@@ -1,5 +1,5 @@
 /* ---------------------------------------------------
- * score.h
+ * entity.h
  * ---------------------------------------------------
  * GRUPO 1:
  * 	CASTRO, Tomás
@@ -26,30 +26,32 @@ typedef enum {
 typedef struct {
     float x, y;
     bool active;
+    float speed;
 } bullet_t;
 
 typedef struct {
     float x, y;
     bool alive;
     alien_t type;
+    bullet_t bullet;
 } enemy_t;
 
 typedef struct {
     float x, y;
     bool alive;
-    bool active;
 } barrierBlock_t;
 
 typedef struct {
     float x, y;
     bool alive;
-    int direction;
+    float speed;
 } mothership_t;
 
 typedef struct {
     float x, y;
     int lives;
     bool alive;
+    bullet_t bullet;
 } player_t;
 
 #endif // ENTITY_H
