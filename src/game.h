@@ -30,11 +30,11 @@ typedef struct {
     mothership_t mothership;
     int score;
     int level;
+    int lives;
     int state;
-    float enemy_dx;
 } gameState_t;
 
-void game_init(int enemiesRow, int enemiesColumn);
+void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barrierRow, int barrierColumn);
 void game_update(void);
 void game_over(void);
 void game_resume(void);
@@ -43,5 +43,8 @@ void game_reset(void);
 
 int getScore(void);
 int getLevel(void);
+coord_t getPlayerPosition(void);
+coord_t getEnemyPosition(int row, int column);
+coord_t getBarrierPosition(int barrier, int row, int column);
 
 #endif // GAME_H

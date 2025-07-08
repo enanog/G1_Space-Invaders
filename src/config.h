@@ -24,6 +24,8 @@
 #define BARRIER_ROWS 3
 #define BARRIER_COLUMNS 9
 #define PLAYER_LIVES 3
+#define SCREEN_W 1900
+#define SCREEN_H 1000
 
 
 #endif // CONFIG_H
