@@ -49,6 +49,15 @@ typedef struct
     bool shot;
 } input_t;
 
+/**
+ * @brief Initializes the game state including enemies, player, barriers, and projectile.
+ *
+ * @param enemiesRow Number of enemy rows
+ * @param enemiesColumn Number of enemy columns
+ * @param barrierQuantity Number of barriers
+ * @param barrierRows Number of rows per barrier
+ * @param barrierColumns Number of columns per barrier
+ */
 void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barrierRow, int barrierColumn);
 int game_update(input_t player);
 int game_over(void);

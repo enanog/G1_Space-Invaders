@@ -28,12 +28,14 @@ static long long getTimeMillis(void) ;
 void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barrierRow, int barrierColumn) 
 {
     
+    // Initialize the player's position at the bottom center of the screen
     game.player.x = 0.5f;
     game.player.y = 0.9f;
     game.player.alive = true;
     game.player.lives = 3;
 
-    game.enemiesDirection = 1;
+    // Allocate memory for the enemies grid
+    game.enemiesDirection = 1;      // Enemies start moving right
     game.enemiesSpeed = ENEMY_SPEED;
     game.enemiesRow = enemiesRow;
     game.enemiesColumn = enemiesColumn;
@@ -131,15 +133,39 @@ int game_over(void)
     return 0;
 }
 
+/**
+ * @brief Returns the position of the player.
+ *
+ * @return coord_t Struct with player's position
+ */
 coord_t getPlayerPosition(void)
 {
     coord_t position = {game.player.x, game.player.y};
     return position;
 }
 
+/**
+ * @brief Returns the position of a specific barrier cell.
+ *
+ * @param barrier Index of the barrier
+ * @param row Row within the barrier
+ * @param column Column within the barrier
+ * @return coord_t Struct with the barrier cell's position
+ */
 coord_t getEnemyPosition(int row, int column)
 {
     coord_t position = {game.enemies[row][column].x , game.enemies[row][column].y};
+    return position;
+}
+
+/**
+ * @brief Returns the position of the projectile.
+ *
+ * @return coord_t Struct with projectile's position
+ */
+coord_t getProjectilePosition(void)
+{
+    coord_t position = {game.player.bullet.x, game.player.bullet.y};
     return position;
 }
 

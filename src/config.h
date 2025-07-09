@@ -29,5 +29,6 @@
 #define PLAYER_SPEED 0.0002f
 #define ENEMY_SPEED 0.00005f
 #define ENEMY_DESCENT_STEP 0.03f
+#define BULLET_SPEED 0.0025f
 
 #endif // CONFIG_H
