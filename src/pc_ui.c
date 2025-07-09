@@ -25,6 +25,7 @@
 #include "playSound.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include "entity.h"
 
 ALLEGRO_DISPLAY *display = NULL;
 
@@ -53,7 +54,7 @@ int main(void)
 
     // playSound_shutdown();
     
-	//map();
+	map();
     return 0;
 }
 
@@ -122,6 +123,10 @@ void map(void)
 			{
 				player.direction = 1;
 			}
+			else if(event.keyboard.keycode == ALLEGRO_KEY_SPACE)
+			{
+				player.shot = 1;
+			}
 		}
 		else if(event.type == ALLEGRO_EVENT_KEY_UP)
 		{
@@ -129,7 +134,12 @@ void map(void)
 			{
 				player.direction = 0;
 			}
+			else if(event.keyboard.keycode == ALLEGRO_KEY_SPACE)
+			{
+				player.shot = 0;
+			}
 		}
+
 
 		if(redraw && al_is_event_queue_empty(queue))
 		{
@@ -145,8 +155,10 @@ void map(void)
 			{
 				for(column = 0; column < ENEMIES_COLUMNS_MAX; column++)
 				{
-					coord_t position = getEnemyPosition(row, column);
+					if(!getIsEnemyAlive(row,column))
+						continue;
 					//printf("Enemy[%d][%d]: x:%f y:%f\n", row, column, position.x, position.y);
+					coord_t position=getEnemyPosition(row,column);
 					ALLEGRO_COLOR color;
 					switch (getEnemyTier(row))
 					{
@@ -190,7 +202,16 @@ void map(void)
 					}
 				}
 			}
-
+			bullet_t b = getPlayerBulletinfo();
+			if (b.active) {
+				al_draw_filled_rectangle(
+					b.x * SCREEN_W,
+					b.y * SCREEN_H,
+					(b.x + BULLET_WIDHT) * SCREEN_W,
+					(b.y + BULLET_HEIGHT) * SCREEN_H,
+					al_map_rgb(255, 255, 0)
+				);
+			}
 			
 			al_flip_display();
 			redraw = false;
@@ -209,3 +230,4 @@ void allegro_shutdown(void)
 		al_destroy_display(display);
 	}
 }
+

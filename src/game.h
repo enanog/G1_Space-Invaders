@@ -61,6 +61,8 @@ typedef struct
 void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barrierRow, int barrierColumn);
 void game_create_enemy_map(int enemiesRow, int enemiesColumn);
 void game_create_barriers(int count, int rows, int cols);
+void update_player_bullet(input_t input, float dt);
+
 int game_update(input_t player);
 int game_over(void);
 void game_resume(void);
@@ -73,5 +75,6 @@ int getEnemyTier(int row);
 coord_t getPlayerPosition(void);
 coord_t getEnemyPosition(int row, int column);
 coord_t getBarrierPosition(int barrier, int row, int column);
-
+bullet_t getPlayerBulletinfo(void);
+bool getIsEnemyAlive(int row, int column);
 #endif // GAME_H

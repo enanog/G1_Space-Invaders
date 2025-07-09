@@ -148,16 +148,111 @@ int game_update(input_t player)
             game.enemies[row][column].x += game.enemiesDirection * dt * ENEMY_SPEED;
         }
     }
+    update_player_bullet(player, dt);
 
     game.lastTimeUpdated = getTimeMillis();
 
     return game_over();
 }
 
+static bool playerShotLock = false;
+
+void update_player_bullet(input_t input, float dt)
+{
+    // Si se presionó disparo y no hay bala activa
+    if (input.shot && !playerShotLock && !game.player.bullet.active) {
+        game.player.bullet.active = true;
+        game.player.bullet.x = game.player.x + PLAYER_WIDTH / 2.0f - BULLET_WIDHT / 2.0f;
+        game.player.bullet.y = game.player.y;
+        playerShotLock = true;
+    }
+    else if (!input.shot)
+    {
+        playerShotLock = false;
+    }
+     if (!game.player.bullet.active)
+        return;
+
+    // Movimiento
+    game.player.bullet.y -= BULLET_SPEED * dt;
+
+    if (game.player.bullet.y < 0.0f) {
+        game.player.bullet.active = false;
+        return;
+    }
+
+    // Colisión con aliens
+    for (int row = 0; row < game.enemiesRow; row++) {
+        for (int column = 0; column < game.enemiesColumn; column++) {
+            if (!game.enemies[row][column].alive) continue;
+
+            float ex = game.enemies[row][column].x;
+            float ey = game.enemies[row][column].y;
+
+            if (game.player.bullet.x + BULLET_WIDHT  >= ex &&
+                game.player.bullet.x <= ex + ENEMY_WIDTH &&
+                game.player.bullet.y + BULLET_HEIGHT >= ey &&
+                game.player.bullet.y <= ey + ENEMY_HEIGHT) {
+
+                game.enemies[row][column].alive = false;
+                game.player.bullet.active = false;
+
+                switch (game.enemies[row][column].type) {
+                    case ALIEN_TIER1: game.score += 10; break;
+                    case ALIEN_TIER2: game.score += 20; break;
+                    case ALIEN_TIER3: game.score += 40; break;
+                }
+                return;
+            }
+        }
+    }
+
+    // Colisión con balas enemigas
+    for (int row = 0; row < game.enemiesRow; row++) {
+        for (int column = 0; column < game.enemiesColumn; column++) {
+            bullet_t* b = &game.enemies[row][column].bullet;
+            if (!b->active) continue;
+
+            if (game.player.bullet.x + BULLET_WIDHT >= b->x &&
+                game.player.bullet.x <= b->x + BULLET_WIDHT &&
+                game.player.bullet.y + BULLET_HEIGHT >= b->y &&
+                game.player.bullet.y <= b->y + BULLET_HEIGHT) {
+
+                game.player.bullet.active = false;
+                b->active = false;
+                return;
+            }
+        }
+    }
+
+    // Colisión con barreras
+    for (int b = 0; b < game.barrirersQuantity; b++) {
+        for (int r = 0; r < game.barriersRow; r++) {
+            for (int c = 0; c < game.barriersColumn; c++) {
+                if (!game.barriers[b].mat[r][c].alive) continue;
+
+                float bx = game.barriers[b].mat[r][c].x;
+                float by = game.barriers[b].mat[r][c].y;
+
+                if (game.player.bullet.x + BULLET_WIDHT >= bx &&
+                    game.player.bullet.x <= bx + BARRIER_WIDTH_UNITS &&
+                    game.player.bullet.y + BULLET_HEIGHT >= by &&
+                    game.player.bullet.y <= by + BARRIER_HEIGHT_UNITS) {
+
+                    game.barriers[b].mat[r][c].alive = false;
+                    game.player.bullet.active = false;
+                    return;
+                }
+            }
+        }
+    }
+}
+
+
 int game_over(void)
 {
     int row, column;
-    for(row = game.enemiesRow-1; row > 0; row--)
+    for(row = game.enemiesRow-1; row >= 0; row--)
     {
         for(column = 0; column < game.enemiesColumn; column++)
         {
@@ -195,8 +290,14 @@ coord_t getPlayerPosition(void)
  */
 coord_t getEnemyPosition(int row, int column)
 {
-    coord_t position = {game.enemies[row][column].x , game.enemies[row][column].y};
+    coord_t position;
+    position.x = game.enemies[row][column].x;
+    position.y = game.enemies[row][column].y;
     return position;
+}
+bool getIsEnemyAlive(int row, int column)
+{
+    return game.enemies[row][column].alive;
 }
 
 /**
@@ -235,4 +336,8 @@ static long long getTimeMillis(void)
     struct timespec ts;
     timespec_get(&ts, TIME_UTC);
     return ts.tv_sec * 1000LL + ts.tv_nsec / 1000000;
+}
+bullet_t getPlayerBulletinfo(void)
+{
+    return game.player.bullet;
 }
