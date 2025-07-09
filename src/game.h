@@ -1,5 +1,5 @@
 /* ---------------------------------------------------
- * score.h
+ * game.h
  * ---------------------------------------------------
  * GRUPO 1:
  * 	CASTRO, Tomás
@@ -39,6 +39,8 @@ typedef struct
     int barrirersQuantity;
     int barriersRow;
     int barriersColumn;
+    int enemyShotInterval;
+    long long lastTimeEnemyShoot;
     long long lastTimeUpdated;
 } gameState_t;
 
@@ -81,5 +83,5 @@ bullet_t getPlayerBulletinfo(void);
 bool getIsEnemyAlive(int row, int column);
 void getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
 void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
-void enemyBulletShot(int row, int col);
+
 #endif // GAME_H

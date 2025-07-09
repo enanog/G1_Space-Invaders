@@ -20,16 +20,17 @@
 #include "config.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <time.h>
 #include "playSound.h"
 #include <string.h>
 
 static gameState_t game;
-static long long getTimeMillis(void) ;
+static long long getTimeMillis(void);
+static void enemiesBulletActive(void);
 
 void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barrierRow, int barrierColumn) 
 {
-	
 	// Initialize the player's position at the bottom center of the screen
     hitbox_t playerInitialHitbox = {
         {0.5f - PLAYER_WIDTH/2.0f, 0.9f},
@@ -41,6 +42,15 @@ void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barri
 	game.player.lives = 3;
 	game.player.bullet.speed = BULLET_SPEED;
 	game.player.bullet.active = false;
+
+    game.enemiesDirection = 1;
+	game.enemiesSpeed = ENEMY_SPEED;
+	game.enemiesRow = enemiesRow;
+	game.enemiesColumn = enemiesColumn;
+
+    game.enemyShotInterval = INITIAL_SHOOTING_INTERVAL;
+    game.lastTimeEnemyShoot = getTimeMillis();
+    srand(time(NULL));
 
 	game_create_enemy_map(enemiesRow,enemiesColumn);
 
@@ -56,13 +66,7 @@ void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barri
 
 void game_create_enemy_map(int enemiesRow, int enemiesColumn)
 {
-	game.enemiesDirection = 1;
-	game.enemiesSpeed = ENEMY_SPEED;
-	game.enemiesRow = enemiesRow;
-	game.enemiesColumn = enemiesColumn;
-
 	float total_width  = enemiesColumn * ENEMY_WIDTH  + (enemiesColumn - 1) * ENEMY_H_SPACING;
-	float total_height = enemiesRow    * ENEMY_HEIGHT + (enemiesRow    - 1) * ENEMY_V_SPACING;
 
 	float start_x = (1.0f - total_width)  / 2.0f;
 	float start_y = ENEMY_TOP_OFFSET;
@@ -210,6 +214,7 @@ int game_update(input_t player)
 			game.enemies[row][col].hitbox.end.x += game.enemiesDirection * dt * ENEMY_SPEED;
 		}
 	}
+    enemiesBulletActive();
 	update_player_bullet(player, dt);
     update_enemy_bullet(dt);
 
@@ -343,12 +348,10 @@ void update_player_bullet(input_t input, float dt)
     {
 		for (col = 0; col < game.enemiesColumn; col++) 
         {
-			if (HITBOX_COLLISION(game.player.bullet.hitbox, game.enemies[row][col].bullet.hitbox)) 
+			if (HITBOX_COLLISION(game.player.bullet.hitbox, game.enemies[row][col].bullet.hitbox) && game.enemies[row][col].bullet.active) 
             {
-
 				game.player.bullet.active = false;
 				game.enemies[row][col].bullet.active = false;
-                printf("Colision bala\n");
 				return;
 			}
 		}
@@ -484,5 +487,24 @@ void getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX])
 
 static void enemiesBulletActive(void)
 {
-
+    long long time = getTimeMillis();
+    long long dt = time - game.lastTimeEnemyShoot;
+    if(dt > game.enemyShotInterval)
+    {
+        int col = rand() % game.enemiesColumn;
+        int row;
+        for(row = game.enemiesRow-1; row >= 0; row--)
+        {
+            if(game.enemies[row][col].alive)
+            {
+                if(game.enemies[row][col].bullet.active)
+                {
+                    break;
+                }
+                enemyBulletShot(row, col);
+                game.lastTimeEnemyShoot = time;
+                return;
+            }
+        }
+    }
 }

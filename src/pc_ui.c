@@ -93,7 +93,7 @@ void map(void)
 	bool running = true;
 
 	al_clear_to_color(al_map_rgb(0, 0, 0));
-	game_init(5, 11, BARRIER_QUANTITY_MAX, BARRIER_ROWS_MAX, BARRIER_COLUMNS_MAX);
+	game_init(5, 6, BARRIER_QUANTITY_MAX, BARRIER_ROWS_MAX, BARRIER_COLUMNS_MAX);
 	input_t player = {0, 0};
 	int row, col;
 
@@ -124,10 +124,6 @@ void map(void)
 			else if(event.keyboard.keycode == ALLEGRO_KEY_SPACE)
 			{
 				player.shot = 1;
-			}
-			else if(event.keyboard.keycode == ALLEGRO_KEY_K)
-			{
-				enemyBulletShot(0,0);
 			}
 		}
 		else if(event.type == ALLEGRO_EVENT_KEY_UP)
