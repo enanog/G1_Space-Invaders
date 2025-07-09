@@ -31,7 +31,6 @@ typedef struct
     mothership_t mothership;
     int score;
     int level;
-    int lives;
     int state;
     int enemiesRow;
     int enemiesColumn;
@@ -81,4 +80,6 @@ hitbox_t getBarrierPosition(int barrier, int row, int column);
 bullet_t getPlayerBulletinfo(void);
 bool getIsEnemyAlive(int row, int column);
 void getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
+void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
+void enemyBulletShot(int row, int col);
 #endif // GAME_H

@@ -22,6 +22,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include "playSound.h"
+#include <string.h>
 
 static gameState_t game;
 static long long getTimeMillis(void) ;
@@ -30,12 +31,13 @@ void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barri
 {
 	
 	// Initialize the player's position at the bottom center of the screen
-	game.player.hitbox.start.x = 0.5f - PLAYER_WIDTH/2.0f;
-	game.player.hitbox.start.y = 0.9f;
-	game.player.hitbox.end.x = 0.5f + PLAYER_WIDTH/2;
-	game.player.hitbox.end.y = 0.9f + PLAYER_HEIGHT;
+    hitbox_t playerInitialHitbox = {
+        {0.5f - PLAYER_WIDTH/2.0f, 0.9f},
+        {0.5f + PLAYER_WIDTH/2.0f, 0.9f + PLAYER_HEIGHT}
+    };
 
-	game.player.alive = true;
+    hitboxPosition(&game.player.hitbox, playerInitialHitbox);
+
 	game.player.lives = 3;
 	game.player.bullet.speed = BULLET_SPEED;
 	game.player.bullet.active = false;
@@ -73,7 +75,6 @@ void game_create_enemy_map(int enemiesRow, int enemiesColumn)
 
 			float x = start_x + col * (ENEMY_WIDTH + ENEMY_H_SPACING);
 			float y = start_y + row * (ENEMY_HEIGHT + ENEMY_V_SPACING);
-			printf("%f", ENEMY_V_SPACING);
 			game.enemies[row][col].hitbox.start.x = x;
 			game.enemies[row][col].hitbox.start.y = y;
 			game.enemies[row][col].hitbox.end.x = x + ENEMY_WIDTH;
@@ -128,8 +129,6 @@ void game_create_barriers(int barrierQuantity, int barrierRow, int barrierColumn
 		}
 	}
 }
-
-
 
 int game_update(input_t player)
 {
@@ -212,11 +211,36 @@ int game_update(input_t player)
 		}
 	}
 	update_player_bullet(player, dt);
+    update_enemy_bullet(dt);
 
 	game.lastTimeUpdated = getTimeMillis();
 
 	//return game_over();
 	return 0;
+}
+
+void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX])
+{
+    int row, col;
+	for(row = 0; row < game.enemiesRow; row++)
+	{
+		for(col = 0; col < game.enemiesColumn; col++)
+		{
+            matEnemy[row][col] = game.enemies[row][col].bullet;
+        }
+    }
+}
+
+void enemyBulletShot(int row, int col)
+{
+    if(!game.enemies[row][col].bullet.active)
+    {
+        game.enemies[row][col].bullet.hitbox.start.x = game.enemies[row][col].hitbox.start.x + ENEMY_WIDTH / 2.0f - BULLET_WIDHT / 2.0f;
+        game.enemies[row][col].bullet.hitbox.end.x = game.enemies[row][col].hitbox.start.x + ENEMY_WIDTH / 2.0f + BULLET_WIDHT / 2.0f;
+        game.enemies[row][col].bullet.hitbox.start.y = game.enemies[row][col].hitbox.end.y;
+        game.enemies[row][col].bullet.hitbox.end.y = game.enemies[row][col].hitbox.end.y + BULLET_HEIGHT;
+        game.enemies[row][col].bullet.active = true;
+    }
 }
 
 void update_enemy_bullet(float dt)
@@ -226,10 +250,25 @@ void update_enemy_bullet(float dt)
 	{
 		for(col = 0; col < game.enemiesColumn; col++)
 		{
-			if(game.enemies[row][col].bullet.active == true)
-			{
-                
-			}
+            if(!game.enemies[row][col].bullet.active)
+            {
+                continue;
+            }
+
+            game.enemies[row][col].bullet.hitbox.start.y += BULLET_SPEED * dt;
+	        game.enemies[row][col].bullet.hitbox.end.y += BULLET_SPEED * dt;
+
+            if (game.enemies[row][col].bullet.hitbox.end.y > 1.0f) 
+            {
+                game.enemies[row][col].bullet.active = false;
+                continue;
+            }
+
+            if (HITBOX_COLLISION(game.enemies[row][col].bullet.hitbox, game.player.hitbox))
+            {
+                game.player.lives--;
+                game.enemies[row][col].bullet.active = false;
+            }
 		}
 	}
 }
@@ -299,23 +338,21 @@ void update_player_bullet(input_t input, float dt)
 		}
 	}
 
-	// // Colisión con balas enemigas
-	// for (int row = 0; row < game.enemiesRow; row++) {
-	// 	for (int column = 0; column < game.enemiesColumn; column++) {
-	// 		bullet_t* b = &game.enemies[row][column].bullet;
-	// 		if (!b->active) continue;
+	// Colisión con balas enemigas
+	for (row = 0; row < game.enemiesRow; row++) 
+    {
+		for (col = 0; col < game.enemiesColumn; col++) 
+        {
+			if (HITBOX_COLLISION(game.player.bullet.hitbox, game.enemies[row][col].bullet.hitbox)) 
+            {
 
-	// 		if (game.player.bullet.x + BULLET_WIDHT >= b->x &&
-	// 			game.player.bullet.x <= b->x + BULLET_WIDHT &&
-	// 			game.player.bullet.y + BULLET_HEIGHT >= b->y &&
-	// 			game.player.bullet.y <= b->y + BULLET_HEIGHT) {
-
-	// 			game.player.bullet.active = false;
-	// 			b->active = false;
-	// 			return;
-	// 		}
-	// 	}
-	// }
+				game.player.bullet.active = false;
+				game.enemies[row][col].bullet.active = false;
+                printf("Colision bala\n");
+				return;
+			}
+		}
+	}
 
 	// // Colisión con barreras
 	// for (int b = 0; b < game.barrirersQuantity; b++) {
@@ -443,4 +480,9 @@ void getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX])
 			matEnemy[row][col] = game.enemies[row][col].alive;
 		}
 	}
+}
+
+static void enemiesBulletActive(void)
+{
+
 }

@@ -35,54 +35,52 @@ void allegro_shutdown(void);
 
 int main(void)
 {
-    if (!allegro_init()) {
-        fprintf(stderr, "ERROR: Failed to initialize Allegro.\n");
-        return 1;
-    }
+	if (!allegro_init()) {
+		fprintf(stderr, "ERROR: Failed to initialize Allegro.\n");
+		return 1;
+	}
 
 	if (!playSound_init()) 
 	{
 		return -1;
 	}
 
-    // playSound_play(SOUND_SHOOT);
-    // al_rest(0.4);
-    // playSound_play(SOUND_INVADER_KILLED);
-    // al_rest(0.5);
-    // playSound_play(SOUND_UFO_HIGH);
-    // al_rest(1.0);
-
-    // playSound_shutdown();
-    
+	// playSound_play(SOUND_SHOOT);
+	// al_rest(0.4);
+	// playSound_play(SOUND_INVADER_KILLED);
+	// al_rest(0.5);
+	// playSound_play(SOUND_UFO_HIGH);
+	// al_rest(1.0);
+	
 	map();
-    return 0;
+	return 0;
 }
 
 bool allegro_init(void) 
 {
-    if (!al_init() || !al_init_font_addon() || !al_init_ttf_addon() ||
-        !al_init_primitives_addon() || !al_init_image_addon())
-    {
-        return false;
-    }
-    if (!al_install_keyboard())
-    {
-        return false;
-    }
+	if (!al_init() || !al_init_font_addon() || !al_init_ttf_addon() ||
+		!al_init_primitives_addon() || !al_init_image_addon())
+	{
+		return false;
+	}
+	if (!al_install_keyboard())
+	{
+		return false;
+	}
 
-    display = al_create_display(SCREEN_W, SCREEN_H);
-    if (!display)
-    {
-        return false;
-    }
+	display = al_create_display(SCREEN_W, SCREEN_H);
+	if (!display)
+	{
+		return false;
+	}
 
-    return true;
+	return true;
 }
 
 
 void map(void)
 {
-    ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
+	ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
 	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 144.0);
 
 	al_register_event_source(queue, al_get_keyboard_event_source());
@@ -91,32 +89,32 @@ void map(void)
 
 	al_start_timer(timer);
 
-    bool redraw = true;
-    bool running = true;
+	bool redraw = true;
+	bool running = true;
 
 	al_clear_to_color(al_map_rgb(0, 0, 0));
-    game_init(5, 11, BARRIER_QUANTITY_MAX, BARRIER_ROWS_MAX, BARRIER_COLUMNS_MAX);
+	game_init(5, 11, BARRIER_QUANTITY_MAX, BARRIER_ROWS_MAX, BARRIER_COLUMNS_MAX);
 	input_t player = {0, 0};
-    while(running)
-    {
-		
+	int row, col;
+
+	while(running)
+	{	
 		ALLEGRO_EVENT event;
-    	al_wait_for_event(queue, &event);
+		al_wait_for_event(queue, &event);
 
 		if(event.type == ALLEGRO_EVENT_TIMER)
 		{
 			redraw = true;
 		}
 		else if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE) 
-        {
-            running = false;
+		{
+			running = false;
 			break;
-        }
+		}
 		if(event.type == ALLEGRO_EVENT_KEY_DOWN)
 		{
 			if(event.keyboard.keycode == ALLEGRO_KEY_LEFT)
 			{
-				printf("Me movi\n");
 				player.direction = -1;
 			}
 			else if(event.keyboard.keycode == ALLEGRO_KEY_RIGHT)
@@ -126,6 +124,10 @@ void map(void)
 			else if(event.keyboard.keycode == ALLEGRO_KEY_SPACE)
 			{
 				player.shot = 1;
+			}
+			else if(event.keyboard.keycode == ALLEGRO_KEY_K)
+			{
+				enemyBulletShot(0,0);
 			}
 		}
 		else if(event.type == ALLEGRO_EVENT_KEY_UP)
@@ -150,44 +152,44 @@ void map(void)
 			{
 				printf("GAME OVER");
 			}
-			int row, column;
+	
 			for(row = 0; row < ENEMIES_ROW_MAX; row++)
 			{
-				for(column = 0; column < ENEMIES_COLUMNS_MAX; column++)
+				for(col = 0; col < ENEMIES_COLUMNS_MAX; col++)
 				{
-					if(!getIsEnemyAlive(row,column))
+					if(!getIsEnemyAlive(row,col))
 						continue;
 					//printf("Enemy[%d][%d]: x:%f y:%f\n", row, column, position.x, position.y);
-					hitbox_t hitbox = getEnemyPosition(row,column);
+					hitbox_t hitbox = getEnemyPosition(row,col);
 					ALLEGRO_COLOR color1, color2;
 					switch (getEnemyTier(row))
 					{
 					case ALIEN_TIER1:
 						color1 = al_map_rgb(255, 0, 0);
-                        color2 = al_map_rgb(255, 255, 0);
+						color2 = al_map_rgb(255, 255, 0);
 						break;
 
 					case ALIEN_TIER2:
 						color1 = al_map_rgb(0, 255, 0);
-                        color2 = al_map_rgb(0, 255, 255);
+						color2 = al_map_rgb(0, 255, 255);
 						break;
 
 					case ALIEN_TIER3:
 						color1 = al_map_rgb(0, 0, 255);
-                        color1 = al_map_rgb(255, 0, 255);
+						color1 = al_map_rgb(255, 0, 255);
 						break;
 
 					default:
 						break;
 					}
-                    al_draw_filled_circle(hitbox.start.x * SCREEN_W, hitbox.start.y  * SCREEN_H, 10, color1);
-                    al_draw_filled_circle(hitbox.end.x * SCREEN_W, hitbox.end.y  * SCREEN_H, 5, color2);
+					al_draw_filled_circle(hitbox.start.x * SCREEN_W, hitbox.start.y  * SCREEN_H, 10, color1);
+					al_draw_filled_circle(hitbox.end.x * SCREEN_W, hitbox.end.y  * SCREEN_H, 5, color2);
 					al_draw_rectangle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, hitbox.end.x * SCREEN_W, hitbox.end.y * SCREEN_H, color1, 2.0f);
 				}
 			}
 			hitbox_t hitbox = getPlayerPosition();
 			//printf("Player: x:%f y:%f\n", position.x, position.y);
-            al_draw_filled_circle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, 5, al_map_rgb(0,255,0));
+			al_draw_filled_circle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, 5, al_map_rgb(0,255,0));
 			al_draw_rectangle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, hitbox.end.x * SCREEN_W, hitbox.end.y * SCREEN_H, al_map_rgb(0,255,0), 2.0f);
 			
 			// int barrier;
@@ -216,23 +218,44 @@ void map(void)
 					bullet.hitbox.end.x * SCREEN_W,
 					bullet.hitbox.end.y * SCREEN_H,
 					al_map_rgb(255, 255, 0),
-                    2.0f
+					2.0f
 				);
 			}
 			
+			bullet_t enemyBulletBitMap[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
+			getEnemiesBulletsInfo(enemyBulletBitMap);
+			for(row = 0; row < ENEMIES_ROW_MAX; row++)
+			{
+				for(col = 0; col < ENEMIES_COLUMNS_MAX; col++)
+				{
+					if(!enemyBulletBitMap[row][col].active)
+					{
+						continue;
+					}
+
+					al_draw_rectangle(
+					enemyBulletBitMap[row][col].hitbox.start.x * SCREEN_W,
+					enemyBulletBitMap[row][col].hitbox.start.y * SCREEN_H,
+					enemyBulletBitMap[row][col].hitbox.end.x * SCREEN_W,
+					enemyBulletBitMap[row][col].hitbox.end.y * SCREEN_H,
+					al_map_rgb(255, 255, 255), 2.0f);
+				}
+			}
+
 			al_flip_display();
 			redraw = false;
 		}
-    }
+	}
 
 	al_destroy_timer(timer);
-    al_destroy_event_queue(queue);
+	al_destroy_event_queue(queue);
 	allegro_shutdown();
+	playSound_shutdown();
 }
 
 void allegro_shutdown(void) 
 {
-    if (display)
+	if (display)
 	{
 		al_destroy_display(display);
 	}

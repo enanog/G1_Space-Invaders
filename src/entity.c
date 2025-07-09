@@ -24,3 +24,11 @@ void hitboxMove(hitbox_t *hitbox, hitbox_t movement)
     hitbox->end.x += movement.end.x;
     hitbox->end.y += movement.end.x;
 }
+
+void hitboxPosition(hitbox_t *hitbox, hitbox_t position)
+{
+    hitbox->start.x = position.start.x;
+    hitbox->start.y = position.start.y;
+    hitbox->end.x = position.end.x;
+    hitbox->end.y = position.end.y;
+}

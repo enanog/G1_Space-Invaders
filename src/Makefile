@@ -2,7 +2,7 @@ GC := gcc
 CFLAGS := -Wall
 ALLEGRO_LIBS := -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives -lallegro_audio -lallegro_acodec
 
-OBJ := game.o pc_ui.o playSound.o
+OBJ := game.o pc_ui.o playSound.o entity.o
 
 all: out
 
@@ -11,6 +11,9 @@ out: ${OBJ}
 
 pc_ui.o: pc_ui.c game.h config.h 
 	${GC} ${CFLAGS} -c pc_ui.c
+
+entity.o: entity.c entity.h
+	${GC} ${CFLAGS} -c entity.c
 
 game.o: game.c game.h entity.h config.h
 	${GC} ${CFLAGS} -c game.c
