@@ -56,7 +56,7 @@ typedef struct
 
 typedef struct
 {
-    barrierBlock_t mat[BARRIER_ROWS][BARRIER_COLUMNS];
+    barrierBlock_t mat[BARRIER_ROWS_MAX][BARRIER_COLUMNS_MAX];
 } barrier_t;
 
 typedef struct 

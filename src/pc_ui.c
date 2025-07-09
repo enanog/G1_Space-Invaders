@@ -67,7 +67,7 @@ bool allegro_init(void)
 void map(void)
 {
     ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
-	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 60.0);
+	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 144.0);
 
 	al_register_event_source(queue, al_get_keyboard_event_source());
 	al_register_event_source(queue, al_get_timer_event_source(timer));
@@ -79,10 +79,11 @@ void map(void)
     bool running = true;
 
 	al_clear_to_color(al_map_rgb(0, 0, 0));
-    game_init(ENEMIES_ROW, ENEMIES_COLUMNS, BARRIER_QUANTITY, BARRIER_ROWS, BARRIER_COLUMNS);
-
+    game_init(ENEMIES_ROW_MAX, ENEMIES_COLUMNS_MAX, BARRIER_QUANTITY_MAX, BARRIER_ROWS_MAX, BARRIER_COLUMNS_MAX);
+	input_t player = {0, 0};
     while(running)
     {
+		
 		ALLEGRO_EVENT event;
     	al_wait_for_event(queue, &event);
 
@@ -95,23 +96,47 @@ void map(void)
             running = false;
 			break;
         }
+		if(event.type == ALLEGRO_EVENT_KEY_DOWN)
+		{
+			if(event.keyboard.keycode == ALLEGRO_KEY_LEFT)
+			{
+				printf("Me movi\n");
+				player.direction = -1;
+			}
+			else if(event.keyboard.keycode == ALLEGRO_KEY_RIGHT)
+			{
+				player.direction = 1;
+			}
+		}
+		else if(event.type == ALLEGRO_EVENT_KEY_UP)
+		{
+			if(event.keyboard.keycode == ALLEGRO_KEY_LEFT || event.keyboard.keycode == ALLEGRO_KEY_RIGHT)
+			{
+				player.direction = 0;
+			}
+		}
 
 		if(redraw && al_is_event_queue_empty(queue))
 		{
-			al_clear_to_color(al_map_rgb(0, 0, 0));  // 👈 Limpiar pantalla cada frame
+			al_clear_to_color(al_map_rgb(0, 0, 0)); 
 
-			int row, column;
-			for(row = 0; row < ENEMIES_ROW; row++)
+			int state = game_update(player);
+			if(state)
 			{
-				for(column = 0; column < ENEMIES_COLUMNS; column++)
+				printf("GAME OVER");
+			}
+			int row, column;
+			for(row = 0; row < ENEMIES_ROW_MAX; row++)
+			{
+				for(column = 0; column < ENEMIES_COLUMNS_MAX; column++)
 				{
 					coord_t position = getEnemyPosition(row, column);
-					printf("Enemy[%d][%d]: x:%f y:%f\n", row, column, position.x, position.y);
+					//printf("Enemy[%d][%d]: x:%f y:%f\n", row, column, position.x, position.y);
 					al_draw_filled_circle(position.x * SCREEN_W, position.y * SCREEN_H, 5, al_map_rgb(255,255,255));
 				}
 			}
 			coord_t position = getPlayerPosition();
-			printf("Player: x:%f y:%f\n", position.x, position.y);
+			//printf("Player: x:%f y:%f\n", position.x, position.y);
 			al_draw_filled_circle(position.x * SCREEN_W, position.y * SCREEN_H, 5, al_map_rgb(0,255,0));
 			
 			al_flip_display();

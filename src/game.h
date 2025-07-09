@@ -23,20 +23,35 @@
 
 enum{PAUSED, RUNNING, QUIT};
 
-typedef struct {
+typedef struct 
+{
     player_t player;
-    enemy_t enemies[ENEMIES_ROW][ENEMIES_COLUMNS];
-    barrier_t barriers[BARRIER_QUANTITY];
+    enemy_t enemies[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
+    barrier_t barriers[BARRIER_QUANTITY_MAX];
     mothership_t mothership;
     int score;
     int level;
     int lives;
     int state;
+    int enemiesRow;
+    int enemiesColumn;
+    int enemiesSpeed;
+    int enemiesDirection;
+    int barrirersQuantity;
+    int barriersRow;
+    int barriersColumn;
+    long long lastTimeUpdated;
 } gameState_t;
 
+typedef struct 
+{
+    int direction;
+    bool shot;
+} input_t;
+
 void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barrierRow, int barrierColumn);
-void game_update(void);
-void game_over(void);
+int game_update(input_t player);
+int game_over(void);
 void game_resume(void);
 void game_pause(void);
 void game_reset(void);
