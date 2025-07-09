@@ -59,6 +59,8 @@ typedef struct
  * @param barrierColumns Number of columns per barrier
  */
 void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barrierRow, int barrierColumn);
+void game_create_enemy_map(int enemiesRow, int enemiesColumn);
+void game_create_barriers(int count, int rows, int cols);
 int game_update(input_t player);
 int game_over(void);
 void game_resume(void);

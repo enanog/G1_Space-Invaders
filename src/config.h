@@ -28,7 +28,27 @@
 #define SCREEN_H 1000
 #define PLAYER_SPEED 0.0002f
 #define ENEMY_SPEED 0.00005f
-#define ENEMY_DESCENT_STEP 0.03f
+
+#define ENEMY_WIDTH      (1.0f / 16.0f)
+#define ENEMY_HEIGHT     (1.0f / 16.0f)
+#define ENEMY_H_SPACING  (ENEMY_WIDTH / 2.0f)
+#define ENEMY_V_SPACING  (ENEMY_HEIGHT / 2.0f)
+#define ENEMY_TOP_OFFSET 0.05f
+
+
+#define BARRIER_WIDTH_UNITS   (1.0f / 20.0f)
+#define BARRIER_HEIGHT_UNITS  (1.0f / 30.0f)
+#define BARRIER_SPACING       (BARRIER_WIDTH_UNITS * 3.0f)
+#define BARRIER_BOTTOM_OFFSET 0.1f
+
+
+#ifndef RASBERRY
+#define OFFSET 50
+#else
+#define OFFSET 1
+#endif
+
+#define ENEMY_DESCENT_STEP (1.0/SCREEN_H)*OFFSET
 #define BULLET_SPEED 0.0025f
 
 #endif // CONFIG_H

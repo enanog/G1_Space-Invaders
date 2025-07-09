@@ -139,6 +139,26 @@ void map(void)
 			//printf("Player: x:%f y:%f\n", position.x, position.y);
 			al_draw_filled_circle(position.x * SCREEN_W, position.y * SCREEN_H, 5, al_map_rgb(0,255,0));
 			
+			int barrier;
+
+			for (barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++) 
+			{
+				for (row = 0; row < BARRIER_ROWS_MAX; row++)
+				 {
+					for (column = 0; column < BARRIER_COLUMNS_MAX; column++) 
+					{
+						coord_t position = getBarrierPosition(barrier, row, column);
+
+						// Si la posición es (0, 0), asumimos que no existe o está fuera de rango
+						if (position.x == 0.0f && position.y == 0.0f)
+							continue;
+
+						al_draw_filled_circle(position.x * SCREEN_W, position.y * SCREEN_H, 5, al_map_rgb(0,255,255));
+					}
+				}
+			}
+
+			
 			al_flip_display();
 			redraw = false;
 		}

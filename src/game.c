@@ -33,41 +33,9 @@ void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barri
     game.player.y = 0.9f;
     game.player.alive = true;
     game.player.lives = 3;
+    game_create_enemy_map(enemiesRow,enemiesColumn);
 
-    // Allocate memory for the enemies grid
-    game.enemiesDirection = 1;      // Enemies start moving right
-    game.enemiesSpeed = ENEMY_SPEED;
-    game.enemiesRow = enemiesRow;
-    game.enemiesColumn = enemiesColumn;
-    int row, column;
-    for(row = 0; row < enemiesRow; row++)
-    {
-        for(column = 0; column < enemiesColumn; column++)
-        {
-            game.enemies[row][column].x =  0.8f * column / (enemiesColumn - 1) + 0.1f ;
-            game.enemies[row][column].y =  0.5f * row / (enemiesRow-1) + 0.1f;
-            game.enemies[row][column].alive = true;
-            game.enemies[row][column].type = (row < enemiesRow/2)? ALIEN_TIER1: ((row < enemiesRow*4/5)? ALIEN_TIER2: ALIEN_TIER3); // Magic numbers
-            game.enemies[row][column].bullet.active = false;
-        }
-    }
-
-    game.barrirersQuantity = barrierQuantity;
-    game.barriersRow = barrierRow;
-    game.barriersColumn = barrierColumn;
-    int cant;
-    for(cant = 0; cant < barrierQuantity; cant++)
-    {
-        for(row = 0; row < barrierRow; row++)
-        {
-            for(column = 0; column < barrierColumn; column++)
-            {
-                game.barriers[cant].mat[row][column].alive = true;
-                game.barriers[cant].mat[row][column].x = 1;
-                game.barriers[cant].mat[row][column].y = 1;
-            }
-        }
-    }
+    game_create_barriers(barrierQuantity,barrierRow,barrierColumn);
 
     game.mothership.alive = false;
     game.score = 0;
@@ -76,6 +44,69 @@ void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barri
 
     game.lastTimeUpdated = getTimeMillis();
 }
+void game_create_enemy_map(int enemiesRow, int enemiesColumn)
+{
+    game.enemiesDirection = 1;
+    game.enemiesSpeed = ENEMY_SPEED;
+    game.enemiesRow = enemiesRow;
+    game.enemiesColumn = enemiesColumn;
+
+    float total_width  = enemiesColumn * ENEMY_WIDTH  + (enemiesColumn - 1) * ENEMY_H_SPACING;
+    float total_height = enemiesRow    * ENEMY_HEIGHT + (enemiesRow    - 1) * ENEMY_V_SPACING;
+
+    float start_x = (1.0f - total_width)  / 2.0f;
+    float start_y = ENEMY_TOP_OFFSET;
+    int row, col;
+
+    for ( row= 0; row < enemiesRow; row++) {
+        for ( col = 0; col < enemiesColumn; col++) {
+
+            float x = start_x + col * (ENEMY_WIDTH + ENEMY_H_SPACING);
+            float y = start_y + row * (ENEMY_HEIGHT + ENEMY_V_SPACING);
+
+            game.enemies[row][col].x = x;
+            game.enemies[row][col].y = y;
+            game.enemies[row][col].alive = true;
+
+            // Tipo de enemigo según la proporción de la fila
+            float frow = (float)row / enemiesRow;
+            if (frow < 0.4f)
+                game.enemies[row][col].type = ALIEN_TIER1;
+            else if (frow < 0.8f)
+                game.enemies[row][col].type = ALIEN_TIER2;
+            else
+                game.enemies[row][col].type = ALIEN_TIER3;
+
+            game.enemies[row][col].bullet.active = false;
+        }
+    }
+}
+void game_create_barriers(int barrierQuantity, int barrierRow, int barrierColumn)
+{
+    game.barrirersQuantity=barrierQuantity;
+    game.barriersRow=barrierRow;
+    game.barriersColumn=barrierColumn;
+    float barrier_width  = barrierColumn * BARRIER_WIDTH_UNITS;
+    float barrier_height = barrierRow * BARRIER_HEIGHT_UNITS;
+
+    float total_width = barrierQuantity * barrier_width + (barrierQuantity - 1) * BARRIER_SPACING;
+    float start_x = (1.0f - total_width) / 2.0f;
+    float base_y = 1.0f - BARRIER_BOTTOM_OFFSET - barrier_height;
+
+    for (int b = 0; b < barrierQuantity; b++) {
+        float barrier_x = start_x + b * (barrier_width + BARRIER_SPACING);
+
+        for (int row = 0; row < barrierRow; row++) {
+            for (int col = 0; col < barrierColumn; col++) {
+                game.barriers[b].mat[row][col].x = barrier_x + col * BARRIER_WIDTH_UNITS;
+                game.barriers[b].mat[row][col].y = base_y + row * BARRIER_HEIGHT_UNITS;
+                game.barriers[b].mat[row][col].alive = true;
+            }
+        }
+    }
+}
+
+
 
 int game_update(input_t player)
 {
@@ -171,7 +202,17 @@ coord_t getProjectilePosition(void)
 
 coord_t getBarrierPosition(int barrier, int row, int column)
 {
+    coord_t position = {0.0f, 0.0f};
+     if (barrier < 0 || barrier >= BARRIER_QUANTITY_MAX ||
+        row < 0 || row >= BARRIER_ROWS_MAX ||
+        column < 0 || column >= BARRIER_COLUMNS_MAX)
+        return position;
 
+    if (!game.barriers[barrier].mat[row][column].alive)
+        return position;
+    position.x = game.barriers[barrier].mat[row][column].x;
+    position.y = game.barriers[barrier].mat[row][column].y;
+    return position;
 }
 
 static long long getTimeMillis(void)
