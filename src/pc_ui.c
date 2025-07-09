@@ -67,7 +67,7 @@ bool allegro_init(void)
 	{
 		return false;
 	}
-
+	al_set_new_display_flags(ALLEGRO_FULLSCREEN);
 	display = al_create_display(SCREEN_W, SCREEN_H);
 	if (!display)
 	{
@@ -93,7 +93,7 @@ void map(void)
 	bool running = true;
 
 	al_clear_to_color(al_map_rgb(0, 0, 0));
-	game_init(5, 6, BARRIER_QUANTITY_MAX, BARRIER_ROWS_MAX, BARRIER_COLUMNS_MAX);
+	game_init(5, 6);
 	input_t player = {0, 0};
 	int row, col;
 
@@ -185,27 +185,38 @@ void map(void)
 			}
 			hitbox_t hitbox = getPlayerPosition();
 			//printf("Player: x:%f y:%f\n", position.x, position.y);
-			al_draw_filled_circle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, 5, al_map_rgb(0,255,0));
-			al_draw_rectangle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, hitbox.end.x * SCREEN_W, hitbox.end.y * SCREEN_H, al_map_rgb(0,255,0), 2.0f);
+			al_draw_filled_circle(hitbox.start.x * SCREEN_W,
+								  hitbox.start.y * SCREEN_H,
+								  5, al_map_rgb(0,255,0));
+			al_draw_rectangle(hitbox.start.x * SCREEN_W,
+				              hitbox.start.y * SCREEN_H,
+							  hitbox.end.x * SCREEN_W,
+							  hitbox.end.y * SCREEN_H,
+							  al_map_rgb(0,255,0), 2.0f);
 			
-			// int barrier;
+			int barrier;
 
-			// for (barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++) 
-			// {
-			// 	for (row = 0; row < BARRIER_ROWS_MAX; row++)
-			// 	 {
-			// 		for (column = 0; column < BARRIER_COLUMNS_MAX; column++) 
-			// 		{
-			// 			coord_t position = getBarrierPosition(barrier, row, column);
+			for (barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++) 
+			{
+				for (row = 0; row < BARRIER_ROWS; row++)
+				 {
+					for (col = 0; col < BARRIER_COLUMNS; col++) 
+					{
+						bool barrierAlive = getBarrierIsAlive(barrier, row, col);
+						if (!barrierAlive)
+						{
+							continue;
+						}
+						hitbox_t hitbox = getBarrierPosition(barrier, row, col);
+						al_draw_filled_rectangle(hitbox.start.x * SCREEN_W,
+												 hitbox.start.y * SCREEN_H,
+												 hitbox.end.x * SCREEN_W,
+												 hitbox.end.y * SCREEN_H,
+												 al_map_rgb(0,255,0));
+					}
+				}
+			}
 
-			// 			// Si la posición es (0, 0), asumimos que no existe o está fuera de rango
-			// 			if (position.x == 0.0f && position.y == 0.0f)
-			// 				continue;
-						
-			// 			al_draw_filled_circle(position.x * SCREEN_W, position.y * SCREEN_H, 5, al_map_rgb(0,255,255));
-			// 		}
-			// 	}
-			// }
 			bullet_t bullet = getPlayerBulletinfo();
 			if (bullet.active) {
 				al_draw_rectangle(

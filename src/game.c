@@ -25,22 +25,34 @@
 #include "playSound.h"
 #include <string.h>
 
+#ifndef RASPBERRY
+const bool BARRIER_SHAPE[BARRIER_ROWS][BARRIER_COLUMNS] = {
+    {0,1,1,1,0},
+    {1,1,1,1,1},
+    {1,0,0,0,1}
+};
+#else
+#endif
+
 static gameState_t game;
 static long long getTimeMillis(void);
 static void enemiesBulletActive(void);
+static void updateBarrier(void);
+static bool collisionEnemyBullet(hitbox_t *hitbox);
+static bool collisionEnemyHitbox(hitbox_t *hitbox);
 
-void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barrierRow, int barrierColumn) 
+void game_init(int enemiesRow, int enemiesColumn) 
 {
 	// Initialize the player's position at the bottom center of the screen
     hitbox_t playerInitialHitbox = {
-        {0.5f - PLAYER_WIDTH/2.0f, 0.9f},
-        {0.5f + PLAYER_WIDTH/2.0f, 0.9f + PLAYER_HEIGHT}
+        {0.5f - PLAYER_WIDTH/2.0f, PLAYER_BOTTOM_OFFSET},
+        {0.5f + PLAYER_WIDTH/2.0f, PLAYER_BOTTOM_OFFSET + PLAYER_HEIGHT}
     };
 
     hitboxPosition(&game.player.hitbox, playerInitialHitbox);
 
 	game.player.lives = 3;
-	game.player.bullet.speed = BULLET_SPEED;
+	game.player.bullet.speed = PLAYER_BULLET_SPEED;
 	game.player.bullet.active = false;
 
     game.enemiesDirection = 1;
@@ -54,7 +66,7 @@ void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barri
 
 	game_create_enemy_map(enemiesRow,enemiesColumn);
 
-	game_create_barriers(barrierQuantity,barrierRow,barrierColumn);
+	game_create_barriers();
 
 	game.mothership.alive = false;
 	game.score = 0;
@@ -72,7 +84,7 @@ void game_create_enemy_map(int enemiesRow, int enemiesColumn)
 	float start_y = ENEMY_TOP_OFFSET;
 	int row, col;
 
-	for ( row = 0; row < enemiesRow; row++) 
+	for (row = 0; row < enemiesRow; row++) 
 	{
 		for ( col = 0; col < enemiesColumn; col++) 
 		{
@@ -106,29 +118,36 @@ void game_create_enemy_map(int enemiesRow, int enemiesColumn)
 }
 
 
-void game_create_barriers(int barrierQuantity, int barrierRow, int barrierColumn)
+void game_create_barriers()
 {
-	game.barrirersQuantity = barrierQuantity;
-	game.barriersRow = barrierRow;
-	game.barriersColumn = barrierColumn;
+	float total_width = BARRIER_QUANTITY_MAX * BARRIER_WIDTH + (BARRIER_QUANTITY_MAX-1) * BARRIER_SPACING;
+	float start_x = (1.0f - total_width) / 2;
+	float base_y = 1.0f - BARRIER_BOTTOM_OFFSET - BARRIER_HEIGHT;
 
-	float barrier_width  = barrierColumn * BARRIER_WIDTH_UNITS;
-	float barrier_height = barrierRow * BARRIER_HEIGHT_UNITS;
+    int elem, row, col;
+	for (elem = 0; elem < BARRIER_QUANTITY_MAX; elem++) 
+    {
+		float barrier_x = start_x + elem * (BARRIER_WIDTH + BARRIER_SPACING);
 
-	float total_width = barrierQuantity * barrier_width + (barrierQuantity-1) * BARRIER_SPACING;
-	float start_x = (1.0f - total_width);
-	float base_y = 1.0f - BARRIER_BOTTOM_OFFSET - barrier_height;
+		for (row = 0; row < BARRIER_ROWS; row++) 
+        {
+			for (col = 0; col < BARRIER_COLUMNS; col++) 
+            {
+                if(!BARRIER_SHAPE[row][col])
+                {
+                    game.barriers[elem].mat[row][col].lives = 0;
+                    continue;
+                }
 
-	for (int elem = 0; elem < barrierQuantity; elem++) {
-		float barrier_x = start_x + elem * (barrier_width + BARRIER_SPACING);
-
-		for (int row = 0; row < barrierRow; row++) {
-			for (int col = 0; col < barrierColumn; col++) {
-				game.barriers[elem].mat[row][col].hitbox.start.x = barrier_x + col * BARRIER_WIDTH_UNITS;
-				game.barriers[elem].mat[row][col].hitbox.start.y = base_y + row * BARRIER_HEIGHT_UNITS;
-				game.barriers[elem].mat[row][col].hitbox.end.x = barrier_x + col * BARRIER_WIDTH_UNITS + BARRIER_WIDTH_UNITS;
-				game.barriers[elem].mat[row][col].hitbox.end.y = base_y + row * BARRIER_HEIGHT_UNITS + BARRIER_HEIGHT_UNITS;
-				game.barriers[elem].mat[row][col].alive = true;
+				game.barriers[elem].mat[row][col].hitbox.start.x = barrier_x + col * (BARRIER_WIDTH / BARRIER_COLUMNS);
+				game.barriers[elem].mat[row][col].hitbox.start.y = base_y + row * (BARRIER_HEIGHT / BARRIER_ROWS);
+				game.barriers[elem].mat[row][col].hitbox.end.x = barrier_x + (col+1) * (BARRIER_WIDTH / BARRIER_COLUMNS);
+				game.barriers[elem].mat[row][col].hitbox.end.y = base_y + (row+1) * (BARRIER_HEIGHT / BARRIER_ROWS);
+                #ifndef RASPBERRY
+				game.barriers[elem].mat[row][col].lives = 1;
+                #else
+                game.barriers[elem].mat[row][col].lives = BARRIER_LIVES;
+                #endif
 			}
 		}
 	}
@@ -217,6 +236,7 @@ int game_update(input_t player)
     enemiesBulletActive();
 	update_player_bullet(player, dt);
     update_enemy_bullet(dt);
+    updateBarrier();
 
 	game.lastTimeUpdated = getTimeMillis();
 
@@ -260,8 +280,8 @@ void update_enemy_bullet(float dt)
                 continue;
             }
 
-            game.enemies[row][col].bullet.hitbox.start.y += BULLET_SPEED * dt;
-	        game.enemies[row][col].bullet.hitbox.end.y += BULLET_SPEED * dt;
+            game.enemies[row][col].bullet.hitbox.start.y += ENEMY_BULLET_SPEED * dt;
+	        game.enemies[row][col].bullet.hitbox.end.y += ENEMY_BULLET_SPEED * dt;
 
             if (game.enemies[row][col].bullet.hitbox.end.y > 1.0f) 
             {
@@ -344,40 +364,80 @@ void update_player_bullet(input_t input, float dt)
 	}
 
 	// Colisión con balas enemigas
-	for (row = 0; row < game.enemiesRow; row++) 
+    if(collisionEnemyBullet(&game.player.bullet.hitbox))
     {
-		for (col = 0; col < game.enemiesColumn; col++) 
+        game.player.bullet.active = false;
+    }
+}
+
+static void updateBarrier(void)
+{
+    int elem, row, col;
+	for (elem = 0; elem < BARRIER_QUANTITY_MAX; elem++) 
+    {
+		for (row = 0; row < BARRIER_ROWS; row++) 
         {
-			if (HITBOX_COLLISION(game.player.bullet.hitbox, game.enemies[row][col].bullet.hitbox) && game.enemies[row][col].bullet.active) 
+			for (col = 0; col < BARRIER_COLUMNS; col++) 
             {
-				game.player.bullet.active = false;
-				game.enemies[row][col].bullet.active = false;
-				return;
+				if (!game.barriers[elem].mat[row][col].lives)
+                {
+                    continue;
+                }
+
+				if (HITBOX_COLLISION(game.player.bullet.hitbox, game.barriers[elem].mat[row][col].hitbox))
+                {
+                    game.barriers[elem].mat[row][col].lives--;
+					game.player.bullet.active = false;
+					return;
+                } 
+
+                else if(collisionEnemyBullet(&game.barriers[elem].mat[row][col].hitbox))
+                {
+                    game.barriers[elem].mat[row][col].lives--;
+                    return;
+                }
+
+                else if(collisionEnemyHitbox(&game.barriers[elem].mat[row][col].hitbox))
+                {
+                    game.barriers[elem].mat[row][col].lives = 0;
+                    return;
+                }
 			}
 		}
 	}
+}
 
-	// // Colisión con barreras
-	// for (int b = 0; b < game.barrirersQuantity; b++) {
-	// 	for (int r = 0; r < game.barriersRow; r++) {
-	// 		for (int c = 0; c < game.barriersColumn; c++) {
-	// 			if (!game.barriers[b].mat[r][c].alive) continue;
+static bool collisionEnemyBullet(hitbox_t *hitbox)
+{
+    int row, col;
+    for (row = 0; row < game.enemiesRow; row++) 
+    {
+		for (col = 0; col < game.enemiesColumn; col++) 
+        {
+			if (HITBOX_COLLISION(*hitbox, game.enemies[row][col].bullet.hitbox) && game.enemies[row][col].bullet.active) 
+            {
+				game.enemies[row][col].bullet.active = false;
+				return 1;
+			}
+		}
+	}
+    return 0;
+}
 
-	// 			float bx = game.barriers[b].mat[r][c].x;
-	// 			float by = game.barriers[b].mat[r][c].y;
-
-	// 			if (game.player.bullet.x + BULLET_WIDHT >= bx &&
-	// 				game.player.bullet.x <= bx + BARRIER_WIDTH_UNITS &&
-	// 				game.player.bullet.y + BULLET_HEIGHT >= by &&
-	// 				game.player.bullet.y <= by + BARRIER_HEIGHT_UNITS) {
-
-	// 				game.barriers[b].mat[r][c].alive = false;
-	// 				game.player.bullet.active = false;
-	// 				return;
-	// 			}
-	// 		}
-	// 	}
-	// }
+static bool collisionEnemyHitbox(hitbox_t *hitbox)
+{
+    int row, col;
+    for (row = 0; row < game.enemiesRow; row++) 
+    {
+		for (col = 0; col < game.enemiesColumn; col++) 
+        {
+			if (HITBOX_COLLISION(*hitbox, game.enemies[row][col].hitbox) && game.enemies[row][col].alive) 
+            {
+				return 1;
+			}
+		}
+	}
+    return 0;
 }
 
 
@@ -422,8 +482,7 @@ hitbox_t getPlayerPosition(void)
  */
 hitbox_t getEnemyPosition(int row, int column)
 {
-	hitbox_t hitbox = game.enemies[row][column].hitbox;
-	return hitbox;
+	return game.enemies[row][column].hitbox;
 }
 bool getIsEnemyAlive(int row, int column)
 {
@@ -441,20 +500,15 @@ bool getIsEnemyAlive(int row, int column)
 // 	return hitbox;
 // }
 
-// hitbox_t getBarrierPosition(int barrier, int row, int column)
-// {
-// 	hitbox_t position = {0.0f, 0.0f};
-// 	 if (barrier < 0 || barrier >= BARRIER_QUANTITY_MAX ||
-// 		row < 0 || row >= BARRIER_ROWS_MAX ||
-// 		column < 0 || column >= BARRIER_COLUMNS_MAX)
-// 		return position;
+bool getBarrierIsAlive(int barrier, int row, int column)
+{
+    return game.barriers[barrier].mat[row][column].lives > 0;
+}
 
-// 	if (!game.barriers[barrier].mat[row][column].alive)
-// 		return position;
-// 	position.x = game.barriers[barrier].mat[row][column].x;
-// 	position.y = game.barriers[barrier].mat[row][column].y;
-// 	return position;
-// }
+hitbox_t getBarrierPosition(int barrier, int row, int column)
+{
+	return game.barriers[barrier].mat[row][column].hitbox;
+}
 
 int getEnemyTier(int row)
 {

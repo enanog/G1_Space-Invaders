@@ -57,12 +57,12 @@ typedef struct
 typedef struct 
 {
 	hitbox_t hitbox;
-	bool alive;
+	int lives;
 } barrierBlock_t;
 
 typedef struct
 {
-	barrierBlock_t mat[BARRIER_ROWS_MAX][BARRIER_COLUMNS_MAX];
+	barrierBlock_t mat[BARRIER_ROWS][BARRIER_COLUMNS];
 } barrier_t;
 
 typedef struct 

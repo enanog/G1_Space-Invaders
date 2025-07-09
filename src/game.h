@@ -59,9 +59,9 @@ typedef struct
  * @param barrierRows Number of rows per barrier
  * @param barrierColumns Number of columns per barrier
  */
-void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barrierRow, int barrierColumn);
+void game_init(int enemiesRow, int enemiesColumn);
 void game_create_enemy_map(int enemiesRow, int enemiesColumn);
-void game_create_barriers(int count, int rows, int cols);
+void game_create_barriers();
 void update_player_bullet(input_t input, float dt);
 void update_enemy_bullet(float dt);
 
@@ -76,10 +76,15 @@ void game_reset(void);
 int getScore(void);
 int getLevel(void);
 int getEnemyTier(int row);
+
 hitbox_t getPlayerPosition(void);
 hitbox_t getEnemyPosition(int row, int column);
+
 hitbox_t getBarrierPosition(int barrier, int row, int column);
+bool getBarrierIsAlive(int barrier, int row, int column);
+
 bullet_t getPlayerBulletinfo(void);
+
 bool getIsEnemyAlive(int row, int column);
 void getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
 void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
