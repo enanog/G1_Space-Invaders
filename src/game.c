@@ -99,7 +99,7 @@ void game_create_barriers(int barrierQuantity, int barrierRow, int barrierColumn
     float barrier_width  = barrierColumn * BARRIER_WIDTH_UNITS;
     float barrier_height = barrierRow * BARRIER_HEIGHT_UNITS;
 
-    float total_width = barrierQuantity * barrier_width + (barrierQuantity) * BARRIER_SPACING;
+    float total_width = barrierQuantity * barrier_width + (barrierQuantity-1) * BARRIER_SPACING;
     float start_x = (1.0f - total_width);
     float base_y = 1.0f - BARRIER_BOTTOM_OFFSET - barrier_height;
 

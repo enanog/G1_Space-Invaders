@@ -35,9 +35,9 @@
 #define BARRIER_COLUMNS_MAX 9
 #define PLAYER_LIVES 3
 
-#define PLAYER_WIDTH
-#define PLAYER_HEIGHT
-#define PLAYER_SPEED 0.0002f
+#define PLAYER_WIDTH	0.05f
+#define PLAYER_HEIGHT	0.05f
+#define PLAYER_SPEED	0.0002f
 
 
 #define ENEMY_WIDTH         (0.5f / ENEMIES_COLUMNS_MAX)
@@ -55,7 +55,8 @@
 #define BARRIER_BOTTOM_OFFSET 0.1f
 
 
-#define BULLET_SPEED 0.0025f
-#define BULLET_
+#define BULLET_SPEED 	0.0025f
+#define BULLET_WIDHT 	0.01f
+#define BULLET_HEIGHT	0.01f
 
 #endif // CONFIG_H

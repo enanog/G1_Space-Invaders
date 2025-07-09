@@ -22,6 +22,7 @@
 #include <allegro5/allegro_image.h>
 #include "game.h"
 #include "config.h"
+#include "playSound.h"
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -37,8 +38,22 @@ int main(void)
         fprintf(stderr, "ERROR: Failed to initialize Allegro.\n");
         return 1;
     }
+
+	if (!playSound_init()) 
+	{
+		return -1;
+	}
+
+    // playSound_play(SOUND_SHOOT);
+    // al_rest(0.4);
+    // playSound_play(SOUND_INVADER_KILLED);
+    // al_rest(0.5);
+    // playSound_play(SOUND_UFO_HIGH);
+    // al_rest(1.0);
+
+    // playSound_shutdown();
     
-	map();
+	//map();
     return 0;
 }
 
