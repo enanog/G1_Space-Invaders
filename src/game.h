@@ -62,19 +62,23 @@ void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barri
 void game_create_enemy_map(int enemiesRow, int enemiesColumn);
 void game_create_barriers(int count, int rows, int cols);
 void update_player_bullet(input_t input, float dt);
+void update_enemy_bullet(float dt);
 
 int game_update(input_t player);
 int game_over(void);
 void game_resume(void);
 void game_pause(void);
 void game_reset(void);
+//void game_level_up(void);
+
 
 int getScore(void);
 int getLevel(void);
 int getEnemyTier(int row);
-coord_t getPlayerPosition(void);
-coord_t getEnemyPosition(int row, int column);
-coord_t getBarrierPosition(int barrier, int row, int column);
+hitbox_t getPlayerPosition(void);
+hitbox_t getEnemyPosition(int row, int column);
+hitbox_t getBarrierPosition(int barrier, int row, int column);
 bullet_t getPlayerBulletinfo(void);
 bool getIsEnemyAlive(int row, int column);
+void getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
 #endif // GAME_H

@@ -95,7 +95,7 @@ void map(void)
     bool running = true;
 
 	al_clear_to_color(al_map_rgb(0, 0, 0));
-    game_init(ENEMIES_ROW_MAX, ENEMIES_COLUMNS_MAX, BARRIER_QUANTITY_MAX, BARRIER_ROWS_MAX, BARRIER_COLUMNS_MAX);
+    game_init(5, 11, BARRIER_QUANTITY_MAX, BARRIER_ROWS_MAX, BARRIER_COLUMNS_MAX);
 	input_t player = {0, 0};
     while(running)
     {
@@ -158,58 +158,65 @@ void map(void)
 					if(!getIsEnemyAlive(row,column))
 						continue;
 					//printf("Enemy[%d][%d]: x:%f y:%f\n", row, column, position.x, position.y);
-					coord_t position=getEnemyPosition(row,column);
-					ALLEGRO_COLOR color;
+					hitbox_t hitbox = getEnemyPosition(row,column);
+					ALLEGRO_COLOR color1, color2;
 					switch (getEnemyTier(row))
 					{
 					case ALIEN_TIER1:
-						color = al_map_rgb(255, 0, 0);
+						color1 = al_map_rgb(255, 0, 0);
+                        color2 = al_map_rgb(255, 255, 0);
 						break;
 
 					case ALIEN_TIER2:
-						color = al_map_rgb(0, 255, 0);
+						color1 = al_map_rgb(0, 255, 0);
+                        color2 = al_map_rgb(0, 255, 255);
 						break;
 
 					case ALIEN_TIER3:
-						color = al_map_rgb(0, 0, 255);
+						color1 = al_map_rgb(0, 0, 255);
+                        color1 = al_map_rgb(255, 0, 255);
 						break;
 
 					default:
 						break;
 					}
-					al_draw_filled_circle(position.x * SCREEN_W, position.y * SCREEN_H, 5, color);
+                    al_draw_filled_circle(hitbox.start.x * SCREEN_W, hitbox.start.y  * SCREEN_H, 10, color1);
+                    al_draw_filled_circle(hitbox.end.x * SCREEN_W, hitbox.end.y  * SCREEN_H, 5, color2);
+					al_draw_rectangle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, hitbox.end.x * SCREEN_W, hitbox.end.y * SCREEN_H, color1, 2.0f);
 				}
 			}
-			coord_t position = getPlayerPosition();
+			hitbox_t hitbox = getPlayerPosition();
 			//printf("Player: x:%f y:%f\n", position.x, position.y);
-			al_draw_filled_circle(position.x * SCREEN_W, position.y * SCREEN_H, 5, al_map_rgb(0,255,0));
+            al_draw_filled_circle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, 5, al_map_rgb(0,255,0));
+			al_draw_rectangle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, hitbox.end.x * SCREEN_W, hitbox.end.y * SCREEN_H, al_map_rgb(0,255,0), 2.0f);
 			
-			int barrier;
+			// int barrier;
 
-			for (barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++) 
-			{
-				for (row = 0; row < BARRIER_ROWS_MAX; row++)
-				 {
-					for (column = 0; column < BARRIER_COLUMNS_MAX; column++) 
-					{
-						coord_t position = getBarrierPosition(barrier, row, column);
+			// for (barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++) 
+			// {
+			// 	for (row = 0; row < BARRIER_ROWS_MAX; row++)
+			// 	 {
+			// 		for (column = 0; column < BARRIER_COLUMNS_MAX; column++) 
+			// 		{
+			// 			coord_t position = getBarrierPosition(barrier, row, column);
 
-						// Si la posición es (0, 0), asumimos que no existe o está fuera de rango
-						if (position.x == 0.0f && position.y == 0.0f)
-							continue;
+			// 			// Si la posición es (0, 0), asumimos que no existe o está fuera de rango
+			// 			if (position.x == 0.0f && position.y == 0.0f)
+			// 				continue;
 						
-						al_draw_filled_circle(position.x * SCREEN_W, position.y * SCREEN_H, 5, al_map_rgb(0,255,255));
-					}
-				}
-			}
-			bullet_t b = getPlayerBulletinfo();
-			if (b.active) {
-				al_draw_filled_rectangle(
-					b.x * SCREEN_W,
-					b.y * SCREEN_H,
-					(b.x + BULLET_WIDHT) * SCREEN_W,
-					(b.y + BULLET_HEIGHT) * SCREEN_H,
-					al_map_rgb(255, 255, 0)
+			// 			al_draw_filled_circle(position.x * SCREEN_W, position.y * SCREEN_H, 5, al_map_rgb(0,255,255));
+			// 		}
+			// 	}
+			// }
+			bullet_t bullet = getPlayerBulletinfo();
+			if (bullet.active) {
+				al_draw_rectangle(
+					bullet.hitbox.start.x * SCREEN_W,
+					bullet.hitbox.start.y * SCREEN_H,
+					bullet.hitbox.end.x * SCREEN_W,
+					bullet.hitbox.end.y * SCREEN_H,
+					al_map_rgb(255, 255, 0),
+                    2.0f
 				);
 			}
 			

@@ -22,56 +22,64 @@
 
 typedef enum 
 {
-    ALIEN_TIER1 = 10,
-    ALIEN_TIER2 = 20,
-    ALIEN_TIER3 = 30
+	ALIEN_TIER1 = 10,
+	ALIEN_TIER2 = 20,
+	ALIEN_TIER3 = 30
 } alien_t;
 
 typedef struct
 {
-    float x;
-    float y;
+	float x;
+	float y;
 }coord_t;
+
+typedef struct
+{
+	coord_t start;  //  Upper-left corner of the hitbox
+	coord_t end;    //  Lower-right corner of the hitbox
+} hitbox_t;
 
 typedef struct 
 {
-    float x, y;
-    bool active;
-    float speed;
+	hitbox_t hitbox;
+	bool active;
+	float speed;
 } bullet_t;
 
 typedef struct 
 {
-    float x, y;
-    bool alive;
-    alien_t type;
-    bullet_t bullet;
+	hitbox_t hitbox;
+	bool alive;
+	alien_t type;
+	bullet_t bullet;
 } enemy_t;
 
 typedef struct 
 {
-    float x, y;
-    bool alive;
+	hitbox_t hitbox;
+	bool alive;
 } barrierBlock_t;
 
 typedef struct
 {
-    barrierBlock_t mat[BARRIER_ROWS_MAX][BARRIER_COLUMNS_MAX];
+	barrierBlock_t mat[BARRIER_ROWS_MAX][BARRIER_COLUMNS_MAX];
 } barrier_t;
 
 typedef struct 
 {
-    float x, y;
-    bool alive;
-    float speed;
+	hitbox_t hitbox;
+	bool alive;
+	float speed;
 } mothership_t;
 
 typedef struct 
 {
-    float x, y;
-    int lives;
-    bool alive;
-    bullet_t bullet;
+	hitbox_t hitbox;
+	int lives;
+	bool alive;
+	bullet_t bullet;
 } player_t;
+
+#define HITBOX_COLLISION(hb1, hb2) (!((hb1).start.x > (hb2).end.x || (hb1).end.x < (hb2).start.x || (hb1).end.y < (hb2).start.y || (hb1).start.y > (hb2).end.y))
 
 #endif // ENTITY_H
