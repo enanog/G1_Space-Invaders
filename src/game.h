@@ -69,6 +69,7 @@ void game_reset(void);
 
 int getScore(void);
 int getLevel(void);
+int getEnemyTier(int row);
 coord_t getPlayerPosition(void);
 coord_t getEnemyPosition(int row, int column);
 coord_t getBarrierPosition(int barrier, int row, int column);

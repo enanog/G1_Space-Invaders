@@ -132,7 +132,25 @@ void map(void)
 				{
 					coord_t position = getEnemyPosition(row, column);
 					//printf("Enemy[%d][%d]: x:%f y:%f\n", row, column, position.x, position.y);
-					al_draw_filled_circle(position.x * SCREEN_W, position.y * SCREEN_H, 5, al_map_rgb(255,255,255));
+					ALLEGRO_COLOR color;
+					switch (getEnemyTier(row))
+					{
+					case ALIEN_TIER1:
+						color = al_map_rgb(255, 0, 0);
+						break;
+
+					case ALIEN_TIER2:
+						color = al_map_rgb(0, 255, 0);
+						break;
+
+					case ALIEN_TIER3:
+						color = al_map_rgb(0, 0, 255);
+						break;
+
+					default:
+						break;
+					}
+					al_draw_filled_circle(position.x * SCREEN_W, position.y * SCREEN_H, 5, color);
 				}
 			}
 			coord_t position = getPlayerPosition();
@@ -152,7 +170,7 @@ void map(void)
 						// Si la posición es (0, 0), asumimos que no existe o está fuera de rango
 						if (position.x == 0.0f && position.y == 0.0f)
 							continue;
-
+						
 						al_draw_filled_circle(position.x * SCREEN_W, position.y * SCREEN_H, 5, al_map_rgb(0,255,255));
 					}
 				}
