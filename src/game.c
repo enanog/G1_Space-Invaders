@@ -51,6 +51,7 @@ void game_init(int enemiesRow, int enemiesColumn, int barrierQuantity, int barri
 
 	game.lastTimeUpdated = getTimeMillis();
 }
+
 void game_create_enemy_map(int enemiesRow, int enemiesColumn)
 {
 	game.enemiesDirection = 1;
@@ -227,7 +228,7 @@ void update_enemy_bullet(float dt)
 		{
 			if(game.enemies[row][col].bullet.active == true)
 			{
-				
+                
 			}
 		}
 	}
