@@ -4,9 +4,11 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/include",
-                "${workspaceFolder}/include/frontend",
+                "${workspaceFolder}/include/frontend/pc",
+                "${workspaceFolder}/include/frontend/raspberry",
                 "${workspaceFolder}/src",
-                "${workspaceFolder}/src/frontend"
+                "${workspaceFolder}/src/frontend/pc",
+                "${workspaceFolder}/src/frontend/raspberry"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

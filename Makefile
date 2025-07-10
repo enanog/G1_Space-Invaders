@@ -13,13 +13,18 @@ ifeq ($(USER)_$(HOST),pi_raspberrypi)
     FRONTEND_DIR := src/frontend/raspberry
     FRONTEND_INC := -Iinclude/frontend/raspberry
     # Allegro libraries
-    ALLEGRO_LIBS := 
+	ALLEGRO_LIBS := 
 	CFLAGS += -DRASPBERRY
+	# Object files
+	OBJ = $(patsubst src/%, obj/%, $(SRC:.c=.o))
+    OBJ += obj/frontend/raspberry/libAudioSDL2.o
 else
     FRONTEND_DIR := src/frontend/pc
     FRONTEND_INC := -Iinclude/frontend/pc
     # Allegro libraries
     ALLEGRO_LIBS = -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives -lallegro_audio -lallegro_acodec
+    # Object files
+	OBJ = $(patsubst src/%, obj/%, $(SRC:.c=.o))
 endif
 
 # Add platform-specific includes
@@ -29,9 +34,6 @@ CFLAGS += $(FRONTEND_INC)
 COMMON_SRC := $(wildcard src/*.c)
 FRONTEND_SRC := $(wildcard $(FRONTEND_DIR)/*.c)
 SRC := $(COMMON_SRC) $(FRONTEND_SRC)
-
-# Object files
-OBJ := $(patsubst src/%, obj/%, $(SRC:.c=.o))
 
 # Default target
 all: space_invaders
@@ -56,4 +58,5 @@ obj/frontend/pc/%.o: src/frontend/pc/%.c
 
 # Clean build artifacts
 clean:
+	find obj/ -type f ! -path 'obj/frontend/raspberry/libAudioSDL2.o' -name '*.o' -delete
 	rm -f $(OBJ) space_invaders

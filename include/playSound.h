@@ -1,3 +1,19 @@
+/* ---------------------------------------------------
+ * playSound.h
+ * ---------------------------------------------------
+ * GRUPO 1:
+ * 	CASTRO, Tomás
+ *	FRIGERIO, Dylan
+ * 	VALENZUELA, Agustín
+ * 	YAGGI, Lucca
+ *
+ * Profesores:
+ * 	MAGLIIOLA, Nicolas
+ * 	JACOBY, Daniel
+ * 	VACATELLO, Pablo
+ *
+ * fecha: 15/07/2025
+ * ---------------------------------------------------*/
 #ifndef PLAY_SOUND_H
 #define PLAY_SOUND_H
 
@@ -17,7 +33,7 @@ typedef enum {
     SOUND_COUNT
 } GameSoundEvent;
 
-// Inicializa Allegro Audio y carga los sonidos
+// Inicializa Audio y carga los sonidos
 bool playSound_init(void);
 
 // Reproduce un sonido asociado al evento

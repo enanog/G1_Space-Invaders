@@ -25,6 +25,7 @@
 #define BARRIER_ROWS	3
 #define BARRIER_COLUMNS 5
 #define PLAYER_LIVES    3
+#define BARRIER_LIVES   2
 #else
 #define OFFSET 1
 #define SCREEN_W 16
