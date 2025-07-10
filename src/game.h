@@ -21,7 +21,7 @@
 #include "entity.h"
 #include "config.h"
 
-enum{PAUSED, RUNNING, QUIT};
+enum{RUNNING, GAME_OVER,QUIT};
 
 typedef struct 
 {
@@ -49,6 +49,8 @@ typedef struct
 {
     int direction;
     bool shot;
+    bool pause;
+    bool exit;
 } input_t;
 
 /**
@@ -60,7 +62,7 @@ typedef struct
  * @param barrierRows Number of rows per barrier
  * @param barrierColumns Number of columns per barrier
  */
-void game_init(int enemiesRow, int enemiesColumn);
+void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame);
 void game_create_enemy_map(int enemiesRow, int enemiesColumn);
 void game_create_barriers();
 void update_player_bullet(input_t input, float dt);

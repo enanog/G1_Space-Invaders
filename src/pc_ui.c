@@ -86,10 +86,9 @@ void map(void)
 	bool running = true;
 
 	al_clear_to_color(al_map_rgb(0, 0, 0));
-	game_init(3, 3);
+	game_init(3, 3, 1);
 	input_t player = {0, 0};
 	int row, col;
-
 	bool fullscreen = false;
 	while(running)
 	{	
@@ -117,8 +116,23 @@ void map(void)
 			}
 			else if(event.keyboard.keycode == ALLEGRO_KEY_SPACE)
 			{
-				player.shot = 1;
+				player.shot = true;
 			}
+            else if(event.keyboard.keycode == ALLEGRO_KEY_ESCAPE && !player.pause)
+			{
+				player.pause = true;
+                game_update(player);
+			}
+            else if(event.keyboard.keycode == ALLEGRO_KEY_ESCAPE && player.pause)
+            {
+                player.pause = false;
+            }
+            else if(event.keyboard.keycode == ALLEGRO_KEY_R && player.pause)
+            {
+                player.exit = true;
+                game_update(player);
+                running = false; // Exit the game loop when paused
+            }
 			else if(event.keyboard.keycode == ALLEGRO_KEY_F4 && (event.keyboard.modifiers & ALLEGRO_KEYMOD_ALT)) 
 			{ 
 				running = false;

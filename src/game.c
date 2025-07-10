@@ -42,9 +42,20 @@ static bool collisionEnemyBullet(hitbox_t *hitbox);
 static bool collisionEnemyHitbox(hitbox_t *hitbox);
 static void mothershipGenerate(void);
 static void mothershipUpdate(float dt);
+static void saveGameState(void);
+static void loadGameState(void);
 
-void game_init(int enemiesRow, int enemiesColumn) 
+void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame) 
 {
+    if(resumeLastGame)
+    {
+        loadGameState();
+        long long currentTime = getTimeMillis();
+        game.lastTimeUpdated = currentTime;
+        game.lastTimeEnemyShoot = currentTime;
+        return;
+    }
+
 	// Initialize the player's position at the bottom center of the screen
     hitbox_t playerInitialHitbox = {
         {0.5f - PLAYER_WIDTH/2.0f, PLAYER_BOTTOM_OFFSET},
@@ -158,6 +169,18 @@ void game_create_barriers()
 
 int game_update(input_t player)
 {
+    if(player.pause)
+    {
+        game.lastTimeUpdated = getTimeMillis();
+        if(player.exit)
+        {
+            game.state = QUIT;
+            saveGameState();
+            return QUIT;
+        }
+        return RUNNING;
+    }
+
 	long long dt = (getTimeMillis()-game.lastTimeUpdated);
 	game.player.hitbox.start.x += player.direction * dt * PLAYER_SPEED;
 	game.player.hitbox.end.x += player.direction * dt * PLAYER_SPEED;
@@ -240,9 +263,9 @@ int game_update(input_t player)
             lastTimeLevelUp = currentTime;
             firstTimeLevelUp = true;
             game.lastTimeUpdated = currentTime;
-            return 0;
+            return RUNNING;
         }
-        return 0; // No enemies left, game continues
+        return RUNNING; // No enemies left, game continues
 	}
 	
 	float rightmostEnemyNextX = game.enemies[0][rightLimit].hitbox.end.x + game.enemiesDirection * dt *  game.enemiesSpeed;
@@ -277,8 +300,8 @@ int game_update(input_t player)
     updateBarrier();
 
 	game.lastTimeUpdated = getTimeMillis();
-    
-	return game_over();
+    game.state = game_over();
+	return game.state;
 }
 
 void game_level_up()
@@ -434,6 +457,30 @@ hitbox_t getMothershipPosition(void)
 bool getIsMothershipAlive(void)
 {
     return game.mothership.alive;
+}
+
+static void saveGameState(void)
+{
+    FILE *file = fopen("../data/savegame.dat", "wb");
+    if (!file) {
+        perror("Failed to open save file");
+        return;
+    }
+
+    fwrite(&game, sizeof(game), 1, file);
+    fclose(file);
+}
+
+static void loadGameState(void)
+{
+    FILE *file = fopen("../data/savegame.dat", "rb");
+    if (!file) {
+        perror("Failed to open save file");
+        return;
+    }
+
+    fread(&game, sizeof(game), 1, file);
+    fclose(file);
 }
 
 static void mothershipGenerate(void)
