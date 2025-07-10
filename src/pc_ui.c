@@ -27,7 +27,7 @@
 #include <stdbool.h>
 #include "entity.h"
 
-ALLEGRO_DISPLAY *display = NULL;
+static ALLEGRO_DISPLAY *display = NULL;
 
 void map(void);
 bool allegro_init(void);
@@ -44,13 +44,6 @@ int main(void)
 	{
 		return -1;
 	}
-
-	// playSound_play(SOUND_SHOOT);
-	// al_rest(0.4);
-	// playSound_play(SOUND_INVADER_KILLED);
-	// al_rest(0.5);
-	// playSound_play(SOUND_UFO_HIGH);
-	// al_rest(1.0);
 	
 	map();
 	return 0;
@@ -67,7 +60,7 @@ bool allegro_init(void)
 	{
 		return false;
 	}
-	al_set_new_display_flags(ALLEGRO_FULLSCREEN);
+
 	display = al_create_display(SCREEN_W, SCREEN_H);
 	if (!display)
 	{
@@ -97,6 +90,7 @@ void map(void)
 	input_t player = {0, 0};
 	int row, col;
 
+	bool fullscreen = false;
 	while(running)
 	{	
 		ALLEGRO_EVENT event;
@@ -125,7 +119,16 @@ void map(void)
 			{
 				player.shot = 1;
 			}
+			else if(event.keyboard.keycode == ALLEGRO_KEY_F4 && (event.keyboard.modifiers & ALLEGRO_KEYMOD_ALT)) 
+			{ 
+				running = false;
+			}
+			else if(event.keyboard.keycode == ALLEGRO_KEY_F11)
+			{
+				fullscreen = !fullscreen;
+			}
 		}
+
 		else if(event.type == ALLEGRO_EVENT_KEY_UP)
 		{
 			if(event.keyboard.keycode == ALLEGRO_KEY_LEFT || event.keyboard.keycode == ALLEGRO_KEY_RIGHT)
@@ -139,6 +142,17 @@ void map(void)
 		}
 
 
+		if(fullscreen)
+		{
+			al_set_display_flag(display, ALLEGRO_FULLSCREEN_WINDOW, true);
+			al_resize_display(display, SCREEN_W, SCREEN_H);
+		}
+		else
+		{
+			al_set_display_flag(display, ALLEGRO_FULLSCREEN_WINDOW, false);
+			al_resize_display(display, SCREEN_W, SCREEN_H);
+		}
+
 		if(redraw && al_is_event_queue_empty(queue))
 		{
 			al_clear_to_color(al_map_rgb(0, 0, 0)); 
@@ -146,7 +160,8 @@ void map(void)
 			int state = game_update(player);
 			if(state)
 			{
-				printf("GAME OVER");
+				printf("GAME OVER\n");
+				running = 0;
 			}
 	
 			for(row = 0; row < ENEMIES_ROW_MAX; row++)
@@ -189,7 +204,7 @@ void map(void)
 								  hitbox.start.y * SCREEN_H,
 								  5, al_map_rgb(0,255,0));
 			al_draw_rectangle(hitbox.start.x * SCREEN_W,
-				              hitbox.start.y * SCREEN_H,
+							  hitbox.start.y * SCREEN_H,
 							  hitbox.end.x * SCREEN_W,
 							  hitbox.end.y * SCREEN_H,
 							  al_map_rgb(0,255,0), 2.0f);

@@ -239,9 +239,8 @@ int game_update(input_t player)
     updateBarrier();
 
 	game.lastTimeUpdated = getTimeMillis();
-
-	//return game_over();
-	return 0;
+    
+	return game_over();
 }
 
 void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX])
@@ -440,24 +439,29 @@ static bool collisionEnemyHitbox(hitbox_t *hitbox)
     return 0;
 }
 
-
 int game_over(void)
 {
-	int row, col;
-	for(row = game.enemiesRow-1; row >= 0; row--)
+	int row, col, flag;
+	for(row = game.enemiesRow-1, flag = 0; row >= 0 && !flag; row--)
 	{
-		for(col = 0; col < game.enemiesColumn; col++)
+		for(col = 0; col < game.enemiesColumn && !flag; col++)
 		{
 			if(game.enemies[row][col].alive == true)
 			{
-				if(game.enemies[row][col].hitbox.end.y <= game.player.hitbox.start.y)
+				if(game.enemies[row][col].hitbox.end.y >= game.player.hitbox.start.y)
 				{
-					return 1;
+					return 1;   // Game Over
 				}
-				return 0;
+                flag = 1;
 			}
 		}
 	}
+
+    if(game.player.lives == 0)
+    {
+        return 1;
+    }
+
 	return 0;
 }
 
