@@ -30,10 +30,9 @@ typedef struct
  * @brief Loads the top scores from the corresponding file for the given platform.
  *
  * @param topScore Pointer to an array of score_t where the loaded scores will be stored.
- * @param platform Platform identifier (PC or PI) to select the correct file.
  * @return The number of scores read from the file, or -1 if the file could not be opened.
  */
-int getTopScore(score_t *topScore, int platform);
+int getTopScore(score_t *topScore);
 
 /**
  * @brief Updates the top scores list with a new score and player name for the specified platform.
@@ -44,10 +43,9 @@ int getTopScore(score_t *topScore, int platform);
  *
  * @param newScore The new score to be considered for the top scores list.
  * @param name The name of the player associated with the new score.
- * @param platform The platform identifier (e.g., PC or another platform).
  * @return int Returns 1 if the operation was successful, 0 if the score was a duplicate and not added,
  *         or -1 if there was an error opening the file.
  */
-int topScoreUpdate(int newScore, const char *name, int platform);
+int topScoreUpdate(int newScore, const char *name);
 
 #endif // SCORE_H

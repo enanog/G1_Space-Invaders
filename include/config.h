@@ -18,7 +18,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#ifndef RASBERRY
+#ifndef RASPBERRY
 #define OFFSET 			50
 #define SCREEN_W 		1920
 #define SCREEN_H        1080

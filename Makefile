@@ -5,32 +5,55 @@ CC = gcc
 # -Iinclude: add 'include/' directory to the list of paths for header files
 CFLAGS = -Wall -Iinclude -Iinclude/frontend
 
-# Find all .c source files in src/ and src/frontend/
-SRC = $(wildcard src/*.c src/frontend/*.c)
+# Detect platform using whoami and hostname
+USER := $(shell whoami)
+HOST := $(shell hostname)
+# Check if user and hostname match the expected values for Raspberry Pi
+ifeq ($(USER)_$(HOST),pi_raspberrypi)
+    FRONTEND_DIR := src/frontend/raspberry
+    FRONTEND_INC := -Iinclude/frontend/raspberry
+    # Allegro libraries
+    ALLEGRO_LIBS := 
+	CFLAGS += -DRASPBERRY
+else
+    FRONTEND_DIR := src/frontend/pc
+    FRONTEND_INC := -Iinclude/frontend/pc
+    # Allegro libraries
+    ALLEGRO_LIBS = -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives -lallegro_audio -lallegro_acodec
+endif
 
-# Generate corresponding .o object file paths inside obj/
-OBJ = $(patsubst src/%, obj/%, $(SRC:.c=.o))
+# Add platform-specific includes
+CFLAGS += $(FRONTEND_INC)
 
-# Allegro libraries required for linking
-ALLEGRO_LIBS = -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives -lallegro_audio -lallegro_acodec 
+# Source files
+COMMON_SRC := $(wildcard src/*.c)
+FRONTEND_SRC := $(wildcard $(FRONTEND_DIR)/*.c)
+SRC := $(COMMON_SRC) $(FRONTEND_SRC)
 
-# Default target: build the final executable
-all: space_invaders_pc
+# Object files
+OBJ := $(patsubst src/%, obj/%, $(SRC:.c=.o))
 
-# Link all object files to create the executable 'space_invaders_pc'
-space_invaders_pc: $(OBJ)
+# Default target
+all: space_invaders
+
+# Link executable
+space_invaders: $(OBJ)
 	$(CC) -o $@ $^ $(ALLEGRO_LIBS)
 
-# Generic rule to compile .c files from src/ into obj/
+# Compile src/*.c
 obj/%.o: src/%.c
-	@mkdir -p $(dir $@)             # Create the directory if it doesn't exist
-	$(CC) $(CFLAGS) -c $< -o $@     # Compile source to object
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Generic rule to compile .c files from src/frontend/ into obj/
-obj/%.o: src/frontend/%.c
-	@mkdir -p $(dir $@)             # Create the directory if it doesn't exist
-	$(CC) $(CFLAGS) -c $< -o $@     # Compile source to object
+# Compile frontend files
+obj/frontend/raspberry/%.o: src/frontend/raspberry/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Remove all object files and the executable
+obj/frontend/pc/%.o: src/frontend/pc/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Clean build artifacts
 clean:
-	rm -f $(OBJ) space_invaders_pc
+	rm -f $(OBJ) space_invaders

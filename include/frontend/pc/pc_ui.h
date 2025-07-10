@@ -24,6 +24,8 @@ typedef enum {
     STATE_SPLASH,
     STATE_MENU,
     STATE_GAME,
+    STATE_RESUME,
+    STATE_SCOREBOARD,
     STATE_EXIT
 } gameState_t;
 

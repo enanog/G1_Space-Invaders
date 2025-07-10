@@ -29,49 +29,49 @@
 #include "pc_ui.h"
 
 static ALLEGRO_DISPLAY *display = NULL;
+ALLEGRO_FONT *font = NULL;
 
-static bool splash_show(ALLEGRO_DISPLAY* display);
+static void splash_show(ALLEGRO_DISPLAY* display);
+static gameState_t menu_show(ALLEGRO_DISPLAY *display);
+
 static char keyboard_input(void);
 
-// void gameLoop(void)
-// {
-//     gameState_t state = STATE_SPLASH;
-//     bool running = true;
+void gameLoop(void)
+{
+    gameState_t state = STATE_SPLASH;
+    bool running = true;
 
-//     keyboard_init();
+    while (running) 
+    {
+        switch (state) 
+        {
+            case STATE_SPLASH:
+                splash_show(display); // Espera tecla y pasa al siguiente estado
+                state = STATE_GAME;
+                break;
 
+            case STATE_MENU:
+                //state = menu_show(display); // Devolvés un GameState
+                break;
 
-//     while (running) 
-//     {
+            case STATE_GAME:
+                map();  // Tu función map adaptada
+                break;
 
-//         switch (state) 
-//         {
-//             case STATE_SPLASH:
-//                 splash_show(display); // Espera tecla y pasa al siguiente estado
-//                 state = STATE_MENU;
-//                 break;
+            case STATE_EXIT:
+                running = false;
+                break;
 
-//             case STATE_MENU:
-//                 //state = menu_show(display); // Devolvés un GameState
-//                 break;
+            default:
+                running = false;
+                break;
+        }
+    }
 
-//             case STATE_GAME:
-//                 //state = game_run(display);  // Tu función map adaptada
-//                 break;
-
-//             case STATE_EXIT:
-//                 running = false;
-//                 break;
-
-//             default:
-//                 running = false;
-//                 break;
-//         }
-//     }
-
-//     allegro_shutdown();
-//     playSound_shutdown();
-// }
+    al_destroy_font(font);
+    allegro_shutdown();
+    playSound_shutdown();
+}
 
 bool allegro_init(void) 
 {
@@ -91,131 +91,90 @@ bool allegro_init(void)
 		return false;
 	}
 
+    font = al_create_builtin_font();
+    if (!font) {
+        return false;
+    }
+
 	return true;
 }
 
-// static bool splash_show(ALLEGRO_DISPLAY* display)
-// {
-//     ALLEGRO_BITMAP* logo = al_load_bitmap("assets/sprites/logo.png");
-//     if (!logo) {
-//         fprintf(stderr, "Failed to load logo.png\n");
-//         return false;
-//     }
+static void splash_show(ALLEGRO_DISPLAY* display)
+{
+    al_clear_to_color(al_map_rgb(0, 0, 0)); // Fondo negro
 
-//     ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();
-//     ALLEGRO_TIMER* timer = al_create_timer(1.0 / 60);
-//     if (!queue || !timer) {
-//         al_destroy_bitmap(logo);
-//         return false;
-//     }
+    // Título del juego
+    al_draw_text(font, al_map_rgb(255, 255, 255),
+                 al_get_display_width(display) / 2,
+                 al_get_display_height(display) / 3,
+                 ALLEGRO_ALIGN_CENTER, "SPACE INVADERS");
 
-//     al_register_event_source(queue, al_get_display_event_source(display));
-//     al_register_event_source(queue, al_get_keyboard_event_source());
-//     al_register_event_source(queue, al_get_timer_event_source(timer));
-//     al_start_timer(timer);
+    // Instrucción para continuar
+    al_draw_text(font, al_map_rgb(180, 180, 180),
+                 al_get_display_width(display) / 2,
+                 al_get_display_height(display) / 2,
+                 ALLEGRO_ALIGN_CENTER, "Press any key to start");
 
-//     bool running = true;
-//     float alpha = 0.0f;
-//     float fade_speed = 0.01f;
+    al_flip_display();
 
-//     al_clear_to_color(al_map_rgb(0, 0, 0));
-//     al_flip_display();
+    ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
+    al_register_event_source(queue, al_get_keyboard_event_source());
 
-//     while (running) {
-//         ALLEGRO_EVENT ev;
-//         al_wait_for_event(queue, &ev);
+    ALLEGRO_EVENT event;
+    bool key_pressed = false;
 
-//         if (ev.type == ALLEGRO_EVENT_TIMER) {
-//             alpha += fade_speed;
-//             if (alpha > 1.0f) alpha = 1.0f;
+    while (!key_pressed) {
+        al_wait_for_event(queue, &event);
+        if (event.type == ALLEGRO_EVENT_KEY_DOWN) {
+            key_pressed = true;
+        }
+    }
 
-//             al_clear_to_color(al_map_rgb(0, 0, 0));
-//             al_draw_tinted_bitmap(logo, al_map_rgba_f(1, 1, 1, alpha),
-//                                   (al_get_display_width(display) - al_get_bitmap_width(logo)) / 2,
-//                                   (al_get_display_height(display) - al_get_bitmap_height(logo)) / 2, 0);
-//             al_flip_display();
-//         }
-//         else if (ev.type == ALLEGRO_EVENT_KEY_DOWN || ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
-//             running = false;
-//         }
-//     }
+    al_destroy_event_queue(queue);
+}
 
-//     al_destroy_bitmap(logo);
-//     al_destroy_timer(timer);
-//     al_destroy_event_queue(queue);
+gameState_t menu_show(ALLEGRO_DISPLAY *display) {
+    const char *options[] = {"Start Game", "Resume", "ScoreBoard", "Exit"};
+    int option_count = 4;
+    int selected = 0;
 
-//     return true;
-// }
+    ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
+    al_register_event_source(queue, al_get_keyboard_event_source());
 
-// static void keyboard_clear(void)
-// {
-//     ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();
-//     if (!queue) 
-//     {
-//         return;
-//     }
+    bool choosing = true;
+    ALLEGRO_EVENT event;
 
-//     al_register_event_source(queue, al_get_keyboard_event_source());
+    while (choosing) {
+        al_clear_to_color(al_map_rgb(0, 0, 0));
 
-//     ALLEGRO_EVENT ev;
-//     while (al_get_next_event(queue, &ev)) 
-//     {
-//         if (ev.type == ALLEGRO_EVENT_KEY_UP) 
-//         {
-//             // Clear the key release event
-//         }
-//     }
+        for (int i = 0; i < option_count; ++i) {
+            ALLEGRO_COLOR color = (i == selected) ? al_map_rgb(255, 255, 0) : al_map_rgb(255, 255, 255);
+            al_draw_text(font, color,
+                         al_get_display_width(display) / 2,
+                         al_get_display_height(display) / 3 + i * 30,
+                         ALLEGRO_ALIGN_CENTER, options[i]);
+        }
 
-//     al_destroy_event_queue(queue);
-// }
+        al_flip_display();
+        al_wait_for_event(queue, &event);
 
-// static void keyboard_init(void)
-// {
-//     ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();
-//     if (!queue) {
-//         return;
-//     }
+        if (event.type == ALLEGRO_EVENT_KEY_DOWN) {
+            switch (event.keyboard.keycode) {
+                case ALLEGRO_KEY_UP:
+                    selected = (selected - 1 + option_count) % option_count;
+                    break;
+                case ALLEGRO_KEY_DOWN:
+                    selected = (selected + 1) % option_count;
+                    break;
+                case ALLEGRO_KEY_ENTER:
+                case ALLEGRO_KEY_SPACE:
+                    choosing = false;
+                    break;
+            }
+        }
+    }
 
-//     al_register_event_source(queue, al_get_keyboard_event_source());
-
-//     ALLEGRO_EVENT ev;
-// }
-
-// static char keyboard_input(void)
-// {
-//     ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();
-//     ALLEGRO_TIMER* timer = al_create_timer(1.0 / 60);
-
-//     if (!queue || !timer) {
-//         return '\0';
-//     }
-
-//     al_register_event_source(queue, al_get_keyboard_event_source());
-//     al_register_event_source(queue, al_get_timer_event_source(timer));
-//     al_start_timer(timer);
-
-//     char input_char = '\0';
-//     bool running = true;
-
-//     while (running) {
-//         ALLEGRO_EVENT ev;
-//         al_wait_for_event(queue, &ev);
-
-//         if (ev.type == ALLEGRO_EVENT_KEY_DOWN) {
-//             input_char = ev.keyboard.unichar;
-//             running = false;
-//         }
-//         else if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
-//             running = false;
-//         }
-//     }
-
-//     al_destroy_timer(timer);
-//     al_destroy_event_queue(queue);
-
-//     return input_char;
-// }
-
+}
 void map(void)
 {
 	ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();

@@ -32,6 +32,9 @@ const bool BARRIER_SHAPE[BARRIER_ROWS][BARRIER_COLUMNS] = {
     {1,0,0,0,1}
 };
 #else
+const bool BARRIER_SHAPE[BARRIER_ROWS][BARRIER_COLUMNS] = {
+    {1,1},
+};
 #endif
 
 static game_t game;

@@ -3,14 +3,10 @@
 
 #include "score.h"
 
-int getTopScore(score_t *topScore, int platform)
+int getTopScore(score_t *topScore)
 {
-    char fileName[30];
-    // Select file name based on platform
-    sprintf(fileName, "../data/topScoreP%c.txt", (platform == PC) ? 'C' : 'I');
-
     // Open the file for reading
-    FILE *file = fopen(fileName, "r");
+    FILE *file = fopen("../data/topScore.txt", "r");
     if (!file) return -1; // Error opening file
 
     // Read up to 10 scores from the file
@@ -23,15 +19,15 @@ int getTopScore(score_t *topScore, int platform)
     return count; // Return the number of scores read
 }
 
-int topScoreUpdate(int newScore, const char *name, int platform)
+int topScoreUpdate(int newScore, const char *name)
 {
-    char fileName[30];
-    // Select the file name based on the platform (PC or PI)
-    sprintf(fileName, "../data/topScoreP%c.txt", (platform == PC) ? 'C' : 'I');
+    // Open the file for reading
+    FILE *file = fopen("../data/topScore.txt", "r");
+    if (!file) return -1; // Error opening file
 
     // Read the current top scores from the file
     score_t topScore[10] = {0};
-    int count = getTopScore(topScore, platform);
+    int count = getTopScore(topScore);
     if (count < 0) 
     {   
         count = 0; // If file does not exist or error, start with zero scores
@@ -69,7 +65,7 @@ int topScoreUpdate(int newScore, const char *name, int platform)
     }
 
     // Write the updated top scores back to the file
-    FILE *file = fopen(fileName, "w");
+    file = fopen("../data/topScore.txt", "w");
     if (!file) return -1; // Error opening file for writing
     for (int i = 0; i < count; i++) {
         fprintf(file, "%s %d\n", topScore[i].name, topScore[i].score);
