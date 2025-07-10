@@ -43,6 +43,7 @@ typedef struct
     int cantPlayerShots;
     long long lastTimeEnemyShoot;
     long long lastTimeUpdated;
+    long long lastTimeMothershipGenerated;
 } gameState_t;
 
 typedef struct 

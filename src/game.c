@@ -301,12 +301,20 @@ int game_update(input_t player)
 
 	game.lastTimeUpdated = getTimeMillis();
     game.state = game_over();
+    if(game.state == GAME_OVER)
+    {
+        saveGameState();
+    }
 	return game.state;
 }
 
 void game_level_up()
 {
     game.level++;
+    if(game.player.lives < MAX_PLAYER_LIVES)
+    {
+        game.player.lives++;
+    }
     game.enemiesSpeed = ENEMY_SPEED + game.level * ENEMY_SPEED_INCREMENT;
     game.enemiesDirection = 1;
     game.enemyShotInterval  = INITIAL_SHOOTING_INTERVAL;
@@ -417,6 +425,7 @@ void update_player_bullet(input_t input, float dt)
 				game.enemies[row][col].alive = false;
 				game.player.bullet.active = false;
                 playSound_play(SOUND_EXPLOSION);
+                playSound_play(SOUND_INVADER_KILLED);
 
                 game.enemyShotInterval -= ENEMY_SHOOTING_INTERVAL_DECREMENT;
                 if(game.enemyShotInterval < MIN_ENEMY_SHOOTING_INTERVAL)
@@ -508,6 +517,8 @@ static void mothershipGenerate(void)
                game.mothership.hitbox.start.x, game.mothership.hitbox.start.y,
                game.mothership.hitbox.end.x, game.mothership.hitbox.end.y);
         game.cantPlayerShots = 0;
+        game.lastTimeMothershipGenerated = getTimeMillis();
+        playSound_play(SOUND_UFO_HIGH);
     }
     else if(game.mothership.alive)
     {
@@ -517,6 +528,7 @@ static void mothershipGenerate(void)
 
 static void mothershipUpdate(float dt)
 {
+    static int switchAudio = 0;
     mothershipGenerate();
 
     if(!game.mothership.alive)
@@ -524,6 +536,20 @@ static void mothershipUpdate(float dt)
         return;
     }
 
+    long long currentTime = getTimeMillis();
+    if(currentTime - game.lastTimeMothershipGenerated > 1000 && !switchAudio)
+    {
+        playSound_play(SOUND_UFO_LOW);
+        switchAudio = !switchAudio;
+        game.lastTimeMothershipGenerated = currentTime;
+    }
+    else if(currentTime - game.lastTimeMothershipGenerated > 2000 && switchAudio)
+    {
+        playSound_play(SOUND_UFO_HIGH);
+        switchAudio = !switchAudio;
+        game.lastTimeMothershipGenerated = currentTime;
+    }
+    
     game.mothership.hitbox.start.x += game.mothership.speed * dt;
     game.mothership.hitbox.end.x += game.mothership.speed * dt;
 

@@ -86,7 +86,7 @@ void map(void)
 	bool running = true;
 
 	al_clear_to_color(al_map_rgb(0, 0, 0));
-	game_init(3, 3, 1);
+	game_init(3, 3, 0);
 	input_t player = {0, 0};
 	int row, col;
 	bool fullscreen = false;
