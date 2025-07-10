@@ -40,6 +40,8 @@ static void enemiesBulletActive(void);
 static void updateBarrier(void);
 static bool collisionEnemyBullet(hitbox_t *hitbox);
 static bool collisionEnemyHitbox(hitbox_t *hitbox);
+static void mothershipGenerate(void);
+static void mothershipUpdate(float dt);
 
 void game_init(int enemiesRow, int enemiesColumn) 
 {
@@ -54,6 +56,7 @@ void game_init(int enemiesRow, int enemiesColumn)
 	game.player.lives = 3;
 	game.player.bullet.speed = PLAYER_BULLET_SPEED;
 	game.player.bullet.active = false;
+    game.cantPlayerShots = 0;
 
     game.enemiesDirection = 1;
 	game.enemiesSpeed = ENEMY_SPEED;
@@ -158,7 +161,7 @@ int game_update(input_t player)
 	long long dt = (getTimeMillis()-game.lastTimeUpdated);
 	game.player.hitbox.start.x += player.direction * dt * PLAYER_SPEED;
 	game.player.hitbox.end.x += player.direction * dt * PLAYER_SPEED;
-	// printf("%f\n", (getTimeMillis()-game.lastTimeUpdated) * PLAYER_SPEED * player.direction);
+
 	if(game.player.hitbox.start.x < 0)
 	{
 		game.player.hitbox.start.x = 0;
@@ -205,16 +208,50 @@ int game_update(input_t player)
 	   leftLimit == game.enemiesColumn && \
 	   bottomLimit == -1)
 	{
-		//game_level_up();
-		return 0;
+        static long long lastTimeLevelUp;
+        static bool firstTimeLevelUp = true;
+        // Reset player position and hitbox
+        hitbox_t playerInitialHitbox = {
+            {0.5f - PLAYER_WIDTH/2.0f, PLAYER_BOTTOM_OFFSET},
+            {0.5f + PLAYER_WIDTH/2.0f, PLAYER_BOTTOM_OFFSET + PLAYER_HEIGHT}
+        };
+
+        hitboxPosition(&game.player.hitbox, playerInitialHitbox);
+        game.mothership.alive = false;
+
+        for(row = 0; row < game.enemiesRow; row++)
+        {
+            for(col = 0; col < game.enemiesColumn; col++)
+            {
+                game.enemies[row][col].bullet.active = false;
+            }
+        }
+
+        if(firstTimeLevelUp)
+        {
+            lastTimeLevelUp = getTimeMillis();
+            firstTimeLevelUp = false;
+        }
+
+        long long currentTime = getTimeMillis();
+        if(currentTime - lastTimeLevelUp > 3000)
+        {
+            game_level_up();
+            lastTimeLevelUp = currentTime;
+            firstTimeLevelUp = true;
+            game.lastTimeUpdated = currentTime;
+            return 0;
+        }
+        return 0; // No enemies left, game continues
 	}
 	
-	float rightmostEnemyNextX = game.enemies[0][rightLimit].hitbox.end.x + game.enemiesDirection * dt * ENEMY_SPEED;
-	float leftmostEnemyNextX = game.enemies[0][leftLimit].hitbox.start.x + game.enemiesDirection * dt * ENEMY_SPEED;
+	float rightmostEnemyNextX = game.enemies[0][rightLimit].hitbox.end.x + game.enemiesDirection * dt *  game.enemiesSpeed;
+	float leftmostEnemyNextX = game.enemies[0][leftLimit].hitbox.start.x + game.enemiesDirection * dt *  game.enemiesSpeed;
 
 	if(rightmostEnemyNextX > 1 || leftmostEnemyNextX < 0)
 	{
 		game.enemiesDirection = (rightmostEnemyNextX > 1)? -1: 1;
+        game.enemiesSpeed += ENEMY_SPEED_INCREMENT;
 		for(row = 0; row < game.enemiesRow; row++)
 		{
 			for(col = 0; col < game.enemiesColumn; col++)
@@ -229,18 +266,32 @@ int game_update(input_t player)
 	{
 		for(col = 0; col < game.enemiesColumn; col++)
 		{
-			game.enemies[row][col].hitbox.start.x += game.enemiesDirection * dt * ENEMY_SPEED;
-			game.enemies[row][col].hitbox.end.x += game.enemiesDirection * dt * ENEMY_SPEED;
+			game.enemies[row][col].hitbox.start.x += game.enemiesDirection * dt *  game.enemiesSpeed;
+			game.enemies[row][col].hitbox.end.x += game.enemiesDirection * dt *  game.enemiesSpeed;
 		}
 	}
     enemiesBulletActive();
 	update_player_bullet(player, dt);
     update_enemy_bullet(dt);
+    mothershipUpdate(dt);
     updateBarrier();
 
 	game.lastTimeUpdated = getTimeMillis();
     
 	return game_over();
+}
+
+void game_level_up()
+{
+    game.level++;
+    game.enemiesSpeed = ENEMY_SPEED + game.level * ENEMY_SPEED_INCREMENT;
+    game.enemiesDirection = 1;
+    game.enemyShotInterval  = INITIAL_SHOOTING_INTERVAL;
+    
+    game.cantPlayerShots = 0;
+    game_create_enemy_map(game.enemiesRow, game.enemiesColumn);
+    game_create_barriers();
+    mothershipGenerate();
 }
 
 void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX])
@@ -259,8 +310,8 @@ void enemyBulletShot(int row, int col)
 {
     if(!game.enemies[row][col].bullet.active)
     {
-        game.enemies[row][col].bullet.hitbox.start.x = game.enemies[row][col].hitbox.start.x + ENEMY_WIDTH / 2.0f - BULLET_WIDHT / 2.0f;
-        game.enemies[row][col].bullet.hitbox.end.x = game.enemies[row][col].hitbox.start.x + ENEMY_WIDTH / 2.0f + BULLET_WIDHT / 2.0f;
+        game.enemies[row][col].bullet.hitbox.start.x = game.enemies[row][col].hitbox.start.x + ENEMY_WIDTH / 2.0f - BULLET_WIDTH / 2.0f;
+        game.enemies[row][col].bullet.hitbox.end.x = game.enemies[row][col].hitbox.start.x + ENEMY_WIDTH / 2.0f + BULLET_WIDTH / 2.0f;
         game.enemies[row][col].bullet.hitbox.start.y = game.enemies[row][col].hitbox.end.y;
         game.enemies[row][col].bullet.hitbox.end.y = game.enemies[row][col].hitbox.end.y + BULLET_HEIGHT;
         game.enemies[row][col].bullet.active = true;
@@ -302,11 +353,12 @@ void update_player_bullet(input_t input, float dt)
 	// Si se presionó disparo y no hay bala activa
 	if (input.shot && !game.player.bullet.active) {
 		game.player.bullet.active = true;
-		game.player.bullet.hitbox.start.x = game.player.hitbox.start.x + PLAYER_WIDTH / 2.0f - BULLET_WIDHT / 2.0f;
+		game.player.bullet.hitbox.start.x = game.player.hitbox.start.x + PLAYER_WIDTH / 2.0f - BULLET_WIDTH / 2.0f;
 		game.player.bullet.hitbox.start.y = game.player.hitbox.start.y - BULLET_HEIGHT;
-		game.player.bullet.hitbox.end.x = game.player.hitbox.start.x + PLAYER_WIDTH / 2.0f + BULLET_WIDHT / 2.0f;
+		game.player.bullet.hitbox.end.x = game.player.hitbox.start.x + PLAYER_WIDTH / 2.0f + BULLET_WIDTH / 2.0f;
 		game.player.bullet.hitbox.end.y = game.player.hitbox.start.y;
 		playSound_play(SOUND_SHOOT);
+        game.cantPlayerShots++;
 	}
 
 	if(!game.player.bullet.active)
@@ -341,8 +393,13 @@ void update_player_bullet(input_t input, float dt)
 
 				game.enemies[row][col].alive = false;
 				game.player.bullet.active = false;
+                playSound_play(SOUND_EXPLOSION);
 
-				playSound_play(SOUND_EXPLOSION);
+                game.enemyShotInterval -= ENEMY_SHOOTING_INTERVAL_DECREMENT;
+                if(game.enemyShotInterval < MIN_ENEMY_SHOOTING_INTERVAL)
+                {
+                    game.enemyShotInterval = MIN_ENEMY_SHOOTING_INTERVAL;
+                }
 
 				switch (game.enemies[row][col].type) 
 				{
@@ -353,7 +410,7 @@ void update_player_bullet(input_t input, float dt)
 						game.score += 20; 
 						break;
 					case ALIEN_TIER3: 
-						game.score += 40;
+						game.score += 30;
 						break;
 					default:
 						break;
@@ -365,6 +422,76 @@ void update_player_bullet(input_t input, float dt)
 	// Colisión con balas enemigas
     if(collisionEnemyBullet(&game.player.bullet.hitbox))
     {
+        game.player.bullet.active = false;
+    }
+}
+
+hitbox_t getMothershipPosition(void)
+{
+    return game.mothership.hitbox;
+}
+
+bool getIsMothershipAlive(void)
+{
+    return game.mothership.alive;
+}
+
+static void mothershipGenerate(void)
+{
+    if(game.cantPlayerShots >= MOTHERSHIP_TRIGGER_SHOTS && !game.mothership.alive)
+    {
+        game.mothership.alive = true;
+        game.mothership.speed = (rand() % 2) ? MOTHERSHIP_SPEED : -MOTHERSHIP_SPEED;
+        printf("Mothership generated with speed: %f\n", game.mothership.speed);
+        if (game.mothership.speed < 0)
+        {
+            game.mothership.hitbox.start.x = 1.0f;
+            game.mothership.hitbox.end.x = 1.0f + MOTHERSHIP_WIDTH;
+        }
+        else
+        {
+            game.mothership.hitbox.start.x = 0.0f - MOTHERSHIP_WIDTH;
+            game.mothership.hitbox.end.x = 0.0f;
+        }
+
+        game.mothership.hitbox.start.y = MOTHERSHIP_TOP_OFFSET;
+        game.mothership.hitbox.end.y = MOTHERSHIP_TOP_OFFSET + MOTHERSHIP_HEIGHT;
+
+        printf("Mothership generated at position: (%f, %f) to (%f, %f)\n",
+               game.mothership.hitbox.start.x, game.mothership.hitbox.start.y,
+               game.mothership.hitbox.end.x, game.mothership.hitbox.end.y);
+        game.cantPlayerShots = 0;
+    }
+    else if(game.mothership.alive)
+    {
+        game.cantPlayerShots = 0;
+    }
+}
+
+static void mothershipUpdate(float dt)
+{
+    mothershipGenerate();
+
+    if(!game.mothership.alive)
+    {
+        return;
+    }
+
+    game.mothership.hitbox.start.x += game.mothership.speed * dt;
+    game.mothership.hitbox.end.x += game.mothership.speed * dt;
+
+    if((game.mothership.hitbox.end.x < 0 && game.mothership.speed < 0) ||
+       (game.mothership.hitbox.start.x > 1.0f && game.mothership.speed > 0))
+    {
+        game.mothership.alive = false;
+        return;
+    }
+
+    if(HITBOX_COLLISION(game.player.bullet.hitbox, game.mothership.hitbox))
+    {
+        game.score += MOTHERSHIP_SCORE;
+        playSound_play(SOUND_EXPLOSION);
+        game.mothership.alive = false;
         game.player.bullet.active = false;
     }
 }

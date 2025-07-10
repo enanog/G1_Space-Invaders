@@ -34,12 +34,13 @@ typedef struct
     int state;
     int enemiesRow;
     int enemiesColumn;
-    int enemiesSpeed;
+    float enemiesSpeed;
     int enemiesDirection;
     int barrirersQuantity;
     int barriersRow;
     int barriersColumn;
     int enemyShotInterval;
+    int cantPlayerShots;
     long long lastTimeEnemyShoot;
     long long lastTimeUpdated;
 } gameState_t;
@@ -70,7 +71,7 @@ int game_over(void);
 void game_resume(void);
 void game_pause(void);
 void game_reset(void);
-//void game_level_up(void);
+void game_level_up(void);
 
 
 int getScore(void);
@@ -88,5 +89,8 @@ bullet_t getPlayerBulletinfo(void);
 bool getIsEnemyAlive(int row, int column);
 void getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
 void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
+
+hitbox_t getMothershipPosition(void);
+bool getIsMothershipAlive(void);
 
 #endif // GAME_H

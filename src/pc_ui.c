@@ -86,7 +86,7 @@ void map(void)
 	bool running = true;
 
 	al_clear_to_color(al_map_rgb(0, 0, 0));
-	game_init(5, 6);
+	game_init(3, 3);
 	input_t player = {0, 0};
 	int row, col;
 
@@ -170,32 +170,26 @@ void map(void)
 				{
 					if(!getIsEnemyAlive(row,col))
 						continue;
-					//printf("Enemy[%d][%d]: x:%f y:%f\n", row, column, position.x, position.y);
 					hitbox_t hitbox = getEnemyPosition(row,col);
-					ALLEGRO_COLOR color1, color2;
+					ALLEGRO_COLOR color;
 					switch (getEnemyTier(row))
 					{
 					case ALIEN_TIER1:
-						color1 = al_map_rgb(255, 0, 0);
-						color2 = al_map_rgb(255, 255, 0);
+						color = al_map_rgb(255, 0, 0);
 						break;
 
 					case ALIEN_TIER2:
-						color1 = al_map_rgb(0, 255, 0);
-						color2 = al_map_rgb(0, 255, 255);
+						color = al_map_rgb(0, 255, 0);
 						break;
 
 					case ALIEN_TIER3:
-						color1 = al_map_rgb(0, 0, 255);
-						color1 = al_map_rgb(255, 0, 255);
+						color = al_map_rgb(0, 0, 255);
 						break;
 
 					default:
 						break;
 					}
-					al_draw_filled_circle(hitbox.start.x * SCREEN_W, hitbox.start.y  * SCREEN_H, 10, color1);
-					al_draw_filled_circle(hitbox.end.x * SCREEN_W, hitbox.end.y  * SCREEN_H, 5, color2);
-					al_draw_rectangle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, hitbox.end.x * SCREEN_W, hitbox.end.y * SCREEN_H, color1, 2.0f);
+					al_draw_rectangle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, hitbox.end.x * SCREEN_W, hitbox.end.y * SCREEN_H, color, 2.0f);
 				}
 			}
 			hitbox_t hitbox = getPlayerPosition();
@@ -223,11 +217,11 @@ void map(void)
 							continue;
 						}
 						hitbox_t hitbox = getBarrierPosition(barrier, row, col);
-						al_draw_filled_rectangle(hitbox.start.x * SCREEN_W,
-												 hitbox.start.y * SCREEN_H,
-												 hitbox.end.x * SCREEN_W,
-												 hitbox.end.y * SCREEN_H,
-												 al_map_rgb(0,255,0));
+						al_draw_rectangle(hitbox.start.x * SCREEN_W,
+                                        hitbox.start.y * SCREEN_H,
+                                        hitbox.end.x * SCREEN_W,
+                                        hitbox.end.y * SCREEN_H,
+                                        al_map_rgb(0,255,0), 2.0f);
 					}
 				}
 			}
@@ -263,6 +257,16 @@ void map(void)
 					al_map_rgb(255, 255, 255), 2.0f);
 				}
 			}
+            hitbox_t mothershipHitbox = getMothershipPosition();
+            if(getIsMothershipAlive())
+            {
+                al_draw_rectangle(
+                    mothershipHitbox.start.x * SCREEN_W,
+                    mothershipHitbox.start.y * SCREEN_H,
+                    mothershipHitbox.end.x * SCREEN_W,
+                    mothershipHitbox.end.y * SCREEN_H,
+                    al_map_rgb(255, 0, 255), 2.0f);
+            }
 
 			al_flip_display();
 			redraw = false;
