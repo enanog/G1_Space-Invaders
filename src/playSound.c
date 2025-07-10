@@ -9,16 +9,18 @@ static ALLEGRO_SAMPLE *sounds[SOUND_COUNT] = {0};
 // Rutas a los archivos de sonido
 static const char *sound_filenames[SOUND_COUNT] = 
 {
-    [SOUND_SHOOT] = "Assets/Sounds/shoot.wav",
-    [SOUND_INVADER_KILLED] = "Assets/Sounds/invaderkilled.wav",
-    [SOUND_EXPLOSION] = "Assets/Sounds/explosion.wav",
-    [SOUND_UFO_HIGH] = "Assets/Sounds/ufo_highpitch.wav",
-    [SOUND_UFO_LOW] = "Assets/Sounds/ufo_lowpitch.wav",
-    [SOUND_FAST1] = "Assets/Sounds/fastinvader1.wav",
-    [SOUND_FAST2] = "Assets/Sounds/fastinvader2.wav",
-    [SOUND_FAST3] = "Assets/Sounds/fastinvader3.wav",
-    [SOUND_FAST4] = "Assets/Sounds/fastinvader4.wav"
+    [SOUND_SHOOT] = "assets/sounds/shoot.wav",
+    [SOUND_INVADER_KILLED] = "assets/sounds/invaderkilled.wav",
+    [SOUND_EXPLOSION] = "assets/sounds/explosion.wav",
+    [SOUND_UFO_HIGH] = "assets/sounds/ufo_highpitch.wav",
+    [SOUND_UFO_LOW] = "assets/sounds/ufo_lowpitch.wav",
+    [SOUND_FAST1] = "assets/sounds/fastinvader1.wav",
+    [SOUND_FAST2] = "assets/sounds/fastinvader2.wav",
+    [SOUND_FAST3] = "assets/sounds/fastinvader3.wav",
+    [SOUND_FAST4] = "assets/sounds/fastinvader4.wav"
 };
+
+static ALLEGRO_SAMPLE_ID sound_ids[SOUND_COUNT];
 
 bool playSound_init(void) 
 {
@@ -61,6 +63,14 @@ void playSound_play(GameSoundEvent event)
     }
 }
 
+void playSound_stop(GameSoundEvent event)
+{
+    if (event >= 0 && event < SOUND_COUNT)
+    {
+        al_stop_sample(&sound_ids[event]);
+    }
+}
+
 void playSound_shutdown(void) 
 {
     for (int i = 0; i < SOUND_COUNT; i++) 
@@ -70,6 +80,18 @@ void playSound_shutdown(void)
             al_destroy_sample(sounds[i]);
             sounds[i] = NULL;
         }
+    }
+}
+
+void playSound_restart(GameSoundEvent event)
+{
+    if (event >= 0 && event < SOUND_COUNT && sounds[event])
+    {
+        // Stop the sound if it was already playing
+        al_stop_sample(&sound_ids[event]);
+
+        // Play it again from the beginning
+        al_play_sample(sounds[event], 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, &sound_ids[event]);
     }
 }
 

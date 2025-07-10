@@ -23,8 +23,13 @@ bool playSound_init(void);
 // Reproduce un sonido asociado al evento
 void playSound_play(GameSoundEvent event);
 
+void playSound_stop(GameSoundEvent event);
+
+void playSound_restart(GameSoundEvent event);
+
 // Libera todos los sonidos cargados
 void playSound_shutdown(void);
+
 
 #endif
 

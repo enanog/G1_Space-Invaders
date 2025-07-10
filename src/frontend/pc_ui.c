@@ -26,28 +26,52 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "entity.h"
+#include "pc_ui.h"
 
 static ALLEGRO_DISPLAY *display = NULL;
 
-void map(void);
-bool allegro_init(void);
-void allegro_shutdown(void);
+static bool splash_show(ALLEGRO_DISPLAY* display);
+static char keyboard_input(void);
 
-int main(void)
-{
-	if (!allegro_init()) {
-		fprintf(stderr, "ERROR: Failed to initialize Allegro.\n");
-		return 1;
-	}
+// void gameLoop(void)
+// {
+//     gameState_t state = STATE_SPLASH;
+//     bool running = true;
 
-	if (!playSound_init()) 
-	{
-		return -1;
-	}
-	
-	map();
-	return 0;
-}
+//     keyboard_init();
+
+
+//     while (running) 
+//     {
+
+//         switch (state) 
+//         {
+//             case STATE_SPLASH:
+//                 splash_show(display); // Espera tecla y pasa al siguiente estado
+//                 state = STATE_MENU;
+//                 break;
+
+//             case STATE_MENU:
+//                 //state = menu_show(display); // Devolvés un GameState
+//                 break;
+
+//             case STATE_GAME:
+//                 //state = game_run(display);  // Tu función map adaptada
+//                 break;
+
+//             case STATE_EXIT:
+//                 running = false;
+//                 break;
+
+//             default:
+//                 running = false;
+//                 break;
+//         }
+//     }
+
+//     allegro_shutdown();
+//     playSound_shutdown();
+// }
 
 bool allegro_init(void) 
 {
@@ -70,6 +94,127 @@ bool allegro_init(void)
 	return true;
 }
 
+// static bool splash_show(ALLEGRO_DISPLAY* display)
+// {
+//     ALLEGRO_BITMAP* logo = al_load_bitmap("assets/sprites/logo.png");
+//     if (!logo) {
+//         fprintf(stderr, "Failed to load logo.png\n");
+//         return false;
+//     }
+
+//     ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();
+//     ALLEGRO_TIMER* timer = al_create_timer(1.0 / 60);
+//     if (!queue || !timer) {
+//         al_destroy_bitmap(logo);
+//         return false;
+//     }
+
+//     al_register_event_source(queue, al_get_display_event_source(display));
+//     al_register_event_source(queue, al_get_keyboard_event_source());
+//     al_register_event_source(queue, al_get_timer_event_source(timer));
+//     al_start_timer(timer);
+
+//     bool running = true;
+//     float alpha = 0.0f;
+//     float fade_speed = 0.01f;
+
+//     al_clear_to_color(al_map_rgb(0, 0, 0));
+//     al_flip_display();
+
+//     while (running) {
+//         ALLEGRO_EVENT ev;
+//         al_wait_for_event(queue, &ev);
+
+//         if (ev.type == ALLEGRO_EVENT_TIMER) {
+//             alpha += fade_speed;
+//             if (alpha > 1.0f) alpha = 1.0f;
+
+//             al_clear_to_color(al_map_rgb(0, 0, 0));
+//             al_draw_tinted_bitmap(logo, al_map_rgba_f(1, 1, 1, alpha),
+//                                   (al_get_display_width(display) - al_get_bitmap_width(logo)) / 2,
+//                                   (al_get_display_height(display) - al_get_bitmap_height(logo)) / 2, 0);
+//             al_flip_display();
+//         }
+//         else if (ev.type == ALLEGRO_EVENT_KEY_DOWN || ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+//             running = false;
+//         }
+//     }
+
+//     al_destroy_bitmap(logo);
+//     al_destroy_timer(timer);
+//     al_destroy_event_queue(queue);
+
+//     return true;
+// }
+
+// static void keyboard_clear(void)
+// {
+//     ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();
+//     if (!queue) 
+//     {
+//         return;
+//     }
+
+//     al_register_event_source(queue, al_get_keyboard_event_source());
+
+//     ALLEGRO_EVENT ev;
+//     while (al_get_next_event(queue, &ev)) 
+//     {
+//         if (ev.type == ALLEGRO_EVENT_KEY_UP) 
+//         {
+//             // Clear the key release event
+//         }
+//     }
+
+//     al_destroy_event_queue(queue);
+// }
+
+// static void keyboard_init(void)
+// {
+//     ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();
+//     if (!queue) {
+//         return;
+//     }
+
+//     al_register_event_source(queue, al_get_keyboard_event_source());
+
+//     ALLEGRO_EVENT ev;
+// }
+
+// static char keyboard_input(void)
+// {
+//     ALLEGRO_EVENT_QUEUE* queue = al_create_event_queue();
+//     ALLEGRO_TIMER* timer = al_create_timer(1.0 / 60);
+
+//     if (!queue || !timer) {
+//         return '\0';
+//     }
+
+//     al_register_event_source(queue, al_get_keyboard_event_source());
+//     al_register_event_source(queue, al_get_timer_event_source(timer));
+//     al_start_timer(timer);
+
+//     char input_char = '\0';
+//     bool running = true;
+
+//     while (running) {
+//         ALLEGRO_EVENT ev;
+//         al_wait_for_event(queue, &ev);
+
+//         if (ev.type == ALLEGRO_EVENT_KEY_DOWN) {
+//             input_char = ev.keyboard.unichar;
+//             running = false;
+//         }
+//         else if (ev.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+//             running = false;
+//         }
+//     }
+
+//     al_destroy_timer(timer);
+//     al_destroy_event_queue(queue);
+
+//     return input_char;
+// }
 
 void map(void)
 {

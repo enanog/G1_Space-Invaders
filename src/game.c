@@ -34,7 +34,7 @@ const bool BARRIER_SHAPE[BARRIER_ROWS][BARRIER_COLUMNS] = {
 #else
 #endif
 
-static gameState_t game;
+static game_t game;
 static long long getTimeMillis(void);
 static void enemiesBulletActive(void);
 static void updateBarrier(void);
@@ -172,6 +172,7 @@ int game_update(input_t player)
     if(player.pause)
     {
         game.lastTimeUpdated = getTimeMillis();
+        playSound_stop(SOUND_UFO_LOW);
         if(player.exit)
         {
             game.state = QUIT;
@@ -470,7 +471,7 @@ bool getIsMothershipAlive(void)
 
 static void saveGameState(void)
 {
-    FILE *file = fopen("../data/savegame.dat", "wb");
+    FILE *file = fopen("data/savegame.dat", "wb");
     if (!file) {
         perror("Failed to open save file");
         return;
@@ -482,7 +483,7 @@ static void saveGameState(void)
 
 static void loadGameState(void)
 {
-    FILE *file = fopen("../data/savegame.dat", "rb");
+    FILE *file = fopen("data/savegame.dat", "rb");
     if (!file) {
         perror("Failed to open save file");
         return;
@@ -498,7 +499,6 @@ static void mothershipGenerate(void)
     {
         game.mothership.alive = true;
         game.mothership.speed = (rand() % 2) ? MOTHERSHIP_SPEED : -MOTHERSHIP_SPEED;
-        printf("Mothership generated with speed: %f\n", game.mothership.speed);
         if (game.mothership.speed < 0)
         {
             game.mothership.hitbox.start.x = 1.0f;
@@ -513,12 +513,9 @@ static void mothershipGenerate(void)
         game.mothership.hitbox.start.y = MOTHERSHIP_TOP_OFFSET;
         game.mothership.hitbox.end.y = MOTHERSHIP_TOP_OFFSET + MOTHERSHIP_HEIGHT;
 
-        printf("Mothership generated at position: (%f, %f) to (%f, %f)\n",
-               game.mothership.hitbox.start.x, game.mothership.hitbox.start.y,
-               game.mothership.hitbox.end.x, game.mothership.hitbox.end.y);
         game.cantPlayerShots = 0;
         game.lastTimeMothershipGenerated = getTimeMillis();
-        playSound_play(SOUND_UFO_HIGH);
+        playSound_restart(SOUND_UFO_LOW);
     }
     else if(game.mothership.alive)
     {
@@ -528,7 +525,6 @@ static void mothershipGenerate(void)
 
 static void mothershipUpdate(float dt)
 {
-    static int switchAudio = 0;
     mothershipGenerate();
 
     if(!game.mothership.alive)
@@ -537,16 +533,9 @@ static void mothershipUpdate(float dt)
     }
 
     long long currentTime = getTimeMillis();
-    if(currentTime - game.lastTimeMothershipGenerated > 1000 && !switchAudio)
+    if(currentTime - game.lastTimeMothershipGenerated > 860)
     {
-        playSound_play(SOUND_UFO_LOW);
-        switchAudio = !switchAudio;
-        game.lastTimeMothershipGenerated = currentTime;
-    }
-    else if(currentTime - game.lastTimeMothershipGenerated > 2000 && switchAudio)
-    {
-        playSound_play(SOUND_UFO_HIGH);
-        switchAudio = !switchAudio;
+        playSound_restart(SOUND_UFO_LOW);
         game.lastTimeMothershipGenerated = currentTime;
     }
     

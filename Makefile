@@ -3,7 +3,7 @@ CC = gcc
 # Compilation flags:
 # -Wall: enable all warnings
 # -Iinclude: add 'include/' directory to the list of paths for header files
-CFLAGS = -Wall -Iinclude
+CFLAGS = -Wall -Iinclude -Iinclude/frontend
 
 # Find all .c source files in src/ and src/frontend/
 SRC = $(wildcard src/*.c src/frontend/*.c)
@@ -12,7 +12,7 @@ SRC = $(wildcard src/*.c src/frontend/*.c)
 OBJ = $(patsubst src/%, obj/%, $(SRC:.c=.o))
 
 # Allegro libraries required for linking
-ALLEGRO_LIBS = -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives
+ALLEGRO_LIBS = -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives -lallegro_audio -lallegro_acodec 
 
 # Default target: build the final executable
 all: space_invaders_pc
