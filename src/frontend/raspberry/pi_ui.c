@@ -4,6 +4,7 @@
 #include "joydrv.h"
 #include "entity.h"
 #include "font.h"
+#include <unistd.h>
 
 static input_t joy_get_input(void);
 static void draw_player(void);
@@ -14,16 +15,37 @@ static void draw_player_bullet(void);
 
 static void draw_mothership(void);
 
-static void menu_game(void );
+static int menu_game(bool resumeLastGame);
 static void pi_ui_render(void);
 
 static void draw_hitbox_filled(hitbox_t hitbox);
 static void disp_write_string(const char *str);
-const char * menu_strings[]={"RSM","STR","TOP","EXT","MEN"};
+const char * menu_strings[]={"RSM","STA","TOP","EXT","MEN","CON"};
 static void disp_write_char(const char c,dcoord_t cords);
 static int game_paused (input_t * input);
 
 static int debounce_joystick_switch(void) ;
+
+
+static void show_16x16_enemy(void);
+static const uint16_t invader_sprite[16] = {
+                0b0000011111100000,
+                0b0001111111111000,
+                0b0011111111111100,
+                0b0110111111101100,
+                0b1111111111111110,
+                0b1111111111111110,
+                0b1111111111111110,
+                0b1111011111101110,
+                0b1111111111111110,
+                0b0011100000111000,
+                0b0111100000111100,
+                0b1110110001101110,
+                0b1100111111110011,
+                0b1100110001100011,
+                0b0111100000111100,
+                0b0011000000011000
+            };
 
 #define BITCHECK(x,n) (((x)>>(n))&1)
 
@@ -35,7 +57,7 @@ enum {
       RESUME,
       START,
       SCOREBOARD,
-      EXIT,MENU};
+      EXIT,MENU,CONTINUE};
 enum{
     PAUSED=8,GAME
 };
@@ -47,9 +69,11 @@ void pi_ui_init(void)
 }
 void pi_ui_menu(void)
 {
-    int state=MENU, nextState=START, switchMenu=0;
+    int state=MENU, nextState=START, running=true;
     joyinfo_t joyInfo;
-    while(state != EXIT)
+    show_16x16_enemy();
+    
+    while(running)
     {
         switch (state)
         {
@@ -62,28 +86,26 @@ void pi_ui_menu(void)
             }
             if (joyInfo.y > 40)
             {
-                if (!switchMenu)
-                {
-                    nextState++;
-                    switchMenu=1;
-                }
+                if (nextState==START)
+                    nextState=CONTINUE;
+                else if ( nextState==CONTINUE)
+                    nextState=EXIT;
+                else if (nextState==EXIT)
+                    nextState=SCOREBOARD;
+                else if (nextState==SCOREBOARD)
+                    nextState=START;
             }
             else if (joyInfo.y<-40)
             {
-                if (!switchMenu)
-                {
-                    nextState--;
-                    switchMenu=1;
-                }
+                if (nextState==START)
+                    nextState=SCOREBOARD;
+                else if ( nextState==SCOREBOARD)
+                    nextState=EXIT;
+                else if (nextState==EXIT)
+                    nextState=CONTINUE;
+                else if (nextState==CONTINUE)
+                    nextState=START;
             }
-            else 
-            {
-                switchMenu=0;
-            }
-            if (nextState>EXIT)
-                nextState=RESUME;
-            else if (nextState<RESUME)
-                nextState=EXIT;
             else
             {
                 disp_clear();
@@ -91,18 +113,20 @@ void pi_ui_menu(void)
                 disp_update();
             }
             
-        
             break;
         
         case START:
-            menu_game();
+            state=menu_game(false);
             break;
-        case RESUME:
+        case CONTINUE:
+            state=menu_game(true);
             break;
         case SCOREBOARD:
 
             break;
         case EXIT:
+            show_16x16_enemy();
+            running=false;
             break;
         default:
             break;
@@ -110,14 +134,14 @@ void pi_ui_menu(void)
     }
 }
 
-static void menu_game(void)
+static int menu_game(bool resumeLastGame)
 {
     input_t input={0,0,0,0};
     printf("Initializing game...\n");
     bool running = true;
-    game_init(ENEMIES_ROW,ENEMIES_COLUMN, false);
+    game_init(ENEMIES_ROW,ENEMIES_COLUMN, resumeLastGame);
     long long lastTime = getTimeMillis();
-     long long currentTime;
+    long long currentTime;
     int state=GAME;
     while (running)
     {
@@ -130,7 +154,7 @@ static void menu_game(void)
                 currentTime= getTimeMillis();
                 if (currentTime - lastTime > 1000/60) // 60 FPS
                 {
-                    printf ("%lld\n",currentTime-lastTime);
+                    //printf ("%lld\n",currentTime-lastTime);
                     lastTime = currentTime;
                     disp_clear();
                 //printf(" ,%d,%d,%d\n", input.direction, input.shot, input.pause);
@@ -148,32 +172,62 @@ static void menu_game(void)
                 }
             break;
             case PAUSED:
-            if (game_paused(&input)==RESUME)
+            if ((state=game_paused(&input))==RESUME)
                 {
                     //for (int i=0;i<100000000;i++);
                     state=GAME;
                     lastTime=getTimeMillis();
+                    input_t aux={0,0,1,0};
+                    game_update(aux);
                    // printf("Sali pausa\n");
             
                 }
-
+            else
+            {
+                running=false;
+            }
             break;
         }
     }
-
+    return state;
 }
 
 
-static int game_paused(input_t * input)
+static int game_paused(input_t *input)
 {
-    if (debounce_joystick_switch())
+    int state=RESUME;
+    joyinfo_t joyInfo;
+    while (!debounce_joystick_switch())
     {
-        input->pause=!input->pause;
-        printf("debouce %d\n",input->pause);
-        return RESUME;
+        joyInfo = joy_read();
+        if (joyInfo.y > 40)
+        {
+            if (state==RESUME)
+                state=MENU;
+            else if (state==MENU)
+                state=EXIT;
+            else if (state==EXIT)
+                state=RESUME;
+        }
+        else if (joyInfo.y<-40)
+        {
+            if (state==RESUME)
+                state=EXIT;
+            else if (state==EXIT)
+                state=MENU;
+            else if (state==MENU)
+                state=RESUME;
+        }
+        else
+        {
+            disp_clear();
+            disp_write_string(menu_strings[state]);
+            disp_update();
+        }
     }
-    return PAUSED;
+    return state;
 }
+
 static void pi_ui_render(void)
 {
     draw_player();
@@ -369,4 +423,26 @@ static void disp_write_string(const char *str)
         disp_write_char(str[i],cords);
         cords.x+=FONT_COLS+1;
     }
+}
+
+
+static void show_16x16_enemy(void)
+{
+     disp_clear();
+     uint8_t y, x;
+    for (y=0; y < 16; y++) 
+    {
+        for (x = 0; x < 16; x++) 
+        {
+            if (invader_sprite[y] & (1 << (15 - x))) 
+            {
+                dcoord_t coord = {x, y};
+                disp_write(coord, D_ON);
+            }
+        }
+    }
+    disp_update();
+    usleep(3000000);
+    disp_clear();
+    disp_update();
 }
