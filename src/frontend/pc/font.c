@@ -51,10 +51,7 @@ void initFonts(ALLEGRO_DISPLAY *display)
 
 void draw_invaders(hitbox_t enemy, int row, ALLEGRO_DISPLAY *display)
 {
-    font1 = al_load_ttf_font("assets/fonts/invaders.ttf", ENEMY_WIDTH*al_get_display_width(display), 0);
-    if (!font1) {
-        fprintf(stderr, "Failed to load font1\n");
-    }
+    
     switch (getEnemyTier(row))
     {
         case ALIEN_TIER1:
