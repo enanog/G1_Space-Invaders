@@ -5,6 +5,7 @@
 #include "entity.h"
 #include "font.h"
 #include <unistd.h>
+#include "score.h"
 
 static input_t joy_get_input(void);
 static void draw_player(void);
@@ -25,7 +26,10 @@ static void disp_write_char(const char c,dcoord_t cords);
 static int game_paused (input_t * input);
 
 static int debounce_joystick_switch(void) ;
-
+static void show_top3(void);
+static void disp_write_string_top(const char *str);
+static void disp_write_digit(char digit,dcoord_t cords);
+void disp_write_long_number_center(int number,char const *str);
 
 static void show_16x16_enemy(void);
 static const uint16_t invader_sprite[16] = {
@@ -71,7 +75,7 @@ void pi_ui_menu(void)
 {
     int state=MENU, nextState=START, running=true;
     joyinfo_t joyInfo;
-    show_16x16_enemy();
+    //show_16x16_enemy();
     
     while(running)
     {
@@ -122,7 +126,9 @@ void pi_ui_menu(void)
             state=menu_game(true);
             break;
         case SCOREBOARD:
-
+            printf("Showing top 3 scores...\n");
+            show_top3();
+            state=MENU;
             break;
         case EXIT:
             show_16x16_enemy();
@@ -418,7 +424,17 @@ static void disp_write_string(const char *str)
 {
     int i;
     dcoord_t cords={1,6};
-    for (i=0;str[i]!='\0';i++)
+    for (i=0;str[i]!='\0' && i<3;i++)
+    {
+        disp_write_char(str[i],cords);
+        cords.x+=FONT_COLS+1;
+    }
+}
+static void disp_write_string_top(const char *str)
+{
+    int i;
+    dcoord_t cords={1,0};
+    for (i=0;str[i]!='\0' && i<3;i++)
     {
         disp_write_char(str[i],cords);
         cords.x+=FONT_COLS+1;
@@ -446,3 +462,99 @@ static void show_16x16_enemy(void)
     disp_clear();
     disp_update();
 }
+
+static void show_top3(void)
+{
+    score_t topScores[3];
+    int topCount = getTopScore(topScores, 3);
+    printf("%d aa\n", topCount);
+    char aux[4];
+    int i,j;
+    disp_clear();
+    disp_update();;
+    for(i=0;i<topCount;i++)
+    {
+        for (j=0;topScores[i].name[j]!='\0' && j<3;j++)
+        {
+            aux[j]=topScores[i].name[j];
+            if (aux[j]>'a' && aux[j]<'z')
+                aux[j]-=32; // Convert to upperca
+        }
+        aux[j]='\0';
+        
+        disp_write_long_number_center(topScores[i].score, aux);
+        disp_clear();
+        disp_update();
+    }
+
+}
+
+static void disp_write_digit(char digit, dcoord_t coord)
+{
+    if (digit < '0' || digit > '9') return;
+
+    int row,col;
+    for (row = 0; row < FONT_ROWS; row++) 
+    {
+        for (col = 0; col < FONT_COLS; col++) 
+        {
+            if (!numeros_5x4[digit - '0'][row][col]) continue;
+
+            int px = coord.x + col;
+            int py = coord.y + row;
+            if (px >= 0 && px <= 15 && py >= 0 && py <= 15) 
+            {
+                disp_write((dcoord_t){px, py}, D_ON);
+            }
+        }
+    }
+}
+void disp_write_long_number_center(int number, const char *str)
+{
+    if (number < 0) number = -number;
+
+    char buffer[12];
+    int len = 0;
+
+    // Convert number to string in reverse
+    do {
+        buffer[len++] = '0' + (number % 10);
+        number /= 10;
+    } while (number > 0);
+
+    // Reverse digits to print left to right
+    for (int i = 0; i < len / 2; i++) {
+        char tmp = buffer[i];
+        buffer[i] = buffer[len - 1 - i];
+        buffer[len - 1 - i] = tmp;
+    }
+
+    const uint8_t y_center = 7;
+    const uint8_t FONT_WIDTH = FONT_COLS;
+
+    int total_width = len * FONT_WIDTH + (len - 1);
+    int start_x = DISP_MAX_X - FONT_WIDTH;  // comienza al borde visible derecho
+    int final_scroll = total_width + DISP_CANT_X_DOTS;  // cuanto tengo que moverme para sacarlo del todo
+    int scroll, i;
+    for ( scroll= 0; scroll <= final_scroll; scroll++) 
+    {
+        disp_clear();
+        disp_write_string_top(str);
+
+        int x = start_x - scroll;
+        for (i = 0; i < len; i++)
+        {
+            if (x >= DISP_MIN - FONT_WIDTH && x <= DISP_MAX_X) 
+            {
+                dcoord_t coord = { .x = x, .y = y_center };
+                disp_write_digit(buffer[i], coord);
+            }
+            x += FONT_WIDTH;
+        }
+
+        disp_update();
+        if(scroll!= final_scroll)
+            usleep(200000);  // 200ms entre frames
+    }
+}
+
