@@ -131,7 +131,7 @@ int topScoreUpdate(int newScore, const char *name)
     }
     
     // Write the updated top scores back to the file
-    file = fopen("../data/topScore.txt", "w");
+    file = fopen("data/topScore.txt", "w");
     if (!file) return -1; // Error opening file for writing
 
 

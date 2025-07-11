@@ -38,7 +38,7 @@ void initFonts(ALLEGRO_DISPLAY *display)
         fprintf(stderr, "Failed to load font1\n");
     }
 
-    font2 = al_load_ttf_font("assets/fonts/Invaders-From-Space.ttf", ENEMY_WIDTH*al_get_display_width(display), 0);
+    font2 = al_load_ttf_font("assets/fonts/invaders.ttf", PLAYER_WIDTH*al_get_display_width(display), 0);
     if (!font2) {
         fprintf(stderr, "Failed to load font2\n");
     }
@@ -71,9 +71,5 @@ void draw_invaders(hitbox_t enemy, int row, ALLEGRO_DISPLAY *display)
 
 void draw_player(hitbox_t player, ALLEGRO_DISPLAY *display)
 {
-    font1 = al_load_ttf_font("assets/fonts/invaders.ttf", PLAYER_WIDTH*al_get_display_width(display), 0);
-    if (!font1) {
-        fprintf(stderr, "Failed to load font1\n");
-    }
-    al_draw_text(font1, al_map_rgb(255, 255, 255), player.start.x * al_get_display_width(display), player.start.y * al_get_display_height(display), 0, PLAYER);
+    al_draw_text(font2, al_map_rgb(255, 255, 255), player.start.x * al_get_display_width(display), player.start.y * al_get_display_height(display), 0, PLAYER);
 }

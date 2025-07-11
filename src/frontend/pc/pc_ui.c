@@ -353,7 +353,7 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
 static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 {
 	ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
-	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 144.0);
+	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 60.0);
 
 	al_register_event_source(queue, al_get_keyboard_event_source());
 	al_register_event_source(queue, al_get_timer_event_source(timer));
@@ -498,7 +498,7 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 					default:
 						break;
 					}
-                    draw_invaders(hitbox, row, display);
+                    //draw_invaders(hitbox, row, display);
 					al_draw_rectangle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, hitbox.end.x * SCREEN_W, hitbox.end.y * SCREEN_H, color, 2.0f);
 				}
 			}
@@ -512,7 +512,8 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 							  hitbox.end.x * SCREEN_W,
 							  hitbox.end.y * SCREEN_H,
 							  al_map_rgb(0,255,0), 2.0f);
-            draw_player(hitbox, display);
+                              
+            //draw_player(hitbox, display);
 			
 			int barrier;
 
