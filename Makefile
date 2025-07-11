@@ -1,53 +1,55 @@
+# Compiler
 CC = gcc
 
-# Compilation flags:
-# -Wall: enable all warnings
-# -Iinclude: add 'include/' directory to the list of paths for header files
-CFLAGS = -Wall -Iinclude -Iinclude/frontend
-
-# Detect platform using whoami and hostname
+# Platform detection
 USER := $(shell whoami)
 HOST := $(shell hostname)
-# Check if user and hostname match the expected values for Raspberry Pi
+
+# Flags
+CFLAGS = -Wall -MMD -MP -Iinclude -Iinclude/frontend
+
+# Platform-specific config
 ifeq ($(USER)_$(HOST),pi_raspberrypi)
     FRONTEND_DIR := src/frontend/raspberry
     FRONTEND_INC := -Iinclude/frontend/raspberry
-    # Allegro libraries
-	ALLEGRO_LIBS := 
-	CFLAGS += -DRASPBERRY
-	# Object files
-	OBJ = $(patsubst src/%, obj/%, $(SRC:.c=.o))
-    OBJ += obj/frontend/raspberry/libAudioSDL2.o
+    ALLEGRO_LIBS :=
+    CFLAGS += -DRASPBERRY
 else
     FRONTEND_DIR := src/frontend/pc
     FRONTEND_INC := -Iinclude/frontend/pc
-    # Allegro libraries
     ALLEGRO_LIBS = -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives -lallegro_audio -lallegro_acodec
-    # Object files
-	OBJ = $(patsubst src/%, obj/%, $(SRC:.c=.o))
 endif
 
-# Add platform-specific includes
+# Add frontend includes to flags
 CFLAGS += $(FRONTEND_INC)
 
-# Source files
+# Source files (exclude libAudioSDL2.c if exists in raspberry)
 COMMON_SRC := $(wildcard src/*.c)
-FRONTEND_SRC := $(wildcard $(FRONTEND_DIR)/*.c)
+FRONTEND_SRC := $(filter-out src/frontend/raspberry/libAudioSDL2.c, $(wildcard $(FRONTEND_DIR)/*.c))
 SRC := $(COMMON_SRC) $(FRONTEND_SRC)
+
+# Object files
+OBJ := $(patsubst src/%, obj/%, $(SRC:.c=.o))
+
+# Manually add precompiled .o if on Raspberry
+ifeq ($(USER)_$(HOST),pi_raspberrypi)
+   # OBJ += obj/frontend/raspberry/libAudioSDL2.o
+   OBJ += obj/frontend/raspberry/joydrv.o 
+   OBJ += obj/frontend/raspberry/disdrv.o
+endif
 
 # Default target
 all: space_invaders
 
-# Link executable
+# Link final executable
 space_invaders: $(OBJ)
 	$(CC) -o $@ $^ $(ALLEGRO_LIBS)
 
-# Compile src/*.c
+# Compilation rules
 obj/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Compile frontend files
 obj/frontend/raspberry/%.o: src/frontend/raspberry/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -56,7 +58,15 @@ obj/frontend/pc/%.o: src/frontend/pc/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Clean build artifacts
+# Dummy rule to avoid trying to compile precompiled .o
+obj/frontend/raspberry/libAudioSDL2.o:
+	@echo "Using precompiled obj/frontend/raspberry/libAudioSDL2.o"
+
+# Clean: remove all object and dependency files (except libAudioSDL2.o)
 clean:
-	find obj/ -type f ! -path 'obj/frontend/raspberry/libAudioSDL2.o' -name '*.o' -delete
-	rm -f $(OBJ) space_invaders
+	rm -f $(filter-out obj/frontend/raspberry/libAudioSDL2.o, $(wildcard obj/**/*.o))
+	rm -f $(wildcard obj/**/*.d)
+	rm -f space_invaders
+
+# Include auto-generated dependency files
+-include $(OBJ:.o=.d)

@@ -22,7 +22,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <time.h>
-#include "playSound.h"
+//#include "playSound.h"
 #include <string.h>
 
 #ifndef RASPBERRY
@@ -38,7 +38,6 @@ const bool BARRIER_SHAPE[BARRIER_ROWS][BARRIER_COLUMNS] = {
 #endif
 
 static game_t game;
-static long long getTimeMillis(void);
 static void enemiesBulletActive(void);
 static void updateBarrier(void);
 static bool collisionEnemyBullet(hitbox_t *hitbox);
@@ -175,7 +174,7 @@ int game_update(input_t player)
     if(player.pause)
     {
         game.lastTimeUpdated = getTimeMillis();
-        playSound_stop(SOUND_UFO_LOW);
+        //playSound_stop(SOUND_UFO_LOW);
         if(player.exit)
         {
             game.state = QUIT;
@@ -199,7 +198,7 @@ int game_update(input_t player)
 		game.player.hitbox.start.x = 1.0f - PLAYER_WIDTH;
 		game.player.hitbox.end.x = 1.0f;
 	}
-	// printf("%d", player.direction);
+	//printf("estoy en game_update");
 	
 	int row, col;
 	int rightLimit = -1, leftLimit = game.enemiesColumn, bottomLimit = -1;
@@ -392,7 +391,7 @@ void update_player_bullet(input_t input, float dt)
 		game.player.bullet.hitbox.start.y = game.player.hitbox.start.y - BULLET_HEIGHT;
 		game.player.bullet.hitbox.end.x = game.player.hitbox.start.x + PLAYER_WIDTH / 2.0f + BULLET_WIDTH / 2.0f;
 		game.player.bullet.hitbox.end.y = game.player.hitbox.start.y;
-		playSound_play(SOUND_SHOOT);
+		//playSound_play(SOUND_SHOOT);
         game.cantPlayerShots++;
 	}
 
@@ -428,8 +427,8 @@ void update_player_bullet(input_t input, float dt)
 
 				game.enemies[row][col].alive = false;
 				game.player.bullet.active = false;
-                playSound_play(SOUND_EXPLOSION);
-                playSound_play(SOUND_INVADER_KILLED);
+                //playSound_play(SOUND_EXPLOSION);
+                //playSound_play(SOUND_INVADER_KILLED);
 
                 game.enemyShotInterval -= ENEMY_SHOOTING_INTERVAL_DECREMENT;
                 if(game.enemyShotInterval < MIN_ENEMY_SHOOTING_INTERVAL)
@@ -518,7 +517,7 @@ static void mothershipGenerate(void)
 
         game.cantPlayerShots = 0;
         game.lastTimeMothershipGenerated = getTimeMillis();
-        playSound_restart(SOUND_UFO_LOW);
+       // playSound_restart(SOUND_UFO_LOW);
     }
     else if(game.mothership.alive)
     {
@@ -538,7 +537,7 @@ static void mothershipUpdate(float dt)
     long long currentTime = getTimeMillis();
     if(currentTime - game.lastTimeMothershipGenerated > 860)
     {
-        playSound_restart(SOUND_UFO_LOW);
+        //playSound_restart(SOUND_UFO_LOW);
         game.lastTimeMothershipGenerated = currentTime;
     }
     
@@ -555,7 +554,7 @@ static void mothershipUpdate(float dt)
     if(HITBOX_COLLISION(game.player.bullet.hitbox, game.mothership.hitbox))
     {
         game.score += MOTHERSHIP_SCORE;
-        playSound_play(SOUND_EXPLOSION);
+       // playSound_play(SOUND_EXPLOSION);
         game.mothership.alive = false;
         game.player.bullet.active = false;
     }
@@ -711,7 +710,7 @@ int getEnemyTier(int row)
 	return game.enemies[row][0].type;
 }
 
-static long long getTimeMillis(void)
+long long getTimeMillis(void)
 {
 	struct timespec ts;
 	timespec_get(&ts, TIME_UTC);
@@ -758,3 +757,4 @@ static void enemiesBulletActive(void)
         }
     }
 }
+

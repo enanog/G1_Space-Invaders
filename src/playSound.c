@@ -114,70 +114,70 @@ void playSound_restart(GameSoundEvent event)
     }
 }
 #else
-#include "audio.h"
+//#include "audio.h"
 
-static Audio * sounds[SOUND_COUNT] = {0};
+//static Audio * sounds[SOUND_COUNT] = {0};
 
 bool playSound_init(void)
 {
-    // Inicia el subsistema de audio
-    if (initAudio() != READY)
-    {
-        fprintf(stderr, "Error: Audio initialization failed\n");
-        return -1;
-    }
+    // // Inicia el subsistema de audio
+    // if (initAudio() != READY)
+    // {
+    //     fprintf(stderr, "Error: Audio initialization failed\n");
+    //     return -1;
+    // }
 
-    // Cargar cada sonido desde archivo
-    for (int i = 0; i < SOUND_COUNT; i++)
-    {
-        sounds[i] = createAudio(sound_filenames[i], 0 /* loop */, 100 /* volumen */);
-        if (!sounds[i])
-        {
-            fprintf(stderr, "Error: Failed to load sound: %s\n", sound_filenames[i]);
-        }
-    }
+    // // Cargar cada sonido desde archivo
+    // for (int i = 0; i < SOUND_COUNT; i++)
+    // {
+    //     sounds[i] = createAudio(sound_filenames[i], 0 /* loop */, 100 /* volumen */);
+    //     if (!sounds[i])
+    //     {
+    //         fprintf(stderr, "Error: Failed to load sound: %s\n", sound_filenames[i]);
+    //     }
+    // }
 
-    return 0;
+    // return 0;
 }
 
 void playSound_play(GameSoundEvent event) 
 {
-    if (event >= 0 && event < SOUND_COUNT && sounds[event]) 
-    {
-        playSoundFromMemory(sounds[event], sounds[event]->volume);
-    }
+    // if (event >= 0 && event < SOUND_COUNT && sounds[event]) 
+    // {
+    //     playSoundFromMemory(sounds[event], sounds[event]->volume);
+    // }
 }
 
 void playSound_stop(GameSoundEvent event)
 {
-    // Simple-SDL2-Audio no permite detener un único sonido específico,
-    // así que usamos pauseAudio() para pausar el dispositivo entero.
-    pauseAudio();
+    // // Simple-SDL2-Audio no permite detener un único sonido específico,
+    // // así que usamos pauseAudio() para pausar el dispositivo entero.
+    // pauseAudio();
 }
 
 void playSound_shutdown(void) 
 {
-    for (int i = 0; i < SOUND_COUNT; i++) 
-    {
-        if (sounds[i]) 
-        {
-            freeAudio(sounds[i]);
-            sounds[i] = NULL;
-        }
-    }
+    // for (int i = 0; i < SOUND_COUNT; i++) 
+    // {
+    //     if (sounds[i]) 
+    //     {
+    //         freeAudio(sounds[i]);
+    //         sounds[i] = NULL;
+    //     }
+    // }
 
-    // Libera el subsistema de audio completo
-    endAudio();
+    // // Libera el subsistema de audio completo
+    // endAudio();
 }
 
 void playSound_restart(GameSoundEvent event)
 {
-    if (event >= 0 && event < SOUND_COUNT && sounds[event]) 
-    {
-        // No se puede "reiniciar" directamente un sonido, así que:
-        pauseAudio();  // Pausamos todo
-        playSoundFromMemory(sounds[event], sounds[event]->volume); // Lo volvemos a reproducir
-    }
+    // if (event >= 0 && event < SOUND_COUNT && sounds[event]) 
+    // {
+    //     // No se puede "reiniciar" directamente un sonido, así que:
+    //     pauseAudio();  // Pausamos todo
+    //     playSoundFromMemory(sounds[event], sounds[event]->volume); // Lo volvemos a reproducir
+    // }
 }
 
 #endif

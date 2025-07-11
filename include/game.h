@@ -68,6 +68,7 @@ void game_create_enemy_map(int enemiesRow, int enemiesColumn);
 void game_create_barriers();
 void update_player_bullet(input_t input, float dt);
 void update_enemy_bullet(float dt);
+long long getTimeMillis(void);
 
 int game_update(input_t player);
 int game_over(void);
@@ -92,6 +93,7 @@ bullet_t getPlayerBulletinfo(void);
 bool getIsEnemyAlive(int row, int column);
 void getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
 void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
+
 
 hitbox_t getMothershipPosition(void);
 bool getIsMothershipAlive(void);
