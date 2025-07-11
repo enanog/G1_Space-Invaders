@@ -58,7 +58,7 @@ int getTopScore(score_t *topScore, int cantScores)
         return -1; // Invalid number of scores
     }
     // Open the file for reading
-    FILE *file = fopen("../data/topScore.txt", "r");
+    FILE *file = fopen("data/topScore.txt", "r");
     if (!file) 
     {
         return -1; // Error opening file
@@ -78,11 +78,11 @@ int topScoreUpdate(int newScore, const char *name)
 {
     int count = 1;
     // Open the file for reading
-    FILE *file = fopen("../data/topScore.txt", "r");
+    FILE *file = fopen("data/topScore.txt", "r");
     if (!file) // Error opening file
     {
         // Create the file if it doesn't exist
-        file = fopen("../data/topScore.txt", "w");
+        file = fopen("data/topScore.txt", "w");
         if (!file) return -1; // Error opening file for writing
         fprintf(file, "%s %d\n", name, newScore);
         fclose(file);

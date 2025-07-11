@@ -512,6 +512,7 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 							  hitbox.end.x * SCREEN_W,
 							  hitbox.end.y * SCREEN_H,
 							  al_map_rgb(0,255,0), 2.0f);
+            draw_player(hitbox, display);
 			
 			int barrier;
 

@@ -28,8 +28,7 @@ const char TIER_2_HANDS_DOWN[] = "\x43"; // 29
 const char TIER_2_HANDS_UP[] = "\x44";   // 30
 const char TIER_3_HANDS_DOWN[] = "\x45"; // 40
 const char TIER_3_HANDS_UP[] = "\x46";   // 41
-
-
+const char PLAYER[] = "\x2D";   // 41
 
 
 void initFonts(ALLEGRO_DISPLAY *display)
@@ -52,6 +51,10 @@ void initFonts(ALLEGRO_DISPLAY *display)
 
 void draw_invaders(hitbox_t enemy, int row, ALLEGRO_DISPLAY *display)
 {
+    font1 = al_load_ttf_font("assets/fonts/invaders.ttf", ENEMY_WIDTH*al_get_display_width(display), 0);
+    if (!font1) {
+        fprintf(stderr, "Failed to load font1\n");
+    }
     switch (getEnemyTier(row))
     {
         case ALIEN_TIER1:
@@ -65,4 +68,12 @@ void draw_invaders(hitbox_t enemy, int row, ALLEGRO_DISPLAY *display)
             break;
     }
 }
-void draw_player(hitbox_t player, ALLEGRO_DISPLAY *diplay);
+
+void draw_player(hitbox_t player, ALLEGRO_DISPLAY *display)
+{
+    font1 = al_load_ttf_font("assets/fonts/invaders.ttf", PLAYER_WIDTH*al_get_display_width(display), 0);
+    if (!font1) {
+        fprintf(stderr, "Failed to load font1\n");
+    }
+    al_draw_text(font1, al_map_rgb(255, 255, 255), player.start.x * al_get_display_width(display), player.start.y * al_get_display_height(display), 0, PLAYER);
+}

@@ -27,5 +27,6 @@
 
 void initFonts(ALLEGRO_DISPLAY *display);
 void draw_invaders(hitbox_t enemy, int row, ALLEGRO_DISPLAY *display);
+void draw_player(hitbox_t player, ALLEGRO_DISPLAY *display);
 
 #endif // FONT_H
