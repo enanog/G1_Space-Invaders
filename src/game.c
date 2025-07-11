@@ -64,7 +64,7 @@ void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame)
         {0.5f + PLAYER_WIDTH/2.0f, PLAYER_BOTTOM_OFFSET + PLAYER_HEIGHT}
     };
 
-    hitboxPosition(&game.player.hitbox, playerInitialHitbox);
+    game.player.hitbox=playerInitialHitbox;
 
 	game.player.lives = 3;
 	game.player.bullet.speed = PLAYER_BULLET_SPEED;
@@ -242,7 +242,7 @@ int game_update(input_t player)
             {0.5f + PLAYER_WIDTH/2.0f, PLAYER_BOTTOM_OFFSET + PLAYER_HEIGHT}
         };
 
-        hitboxPosition(&game.player.hitbox, playerInitialHitbox);
+        game.player.hitbox=playerInitialHitbox;
         game.mothership.alive = false;
 
         for(row = 0; row < game.enemiesRow; row++)

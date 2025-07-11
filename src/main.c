@@ -32,7 +32,7 @@ int main(void)
 	// 	return -1;
 	// }
 	pi_ui_init();
-	pi_ui_update();
+	pi_ui_menu();
 	//gameLoop();
 
 	return 0;

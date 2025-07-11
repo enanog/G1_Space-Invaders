@@ -44,21 +44,46 @@ all: space_invaders
 # Link final executable
 space_invaders: $(OBJ)
 	$(CC) -o $@ $^ $(ALLEGRO_LIBS)
-
-# Compilation rules
-obj/%.o: src/%.c
-	@mkdir -p $(dir $@)
+ifeq ($(USER)_$(HOST),pi_raspberrypi)
+obj/main.o:src/main.c include/frontend/raspberry/pi_ui.h
+	@mkdir -p obj/frontend/raspberry
+	$(CC) $(CFLAGS) -c $< -o $@
+endif
+# General compilation rules
+obj/game.o: src/game.c include/game.h include/config.h include/entity.h include/playSound.h
+	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
 
-obj/frontend/raspberry/%.o: src/frontend/raspberry/%.c
-	@mkdir -p $(dir $@)
+obj/playSound.o: src/playSound.c include/playSound.h
+	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
 
-obj/frontend/pc/%.o: src/frontend/pc/%.c
-	@mkdir -p $(dir $@)
+obj/score.o: src/score.c include/score.h
+	@mkdir -p obj
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# PC specific files
+obj/frontend/pc/pc_ui.o: src/frontend/pc/pc_ui.c include/frontend/pc/pc_ui.h include/game.h
+	@mkdir -p obj/frontend/pc
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# RASPBERRY specific files
+obj/frontend/raspberry/pi_ui.o: src/frontend/raspberry/pi_ui.c include/frontend/raspberry/pi_ui.h include/frontend/raspberry/disdrv.h include/frontend/raspberry/joydrv.h include/game.h include/entity.h
+	@mkdir -p obj/frontend/raspberry
+	$(CC) $(CFLAGS) -c $< -o $@
+
+obj/frontend/raspberry/font.o: src/frontend/raspberry/font.c include/frontend/raspberry/font.h
+	@mkdir -p obj/frontend/raspberry
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Clean: remove all object and dependency files (except libAudioSDL2.o)
 clean:
-	rm -f $(filter-out obj/frontend/raspberry/libAudioSDL2.o, $(wildcard obj/**/*.o))
+	@for f in obj/*.o obj/*/*.o; do \
+		name=$$(basename $$f); \
+		if [ "$$name" != "libAudioSDL2.o" ] && \
+		   [ "$$name" != "disdrv.o" ] && \
+		   [ "$$name" != "joydrv.o" ] && [ -f "$$f" ]; then \
+			rm -f "$$f"; \
+		fi; \
+	done
 	rm -f space_invaders

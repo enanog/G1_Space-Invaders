@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "joydrv.h"
 #include "entity.h"
+#include "font.h"
 
 static input_t joy_get_input(void);
 static void draw_player(void);
@@ -13,19 +14,98 @@ static void draw_player_bullet(void);
 
 static void draw_mothership(void);
 
+static void menu_game(void );
+static void pi_ui_render(void);
+
 static void draw_hitbox_filled(hitbox_t hitbox);
+static void disp_write_string(const char *str);
+const char * menu_strings[]={"RSM","STR","TOP","EXT","MEN"};
+static void disp_write_char(const char c,dcoord_t cords);
+static int game_paused (void);
+
+#define BITCHECK(x,n) (((x)>>(n))&1)
+
 
 #define ENEMIES_ROW 2
 #define ENEMIES_COLUMN 3
 
+enum {
+      RESUME,
+      START,
+      SCOREBOARD,
+      EXIT,MENU};
 
 void pi_ui_init(void) 
 {
     disp_init();
     joy_init();
 }
+void pi_ui_menu(void)
+{
+    int state=MENU, nextState=START, switchMenu=0;
+    joyinfo_t joyInfo;
+    while(state != EXIT)
+    {
+        switch (state)
+        {
+        case MENU:
+            joyInfo = joy_read();
+            if (joyInfo.x>40||joyInfo.x<-40)
+            {
+                state=nextState;
+                break;
+            }
+            if (joyInfo.y > 40)
+            {
+                if (!switchMenu)
+                {
+                    nextState++;
+                    switchMenu=1;
+                }
+            }
+            else if (joyInfo.y<-40)
+            {
+                if (!switchMenu)
+                {
+                    nextState--;
+                    switchMenu=1;
+                }
+            }
+            else 
+            {
+                switchMenu=0;
+            }
+            if (nextState>EXIT)
+                nextState=RESUME;
+            else if (nextState<RESUME)
+                nextState=EXIT;
+            else
+            {
+                disp_clear();
+                disp_write_string(menu_strings[nextState]);
+                disp_update();
+            }
+            
+        
+            break;
+        
+        case START:
+            menu_game();
+            break;
+        case RESUME:
+            break;
+        case SCOREBOARD:
 
-void pi_ui_update(void) 
+            break;
+        case EXIT:
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+static void menu_game(void)
 {
     input_t input={0,0,0,0};
     printf("Initializing game...\n");
@@ -43,13 +123,72 @@ void pi_ui_update(void)
             lastTime = currentTime;
             disp_clear();
            // printf(" ,%d,%d,%d\n", input.direction, input.shot, input.    pause);
-            game_update(input);
+            if(game_update(input)!=RUNNING)
+                running = false;
             pi_ui_render();
             disp_update();
         }
+        if (input.pause)
+        {
+            int i;
+            if ((i=game_paused())!=RESUME)
+                running=false;
+            printf("game_paused%d\n",i);
+            input.pause=false;
+        }
     }
+
 }
-void pi_ui_render(void)
+
+
+static int game_paused(void)
+{
+    int state=RESUME, nextState=RESUME, switchMenu=0;
+    joyinfo_t joyInfo;
+    while(state != EXIT)
+    {
+        joyInfo = joy_read();
+        if (joyInfo.x>40||joyInfo.x<-40)
+        {
+            state=nextState;
+            break;
+        }
+        if (joyInfo.y > 40)
+        {
+            if (!switchMenu)
+            {
+                nextState++;
+                switchMenu=1;
+            }
+        }
+        else if (joyInfo.y<-40)
+        {
+            if (!switchMenu)
+            {
+                nextState--;
+                switchMenu=1;
+            }
+        }
+        else 
+        {
+            switchMenu=0;
+        }
+        if (nextState>MENU)
+            nextState=RESUME;
+        else if (nextState<RESUME)
+            nextState=MENU;
+        else if (nextState==START||nextState==SCOREBOARD)
+            nextState=EXIT;
+        else
+        {
+            disp_clear();
+            disp_write_string(menu_strings[nextState]);
+            disp_update();
+        }
+    }
+    return state;
+}
+static void pi_ui_render(void)
 {
     draw_player();
     draw_enemies();
@@ -202,5 +341,31 @@ static void draw_mothership(void)
         hitbox_t mothershipHitbox = getMothershipPosition();
      
             draw_hitbox_filled(mothershipHitbox);
+    }
+}
+static void disp_write_char(const char c,dcoord_t cords)
+{
+    int row, col;
+    dcoord_t pixel;
+    for (row=0;row<FONT_ROWS;row++)
+    {
+        for(col=0;col<FONT_COLS;col++)
+        {
+            pixel.x=cords.x+col;
+            pixel.y=cords.y+row;
+            if(letras_5x4[c-'A'][row][col])
+                 disp_write(pixel, D_ON);
+        }
+    }
+}
+
+static void disp_write_string(const char *str)
+{
+    int i;
+    dcoord_t cords={1,6};
+    for (i=0;str[i]!='\0';i++)
+    {
+        disp_write_char(str[i],cords);
+        cords.x+=FONT_COLS+1;
     }
 }

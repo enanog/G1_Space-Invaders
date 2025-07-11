@@ -5,7 +5,6 @@
 #include "game.h"
 #include <stdbool.h>
 
-void pi_ui_init();
-void pi_ui_update();
-void pi_ui_render();
+void pi_ui_init(void);
+void pi_ui_menu(void);
 #endif // PI_UI_H
