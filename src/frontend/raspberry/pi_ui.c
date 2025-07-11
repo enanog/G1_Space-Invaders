@@ -21,7 +21,9 @@ static void draw_hitbox_filled(hitbox_t hitbox);
 static void disp_write_string(const char *str);
 const char * menu_strings[]={"RSM","STR","TOP","EXT","MEN"};
 static void disp_write_char(const char c,dcoord_t cords);
-static int game_paused (void);
+static int game_paused (input_t * input);
+
+static int debounce_joystick_switch(void) ;
 
 #define BITCHECK(x,n) (((x)>>(n))&1)
 
@@ -34,6 +36,9 @@ enum {
       START,
       SCOREBOARD,
       EXIT,MENU};
+enum{
+    PAUSED=8,GAME
+};
 
 void pi_ui_init(void) 
 {
@@ -50,7 +55,7 @@ void pi_ui_menu(void)
         {
         case MENU:
             joyInfo = joy_read();
-            if (joyInfo.x>40||joyInfo.x<-40)
+            if (debounce_joystick_switch())
             {
                 state=nextState;
                 break;
@@ -112,81 +117,62 @@ static void menu_game(void)
     bool running = true;
     game_init(ENEMIES_ROW,ENEMIES_COLUMN, false);
     long long lastTime = getTimeMillis();
-
+     long long currentTime;
+    int state=GAME;
     while (running)
     {
-        input=joy_get_input();
-        long long currentTime = getTimeMillis();
-        if (currentTime - lastTime > 1000/60) // 60 FPS
-        {
-            //printf("ENTRO?\n");
-            lastTime = currentTime;
-            disp_clear();
-           // printf(" ,%d,%d,%d\n", input.direction, input.shot, input.    pause);
-            if(game_update(input)!=RUNNING)
-                running = false;
-            pi_ui_render();
-            disp_update();
-        }
-        if (input.pause)
-        {
-            int i;
-            if ((i=game_paused())!=RESUME)
-                running=false;
-            printf("game_paused%d\n",i);
-            input.pause=false;
+        switch(state)
+        {   
+            case GAME:
+           /// printf("ENTRO?%d\n",input.pause);
+                input=joy_get_input();
+                //printf("ENTRO?%d\n",input.pause);
+                currentTime= getTimeMillis();
+                if (currentTime - lastTime > 1000/60) // 60 FPS
+                {
+                    printf ("%lld\n",currentTime-lastTime);
+                    lastTime = currentTime;
+                    disp_clear();
+                //printf(" ,%d,%d,%d\n", input.direction, input.shot, input.pause);
+                    if(game_update(input)!=RUNNING)
+                        running = false;
+                    pi_ui_render();
+                    disp_update();
+                }
+                if (input.pause)
+                {
+                    game_update(input);
+                    printf(" ,%d,%d,%d\n", input.direction, input.shot, input.pause);
+                    state=PAUSED;
+                   //  printf("Entre pausa\n");
+                }
+            break;
+            case PAUSED:
+            if (game_paused(&input)==RESUME)
+                {
+                    //for (int i=0;i<100000000;i++);
+                    state=GAME;
+                    lastTime=getTimeMillis();
+                   // printf("Sali pausa\n");
+            
+                }
+
+            break;
         }
     }
 
 }
 
 
-static int game_paused(void)
+static int game_paused(input_t * input)
 {
-    int state=RESUME, nextState=RESUME, switchMenu=0;
-    joyinfo_t joyInfo;
-    while(state != EXIT)
+    if (debounce_joystick_switch())
     {
-        joyInfo = joy_read();
-        if (joyInfo.x>40||joyInfo.x<-40)
-        {
-            state=nextState;
-            break;
-        }
-        if (joyInfo.y > 40)
-        {
-            if (!switchMenu)
-            {
-                nextState++;
-                switchMenu=1;
-            }
-        }
-        else if (joyInfo.y<-40)
-        {
-            if (!switchMenu)
-            {
-                nextState--;
-                switchMenu=1;
-            }
-        }
-        else 
-        {
-            switchMenu=0;
-        }
-        if (nextState>MENU)
-            nextState=RESUME;
-        else if (nextState<RESUME)
-            nextState=MENU;
-        else if (nextState==START||nextState==SCOREBOARD)
-            nextState=EXIT;
-        else
-        {
-            disp_clear();
-            disp_write_string(menu_strings[nextState]);
-            disp_update();
-        }
+        input->pause=!input->pause;
+        printf("debouce %d\n",input->pause);
+        return RESUME;
     }
-    return state;
+    return PAUSED;
 }
 static void pi_ui_render(void)
 {
@@ -197,12 +183,36 @@ static void pi_ui_render(void)
     draw_enemies_bullets();
     draw_mothership();
 }
+static int debounce_joystick_switch(void) {
+    static int last_state = 1; // Assume switch starts HIGH (not pressed)
+    static int debounced_state = 1;
+    static long long last_debounce_time = 0;
+    const long long debounce_delay = 20; // ms
 
+    int current_state = joy_read().sw;
+    long long now = getTimeMillis();
+
+    if (current_state != last_state) {
+        last_debounce_time = now;
+    }
+
+    if ((now - last_debounce_time) > debounce_delay) {
+        if (debounced_state != current_state) {
+            debounced_state = current_state;
+            if (debounced_state == J_PRESS) {
+                last_state = current_state;
+                return 1; // Falling edge detected
+            }
+        }
+    }
+
+    last_state = current_state;
+    return 0;
+}
 static input_t joy_get_input(void)
 {
     //printf("entre\n");
-    static input_t input = {0, 0, 0, 0};
-    static int flag=1;
+    input_t input = {0, 0, 0, 0};
     joyinfo_t joyInfo = joy_read();
 
     input.direction = (joyInfo.x>40) - (joyInfo.x<-40);
@@ -210,19 +220,10 @@ static input_t joy_get_input(void)
     input.shot = (joyInfo.y>40 || joyInfo.y<-40);
    // printf("x:%d,y:%d,shot:%d\n",joyInfo.x,joyInfo.y,input.shot);
     //printf("direction:%d\n",input.direction);
-    if (joyInfo.sw==J_PRESS)
+    if (debounce_joystick_switch())
     {
-        printf("pause:%d\n",input.pause);
-        printf("flag:%d\n",flag);
-        if (flag)
-        {
-            input.pause=!input.pause;
-            flag=0;
-        }
-    }
-    else 
-    {
-        flag=1;
+        input.pause=!input.pause;
+        printf("debouce %d\n",input.pause);
     }
     return input;
     
