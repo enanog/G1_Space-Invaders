@@ -1,15 +1,5 @@
 {
     "files.associations": {
-        "stdio.h": "c",
-        "pc_ui.h": "c",
-        "allegro_primitives.h": "c",
-        "time.h": "c",
-        "pi_ui.h": "c",
-        "joydrv.h": "c",
-        "stdbool.h": "c",
-        "allegro_ttf.h": "c",
-        "allegro_image.h": "c",
-        "font.h": "c",
-        "allegro_font.h": "c"
+        "allegro_primitives.h": "c"
     }
 }

@@ -56,25 +56,28 @@ obj/frontend/raspberry/font.o: src/frontend/raspberry/font.c include/frontend/ra
 obj/frontend/raspberry/pi_ui.o: src/frontend/raspberry/pi_ui.c include/frontend/raspberry/pi_ui.h include/frontend/raspberry/disdrv.h include/frontend/raspberry/joydrv.h include/game.h include/entity.h
 	@mkdir -p obj/frontend/raspberry
 	$(CC) $(CFLAGS) -c $< -o $@
-else
-# PC specific files
-obj/main.o:src/main.c include/frontend/pc/pc_ui.h include/playSound.h
+obj/playSound.o: src/playSound.c include/playSound.h include/frontend/raspberry/audio.h
 	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
-obj/frontend/pc/font.o: src/frontend/pc/font.c include/frontend/pc/font.h
+else
+
+# PC specific files
+obj/main.o:src/main.c include/frontend/pc/pc_ui.h include/playSound.h 
+	@mkdir -p obj
+	$(CC) $(CFLAGS) -c $< -o $@
+obj/frontend/pc/font.o: src/frontend/pc/font.c include/frontend/pc/font.h include/config.h include/game.h
 	@mkdir -p obj/frontend/pc
 	$(CC) $(CFLAGS) -c $< -o $@
-obj/frontend/pc/pc_ui.o: src/frontend/pc/pc_ui.c include/frontend/pc/pc_ui.h include/game.h
+obj/frontend/pc/pc_ui.o: src/frontend/pc/pc_ui.c include/frontend/pc/pc_ui.h include/game.h include/config.h include/entity.h include/playSound.h
 	@mkdir -p obj/frontend/pc
+	$(CC) $(CFLAGS) -c $< -o $@
+obj/playSound.o: src/playSound.c include/playSound.h
+	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
 endif
 
 # General compilation rules
 obj/game.o: src/game.c include/game.h include/config.h include/entity.h include/playSound.h
-	@mkdir -p obj
-	$(CC) $(CFLAGS) -c $< -o $@
-
-obj/playSound.o: src/playSound.c include/playSound.h
 	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -84,7 +87,7 @@ obj/score.o: src/score.c include/score.h
 
 # Clean: remove all object and dependency files (except libAudioSDL2.o)
 clean:
-	@for f in obj/*.o obj/*/*.o; do \
+	@for f in obj/*.o obj/frontend/pc/*.o obj/frontend/raspberry/*.o; do \
 		name=$$(basename $$f); \
 		if [ "$$name" != "libAudioSDL2.o" ] && \
 		   [ "$$name" != "disdrv.o" ] && \

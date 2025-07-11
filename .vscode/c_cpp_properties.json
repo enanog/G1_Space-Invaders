@@ -3,12 +3,12 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/include",
                 "${workspaceFolder}/include/frontend/pc",
                 "${workspaceFolder}/include/frontend/raspberry",
-                "${workspaceFolder}/src",
+                "${workspaceFolder}/include/",
                 "${workspaceFolder}/src/frontend/pc",
-                "${workspaceFolder}/src/frontend/raspberry"
+                "${workspaceFolder}/src/frontend/raspberry",
+                "${workspaceFolder}/src/"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

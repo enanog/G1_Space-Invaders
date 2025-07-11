@@ -35,21 +35,57 @@
 static ALLEGRO_DISPLAY *display = NULL;
 ALLEGRO_FONT *font = NULL;
 ALLEGRO_FONT *font_enemies = NULL;
+ALLEGRO_BITMAP *background = NULL;
 
 static gameState_t menuShow(ALLEGRO_DISPLAY *display);
 static void mainMenu(void);
 static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol);
 static char keyboard_input(void);
 static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *background);
+static hitbox_t clipHitbox(hitbox_t hb, float margin_x, float margin_y, float inner_w, float inner_h);
 
+bool allegro_init(void) 
+{
+	if (!al_init() || !al_init_font_addon() || !al_init_ttf_addon() ||
+		!al_init_primitives_addon() || !al_init_image_addon())
+	{
+		return false;
+	}
+	if (!al_install_keyboard())
+	{
+		return false;
+	}
+
+	display = al_create_display(SCREEN_W, SCREEN_H);
+	if (!display)
+	{
+		return false;
+	}
+
+    font = al_create_builtin_font();
+    if (!font) {
+        return false;
+    }
+
+    initFonts(display);
+
+	return true;
+}
 
 void gameLoop(void)
 {
     gameState_t state = STATE_SPLASH;
     bool running = true;
-
     while (running) 
     {
+        if(state != STATE_SPLASH)
+        {
+            background = al_load_bitmap("assets/images/backgroundGame.png");
+            if (!background) {
+                fprintf(stderr, "Failed to load background image.\n");
+                return;
+            }
+        }
         switch (state) 
         {
             case STATE_SPLASH: 
@@ -106,39 +142,23 @@ void gameLoop(void)
     playSound_shutdown();
 }
 
-bool allegro_init(void) 
-{
-	if (!al_init() || !al_init_font_addon() || !al_init_ttf_addon() ||
-		!al_init_primitives_addon() || !al_init_image_addon())
-	{
-		return false;
-	}
-	if (!al_install_keyboard())
-	{
-		return false;
-	}
-
-	display = al_create_display(SCREEN_W, SCREEN_H);
-	if (!display)
-	{
-		return false;
-	}
-
-    font = al_create_builtin_font();
-    if (!font) {
-        return false;
-    }
-
-    initFonts(display);
-
-	return true;
-}
-
 static void mainMenu(void) 
 {
     ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
     al_register_event_source(queue, al_get_keyboard_event_source());
     al_register_event_source(queue, al_get_display_event_source(display));
+
+    ALLEGRO_BITMAP *background = NULL;
+    background = al_load_bitmap("assets/images/backgroundMenu.png");
+    if (!background) {
+        fprintf(stderr, "Failed to load background image.\n");
+        return;
+    }
+    
+    if (!background) {
+        fprintf(stderr, "Failed to load background image.\n");
+        return;
+    }
 
     bool running = true;
     bool show_press_enter = false;
@@ -146,58 +166,8 @@ static void mainMenu(void)
 
     while (running) 
     {
-        //ALLEGRO_FONT *font1 = al_load_ttf_font("invaders.ttf", 32, 0);
-        al_clear_to_color(al_map_rgb(0, 0, 0));
-
-        // Draw "SPACE INVADERS" big and centered (simulate style)
-        //al_draw_text(font1, al_map_rgb(255, 255, 0), SCREEN_W / 2, 120, ALLEGRO_ALIGN_CENTER, (char)17);
-
-        int screen_w = al_get_display_width(display);
-        int screen_h = al_get_display_height(display);
-
-        al_draw_text(font, al_map_rgb(255, 255, 0), screen_w / 2, screen_h * 0.2, ALLEGRO_ALIGN_CENTER, "SPACE");
-        al_draw_text(font, al_map_rgb(255, 255, 0), screen_w / 2, screen_h * 0.3, ALLEGRO_ALIGN_CENTER, "INVADERS");
-
-        int rows = 5;
-        int cols = 11;
-
-        // Tamaño relativo de cada invasor (ancho y alto)
-        float invader_width = screen_w * ENEMY_WIDTH;
-        float invader_height = screen_h * ENEMY_HEIGHT;
-
-        // Espaciado horizontal y vertical entre invasores
-        float h_spacing = screen_w * ENEMY_H_SPACING;
-        float v_spacing = screen_h * ENEMY_V_SPACING;
-
-        // Coordenada de inicio (centrado horizontalmente)
-        float total_width = cols * invader_width + (cols - 1) * h_spacing;
-        float start_x = (screen_w - total_width) / 2;
-
-        // Coordenada Y inicia
-        float start_y = screen_h * 0.4f;
-
-        // Colores para cada fila
-        ALLEGRO_COLOR row_colors[] = 
-        {
-            al_map_rgb(255, 0, 255),   // pink
-            al_map_rgb(255, 255, 0),   // yellow
-            al_map_rgb(255, 0, 0),     // red
-            al_map_rgb(0, 255, 255),   // blue
-            al_map_rgb(0, 255, 255)    // blue
-        };
-
-        for (int row = 0; row < rows; row++) 
-        {
-            for (int col = 0; col < cols; col++) 
-            {
-                float x1 = start_x + col * (invader_width + h_spacing);
-                float y1 = start_y + row * (invader_height + v_spacing);
-                float x2 = x1 + invader_width;
-                float y2 = y1 + invader_height;
-
-                al_draw_filled_rectangle(x1, y1, x2, y2, row_colors[row]);
-            }
-        }
+        al_draw_scaled_bitmap(background, 0, 0, al_get_bitmap_width(background), al_get_bitmap_height(background),
+                              0, 0, al_get_display_width(display), al_get_display_height(display), 0);
 
         // After 2 seconds, show "Press ENTER to start"
         if (al_get_time() - start_time > 2.0) 
@@ -206,7 +176,7 @@ static void mainMenu(void)
         }
         if (show_press_enter) 
         {
-            al_draw_text(font, al_map_rgb(255, 255, 255), screen_w / 2, screen_h * 0.8, ALLEGRO_ALIGN_CENTER, "Press ENTER to start");
+            al_draw_text(font, al_map_rgb(255, 255, 255), al_get_display_width(display) / 2, al_get_display_height(display) * 0.8, ALLEGRO_ALIGN_CENTER, "Press ENTER to start");
         }
 
         al_flip_display();
@@ -227,6 +197,7 @@ static void mainMenu(void)
         }
     }
     al_destroy_event_queue(queue);
+    al_destroy_bitmap(background);
 }
 
 static gameState_t menuShow(ALLEGRO_DISPLAY *display) 
@@ -263,8 +234,8 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
 
     while (choosing) 
     {
-        al_clear_to_color(al_map_rgb(0, 0, 0)); // Black background
-
+        al_draw_scaled_bitmap(background, 0, 0, al_get_bitmap_width(background), al_get_bitmap_height(background),
+                              0, 0, al_get_display_width(display), al_get_display_height(display), 0);
         // Draw title
         al_draw_text(font, al_map_rgb(255, 0, 0),
                      screen_w / 2,
@@ -378,6 +349,13 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 	input_t player = {0, 0};
 	int row, col;
 	bool fullscreen = false;
+
+	// Definir márgenes relativos
+	float margin_x = al_get_display_width(display) * 0.08f; // 8% horizontal
+	float margin_y = al_get_display_height(display) * 0.10f; // 10% vertical
+	float inner_w = al_get_display_width(display) - 3 * margin_x;
+	float inner_h = al_get_display_height(display) - 2 * margin_y;
+
 	while(running)
 	{	
 		ALLEGRO_EVENT event;
@@ -390,6 +368,7 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 		else if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE) 
 		{
 			running = false;
+            state = STATE_EXIT;
 			break;
 		}
 		if(event.type == ALLEGRO_EVENT_KEY_DOWN)
@@ -417,13 +396,6 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
             {
                 player.pause = false;
             }
-            else if(event.keyboard.keycode == ALLEGRO_KEY_R && player.pause)
-            {
-                player.exit = true;
-                game_update(player);
-                state = STATE_EXIT;
-                running = false; // Exit the game loop when paused
-            }
 			else if(event.keyboard.keycode == ALLEGRO_KEY_F4 && (event.keyboard.modifiers & ALLEGRO_KEYMOD_ALT)) 
 			{ 
 				running = false;
@@ -448,7 +420,6 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 			}
 		}
 
-
 		if(fullscreen)
 		{
 			al_set_display_flag(display, ALLEGRO_FULLSCREEN_WINDOW, true);
@@ -462,7 +433,8 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 
 		if(redraw && al_is_event_queue_empty(queue))
 		{
-			al_clear_to_color(al_map_rgb(0, 0, 0)); 
+			al_draw_scaled_bitmap(background, 0, 0, al_get_bitmap_width(background), al_get_bitmap_height(background),
+                                  0, 0, al_get_display_width(display), al_get_display_height(display), 0);
 
 			int gameState = game_update(player);
 			if(gameState == GAME_OVER)
@@ -472,114 +444,77 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
                 state = STATE_MENU;
                 break;
 			}
-	
+
+            al_set_clipping_rectangle(margin_x, margin_y, inner_w, inner_h);
+			
 			for(row = 0; row < ENEMIES_ROW_MAX; row++)
 			{
 				for(col = 0; col < ENEMIES_COLUMNS_MAX; col++)
 				{
-					if(!getIsEnemyAlive(row,col))
-						continue;
-					hitbox_t hitbox = getEnemyPosition(row,col);
+					if(!getIsEnemyAlive(row,col)) 
+                        continue;
+					hitbox_t hitbox = clipHitbox(getEnemyPosition(row,col), margin_x, margin_y, inner_w, inner_h);
 					ALLEGRO_COLOR color;
 					switch (getEnemyTier(row))
 					{
-					case ALIEN_TIER1:
-						color = al_map_rgb(255, 0, 0);
-						break;
-
-					case ALIEN_TIER2:
-						color = al_map_rgb(0, 255, 0);
-						break;
-
-					case ALIEN_TIER3:
-						color = al_map_rgb(0, 0, 255);
-						break;
-
-					default:
-						break;
+						case ALIEN_TIER1: color = al_map_rgb(255, 0, 0); break;
+						case ALIEN_TIER2: color = al_map_rgb(0, 255, 0); break;
+						case ALIEN_TIER3: color = al_map_rgb(0, 0, 255); break;
+						default: break;
 					}
                     draw_invaders(hitbox, row, display);
-					al_draw_rectangle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, hitbox.end.x * SCREEN_W, hitbox.end.y * SCREEN_H, color, 2.0f);
+					al_draw_rectangle(hitbox.start.x, hitbox.start.y, hitbox.end.x, hitbox.end.y, color, 2.0f);
 				}
 			}
-			hitbox_t hitbox = getPlayerPosition();
-			//printf("Player: x:%f y:%f\n", position.x, position.y);
-			al_draw_filled_circle(hitbox.start.x * SCREEN_W,
-								  hitbox.start.y * SCREEN_H,
-								  5, al_map_rgb(0,255,0));
-			al_draw_rectangle(hitbox.start.x * SCREEN_W,
-							  hitbox.start.y * SCREEN_H,
-							  hitbox.end.x * SCREEN_W,
-							  hitbox.end.y * SCREEN_H,
-							  al_map_rgb(0,255,0), 2.0f);
-                              
-            draw_player(hitbox, display);
-			
-			int barrier;
 
-			for (barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++) 
+			hitbox_t hitboxPlayer = clipHitbox(getPlayerPosition(), margin_x, margin_y, inner_w, inner_h);
+			al_draw_rectangle(hitboxPlayer.start.x, hitboxPlayer.start.y, hitboxPlayer.end.x, hitboxPlayer.end.y, al_map_rgb(0,255,0), 2.0f);
+            draw_player(hitboxPlayer, display);
+
+			for (int barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++) 
 			{
 				for (row = 0; row < BARRIER_ROWS; row++)
-				 {
+				{
 					for (col = 0; col < BARRIER_COLUMNS; col++) 
 					{
-						bool barrierAlive = getBarrierIsAlive(barrier, row, col);
-						if (!barrierAlive)
-						{
-							continue;
-						}
-						hitbox_t hitbox = getBarrierPosition(barrier, row, col);
-						al_draw_rectangle(hitbox.start.x * SCREEN_W,
-                                        hitbox.start.y * SCREEN_H,
-                                        hitbox.end.x * SCREEN_W,
-                                        hitbox.end.y * SCREEN_H,
-                                        al_map_rgb(0,255,0), 2.0f);
+						if (!getBarrierIsAlive(barrier, row, col)) 
+                        {
+                            continue;
+                        }
+						hitbox_t hitboxBarrier = clipHitbox(getBarrierPosition(barrier, row, col), margin_x, margin_y, inner_w, inner_h);
+                        al_draw_rectangle(hitboxBarrier.start.x, hitboxBarrier.start.y, hitboxBarrier.end.x, hitboxBarrier.end.y, al_map_rgb(0,255,0), 2.0f);
 					}
 				}
 			}
 
 			bullet_t bullet = getPlayerBulletinfo();
 			if (bullet.active) {
-				al_draw_rectangle(
-					bullet.hitbox.start.x * SCREEN_W,
-					bullet.hitbox.start.y * SCREEN_H,
-					bullet.hitbox.end.x * SCREEN_W,
-					bullet.hitbox.end.y * SCREEN_H,
-					al_map_rgb(255, 255, 0),
-					2.0f
-				);
+                hitbox_t bulletHitbox = clipHitbox(bullet.hitbox, margin_x, margin_y, inner_w, inner_h);
+                draw_bullet(bulletHitbox, display);
+				al_draw_rectangle(bulletHitbox.start.x, bulletHitbox.start.y, bulletHitbox.end.x, bulletHitbox.end.y, al_map_rgb(255, 255, 0), 2.0f);
 			}
-			
+
 			bullet_t enemyBulletBitMap[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
 			getEnemiesBulletsInfo(enemyBulletBitMap);
 			for(row = 0; row < ENEMIES_ROW_MAX; row++)
 			{
 				for(col = 0; col < ENEMIES_COLUMNS_MAX; col++)
 				{
-					if(!enemyBulletBitMap[row][col].active)
-					{
-						continue;
-					}
-
-					al_draw_rectangle(
-					enemyBulletBitMap[row][col].hitbox.start.x * SCREEN_W,
-					enemyBulletBitMap[row][col].hitbox.start.y * SCREEN_H,
-					enemyBulletBitMap[row][col].hitbox.end.x * SCREEN_W,
-					enemyBulletBitMap[row][col].hitbox.end.y * SCREEN_H,
-					al_map_rgb(255, 255, 255), 2.0f);
+					if(!enemyBulletBitMap[row][col].active) continue;
+                    hitbox_t enemyBulletHitbox = clipHitbox(enemyBulletBitMap[row][col].hitbox, margin_x, margin_y, inner_w, inner_h);
+                    draw_bullet(enemyBulletHitbox, display);
+					al_draw_rectangle(enemyBulletHitbox.start.x, enemyBulletHitbox.start.y, enemyBulletHitbox.end.x, enemyBulletHitbox.end.y, al_map_rgb(255, 255, 0), 2.0f);
 				}
 			}
-            hitbox_t mothershipHitbox = getMothershipPosition();
+
+            hitbox_t mothershipHitbox = clipHitbox(getMothershipPosition(), margin_x, margin_y, inner_w, inner_h);
             if(getIsMothershipAlive())
             {
-                al_draw_rectangle(
-                    mothershipHitbox.start.x * SCREEN_W,
-                    mothershipHitbox.start.y * SCREEN_H,
-                    mothershipHitbox.end.x * SCREEN_W,
-                    mothershipHitbox.end.y * SCREEN_H,
-                    al_map_rgb(255, 0, 255), 2.0f);
+                draw_mothership(mothershipHitbox, display);
+                al_draw_rectangle(mothershipHitbox.start.x, mothershipHitbox.start.y, mothershipHitbox.end.x, mothershipHitbox.end.y, al_map_rgb(255, 255, 0), 2.0f);
             }
 
+            al_reset_clipping_rectangle();
 			al_flip_display();
 			redraw = false;
 		}
@@ -588,6 +523,19 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 	al_destroy_timer(timer);
 	al_destroy_event_queue(queue);
 	return state;
+}
+
+static hitbox_t clipHitbox(hitbox_t hb, float margin_x, float margin_y, float inner_w, float inner_h)
+{
+    hitbox_t result;
+
+    result.start.x = margin_x + hb.start.x * inner_w;
+    result.start.y = margin_y + hb.start.y * inner_h;
+
+    result.end.x   = margin_x + hb.end.x * inner_w;
+    result.end.y   = margin_y + hb.end.y * inner_h;
+
+    return result;
 }
 
 static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *background)
