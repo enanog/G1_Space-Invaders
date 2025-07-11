@@ -17,6 +17,7 @@
 
 #include "playSound.h"
 #include <stdio.h>
+#include <stdbool.h>
 
 // Rutas a los archivos de sonido
 static const char *sound_filenames[SOUND_COUNT] = 
@@ -33,6 +34,7 @@ static const char *sound_filenames[SOUND_COUNT] =
 };
 
 #ifndef RASPBERRY
+
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_audio.h>
 #include <allegro5/allegro_acodec.h>
@@ -113,61 +115,59 @@ void playSound_restart(GameSoundEvent event)
         al_play_sample(sounds[event], 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, &sound_ids[event]);
     }
 }
-#else
-//#include "audio.h"
 
-//static Audio * sounds[SOUND_COUNT] = {0};
+#else
+
+#include "audio.h"
+
+static Audio * sounds[SOUND_COUNT];
 
 bool playSound_init(void)
 {
-    // // Inicia el subsistema de audio
-    // if (initAudio() != READY)
-    // {
-    //     fprintf(stderr, "Error: Audio initialization failed\n");
-    //     return -1;
-    // }
+     // Inicia el subsistema de audio
+     if (initAudio() != READY)
+     {
+         fprintf(stderr, "Error: Audio initialization failed\n");
+         return false;
+     }
 
-    // // Cargar cada sonido desde archivo
-    // for (int i = 0; i < SOUND_COUNT; i++)
-    // {
-    //     sounds[i] = createAudio(sound_filenames[i], 0 /* loop */, 100 /* volumen */);
-    //     if (!sounds[i])
-    //     {
-    //         fprintf(stderr, "Error: Failed to load sound: %s\n", sound_filenames[i]);
-    //     }
-    // }
+     // Cargar cada sonido desde archivo
+     for (int i = 0; i < SOUND_COUNT; i++)
+     {
+         sounds[i] = createAudio(sound_filenames[i], 0, 100);
+         if (!sounds[i])
+         {
+             fprintf(stderr, "Error: Failed to load sound: %s\n", sound_filenames[i]);
+             return false;
+         }
+     }
 
-    return 0;
+     return 0;
 }
 
 void playSound_play(GameSoundEvent event) 
 {
-    // if (event >= 0 && event < SOUND_COUNT && sounds[event]) 
-    // {
-    //     playSoundFromMemory(sounds[event], sounds[event]->volume);
-    // }
+    if (event >= 0 && event < SOUND_COUNT)
+    {
+         playSoundFromMemory(sounds[event], sounds[event]->volume);
+	}
 }
 
 void playSound_stop(GameSoundEvent event)
 {
     // // Simple-SDL2-Audio no permite detener un único sonido específico,
     // // así que usamos pauseAudio() para pausar el dispositivo entero.
-    // pauseAudio();
+    pauseAudio();
 }
 
 void playSound_shutdown(void) 
 {
-    // for (int i = 0; i < SOUND_COUNT; i++) 
-    // {
-    //     if (sounds[i]) 
-    //     {
-    //         freeAudio(sounds[i]);
-    //         sounds[i] = NULL;
-    //     }
-    // }
-
-    // // Libera el subsistema de audio completo
-    // endAudio();
+	for (int i = 0; i < SOUND_COUNT; i++)
+    {
+            freeAudio(sounds[i]);
+            sounds[i] = NULL;
+    }
+    endAudio();
 }
 
 void playSound_restart(GameSoundEvent event)
