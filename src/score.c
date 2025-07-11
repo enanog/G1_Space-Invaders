@@ -3,6 +3,22 @@
 
 #include "score.h"
 
+// int main(void)
+// {
+//     int
+//     score_t topScores[5];
+//     int count = getTopScore(topScores);
+//     if (count > 0) {
+//         printf("Top Scores:\n");
+//         for (int i = 0; i < count; i++) {
+//             printf("%d. %s: %d\n", i + 1, topScores[i].name, topScores[i].score);
+//         }
+//     } else {
+//         printf("No scores available.\n");
+//     }
+//     return 0;
+// }
+
 int getTopScore(score_t *topScore)
 {
     // Open the file for reading

@@ -15,25 +15,33 @@
  * fecha: 15/07/2025
  * ---------------------------------------------------*/
 
-//#include "pc_ui.h"
-//#include "playSound.h"
-//#include <stdio.h>
+#ifndef RASPBERRY
+#include "pc_ui.h"
+#include "playSound.h"
+#else
 #include "pi_ui.h"
+#endif
+
+#include <stdio.h>
+
 
 int main(void)
 {
-//	if (!allegro_init()) {
- // 	fprintf(stderr, "ERROR: Failed to initialize Allegro.\n");
- //	return 1;
- //}
+    #ifndef RASPBERRY
+	if (!allegro_init()) {
+ 	fprintf(stderr, "ERROR: Failed to initialize Allegro.\n");
+ 	return 1;
+    }
 
-	// if (!playSound_init()) 
-	// {
-	// 	return -1;
-	// }
+	if (!playSound_init()) 
+	{
+		return -1;
+	}
+    gameLoop();
+    #else
 	pi_ui_init();
 	pi_ui_menu();
-	//gameLoop();
+	#endif
 
 	return 0;
 }

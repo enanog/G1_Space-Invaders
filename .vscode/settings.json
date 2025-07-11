@@ -5,6 +5,7 @@
         "allegro_primitives.h": "c",
         "time.h": "c",
         "pi_ui.h": "c",
-        "joydrv.h": "c"
+        "joydrv.h": "c",
+        "stdbool.h": "c"
     }
 }

@@ -46,9 +46,14 @@ space_invaders: $(OBJ)
 	$(CC) -o $@ $^ $(ALLEGRO_LIBS)
 ifeq ($(USER)_$(HOST),pi_raspberrypi)
 obj/main.o:src/main.c include/frontend/raspberry/pi_ui.h
-	@mkdir -p obj/frontend/raspberry
+	@mkdir -p obj
+	$(CC) $(CFLAGS) -c $< -o $@
+else
+obj/main.o:src/main.c include/frontend/pc/pc_ui.h include/playSound.h
+	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
 endif
+
 # General compilation rules
 obj/game.o: src/game.c include/game.h include/config.h include/entity.h include/playSound.h
 	@mkdir -p obj

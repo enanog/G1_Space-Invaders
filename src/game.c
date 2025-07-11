@@ -175,10 +175,10 @@ int game_update(input_t player)
     {
         game.lastTimeUpdated = getTimeMillis();
         //playSound_stop(SOUND_UFO_LOW);
+        saveGameState();
         if(player.exit)
         {
             game.state = QUIT;
-            saveGameState();
             return QUIT;
         }
         return RUNNING;

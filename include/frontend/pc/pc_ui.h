@@ -23,15 +23,16 @@
 typedef enum {
     STATE_SPLASH,
     STATE_MENU,
-    STATE_GAME,
-    STATE_RESUME,
+    STATE_NEW_GAME,
+    STATE_RESUME_GAME,
     STATE_SCOREBOARD,
-    STATE_EXIT
+    STATE_CREDITS,
+    STATE_EXIT,
+    STATE_PAUSE,
+    STATE_RESTART_GAME
 } gameState_t;
 
 void gameLoop(void);
-
-void map(void);
 bool allegro_init(void);
 void allegro_shutdown(void);
 
