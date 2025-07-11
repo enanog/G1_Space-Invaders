@@ -42,6 +42,7 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol);
 static char keyboard_input(void);
 static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *background);
 
+
 void gameLoop(void)
 {
     gameState_t state = STATE_SPLASH;

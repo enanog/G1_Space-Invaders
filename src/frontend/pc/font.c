@@ -22,12 +22,13 @@ ALLEGRO_FONT *font1 = NULL;
 ALLEGRO_FONT *font2 = NULL;
 ALLEGRO_FONT *font3 = NULL;
 
-const char TIER_1_HANDS_UP[] = "\x24"; // 36 decimal
-const char TIER_1_HANDS_DOWN[] = "\x25"; // 37
-const char TIER_2_HANDS_DOWN[] = "\x1D"; // 29
-const char TIER_2_HANDS_UP[] = "\x3B";   // 30
-const char TIER_3_HANDS_DOWN[] = "\x3A"; // 40
-const char TIER_3_HANDS_UP[] = "\x29";   // 41
+const char TIER_1_HANDS_UP[] = "\x41"; // 36 decimal
+const char TIER_1_HANDS_DOWN[] = "\x42"; // 37
+const char TIER_2_HANDS_DOWN[] = "\x43"; // 29
+const char TIER_2_HANDS_UP[] = "\x44";   // 30
+const char TIER_3_HANDS_DOWN[] = "\x45"; // 40
+const char TIER_3_HANDS_UP[] = "\x46";   // 41
+
 
 
 
@@ -64,3 +65,4 @@ void draw_invaders(hitbox_t enemy, int row, ALLEGRO_DISPLAY *display)
             break;
     }
 }
+void draw_player(hitbox_t player, ALLEGRO_DISPLAY *diplay);
