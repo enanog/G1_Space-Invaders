@@ -32,7 +32,7 @@ typedef struct
  * @param topScore Pointer to an array of score_t where the loaded scores will be stored.
  * @return The number of scores read from the file, or -1 if the file could not be opened.
  */
-int getTopScore(score_t *topScore);
+int getTopScore(score_t *topScore, int cantScores);
 
 /**
  * @brief Updates the top scores list with a new score and player name for the specified platform.

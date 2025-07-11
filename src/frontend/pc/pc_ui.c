@@ -28,11 +28,13 @@
 #include "entity.h"
 #include "pc_ui.h"
 #include "score.h"
+#include "font.h"
 
 #define DONT_MATTER -1
 
 static ALLEGRO_DISPLAY *display = NULL;
 ALLEGRO_FONT *font = NULL;
+ALLEGRO_FONT *font_enemies = NULL;
 
 static gameState_t menuShow(ALLEGRO_DISPLAY *display);
 static void mainMenu(void);
@@ -92,11 +94,6 @@ void gameLoop(void)
                 }
                 break;
 
-            case STATE_RESTART_GAME:
-                printf("Restarting game...\n");
-                state = gameRender(STATE_NEW_GAME, 3, 3);
-                break;
-
             default:
                 running = false;
                 break;
@@ -130,6 +127,8 @@ bool allegro_init(void)
     if (!font) {
         return false;
     }
+
+    initFonts(display);
 
 	return true;
 }
@@ -236,7 +235,7 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
     int selected = 0;
 
     score_t topScores[5];
-    int topCount = getTopScore(topScores); // Load top 5 scores
+    int topCount = getTopScore(topScores, 5); // Load top 5 scores
 
     ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
     al_register_event_source(queue, al_get_keyboard_event_source());
@@ -498,6 +497,7 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 					default:
 						break;
 					}
+                    draw_invaders(hitbox, row, display);
 					al_draw_rectangle(hitbox.start.x * SCREEN_W, hitbox.start.y * SCREEN_H, hitbox.end.x * SCREEN_W, hitbox.end.y * SCREEN_H, color, 2.0f);
 				}
 			}
@@ -664,7 +664,7 @@ static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *backgroun
         case 0: 
             return STATE_RESUME_GAME;
         case 1: 
-            return STATE_RESTART_GAME;
+            return STATE_NEW_GAME;
         case 2: 
             return STATE_MENU;
         case 3: 
@@ -673,7 +673,6 @@ static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *backgroun
 
     return STATE_RESUME_GAME;
 }
-
 
 
 void allegro_shutdown(void) 

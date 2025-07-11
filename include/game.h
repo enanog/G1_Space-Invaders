@@ -41,6 +41,7 @@ typedef struct
     int barriersColumn;
     int enemyShotInterval;
     int cantPlayerShots;
+    bool enemiesHands;
     long long lastTimeEnemyShoot;
     long long lastTimeUpdated;
     long long lastTimeMothershipGenerated;
@@ -81,6 +82,8 @@ void game_level_up(void);
 int getScore(void);
 int getLevel(void);
 int getEnemyTier(int row);
+
+bool getEnemiesHands(void);
 
 hitbox_t getPlayerPosition(void);
 hitbox_t getEnemyPosition(int row, int column);

@@ -1,5 +1,5 @@
 /* ---------------------------------------------------
- * pc_ui.h
+ * font.h
  * ---------------------------------------------------
  * GRUPO 1:
  * 	CASTRO, Tomás
@@ -15,24 +15,17 @@
  * fecha: 15/07/2025
  * ---------------------------------------------------*/
 
-#ifndef PC_UI_H
-#define PC_UI_H
-
+#ifndef FONT_H
+#define FONT_H
+#include <allegro5/allegro_font.h>
+#include <allegro5/allegro_ttf.h>
+#include <allegro5/allegro.h>
+#include <allegro5/allegro_primitives.h>
+#include <allegro5/allegro_image.h>
+#include "game.h"
 #include <stdbool.h>
 
-typedef enum {
-    STATE_SPLASH,
-    STATE_MENU,
-    STATE_NEW_GAME,
-    STATE_RESUME_GAME,
-    STATE_SCOREBOARD,
-    STATE_CREDITS,
-    STATE_EXIT,
-    STATE_PAUSE,
-} gameState_t;
+void initFonts(ALLEGRO_DISPLAY *display);
+void draw_invaders(hitbox_t enemy, int row, ALLEGRO_DISPLAY *display);
 
-void gameLoop(void);
-bool allegro_init(void);
-void allegro_shutdown(void);
-
-#endif
+#endif // FONT_H

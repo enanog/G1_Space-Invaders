@@ -6,6 +6,8 @@
         "time.h": "c",
         "pi_ui.h": "c",
         "joydrv.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "allegro_ttf.h": "c",
+        "allegro_image.h": "c"
     }
 }

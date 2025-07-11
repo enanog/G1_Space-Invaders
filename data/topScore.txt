@@ -1,0 +1,10 @@
+Alice 100
+Bob 90
+rlie 80
+Charlie 80
+David 70
+Eve 60
+Frank 50
+Grace 40
+Heidi 30
+Ivan 20

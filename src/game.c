@@ -22,7 +22,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <time.h>
-//#include "playSound.h"
+#include "playSound.h"
 #include <string.h>
 
 #ifndef RASPBERRY
@@ -80,6 +80,7 @@ void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame)
     game.lastTimeEnemyShoot = getTimeMillis();
     srand(time(NULL));
 
+    game.enemiesHands = false;
 	game_create_enemy_map(enemiesRow,enemiesColumn);
 
 	game_create_barriers();
@@ -278,6 +279,14 @@ int game_update(input_t player)
 	{
 		game.enemiesDirection = (rightmostEnemyNextX > 1)? -1: 1;
         game.enemiesSpeed += ENEMY_SPEED_INCREMENT;
+        if (ENEMY_SPEED + game.level * ENEMY_SPEED_INCREMENT > ENEMY_MAX_SPEED)
+        {
+            game.enemiesSpeed = ENEMY_MAX_SPEED;
+        }
+        else
+        {
+            game.enemiesSpeed = ENEMY_SPEED + game.level * ENEMY_SPEED_INCREMENT;
+        }
 		for(row = 0; row < game.enemiesRow; row++)
 		{
 			for(col = 0; col < game.enemiesColumn; col++)
@@ -294,8 +303,19 @@ int game_update(input_t player)
 		{
 			game.enemies[row][col].hitbox.start.x += game.enemiesDirection * dt *  game.enemiesSpeed;
 			game.enemies[row][col].hitbox.end.x += game.enemiesDirection * dt *  game.enemiesSpeed;
+            
 		}
 	}
+    static float enemiesMovement = 0;
+    enemiesMovement += dt * game.enemiesSpeed;
+    if(enemiesMovement > 0.1f)
+    {
+        playSound_play((game.enemiesHands) ? SOUND_FAST1 : SOUND_FAST2);
+        printf("Enemies hands: %d\n", game.enemiesHands);
+        enemiesMovement = 0;
+        game.enemiesHands = !game.enemiesHands;
+    }
+
     enemiesBulletActive();
 	update_player_bullet(player, dt);
     update_enemy_bullet(dt);
@@ -318,7 +338,15 @@ void game_level_up()
     {
         game.player.lives++;
     }
-    game.enemiesSpeed = ENEMY_SPEED + game.level * ENEMY_SPEED_INCREMENT;
+    if (ENEMY_SPEED + game.level * ENEMY_SPEED_INCREMENT > ENEMY_MAX_SPEED)
+    {
+        game.enemiesSpeed = ENEMY_MAX_SPEED;
+    }
+    else
+    {
+        game.enemiesSpeed = ENEMY_SPEED + game.level * ENEMY_SPEED_INCREMENT;
+    }
+
     game.enemiesDirection = 1;
     game.enemyShotInterval  = INITIAL_SHOOTING_INTERVAL;
     
@@ -391,7 +419,7 @@ void update_player_bullet(input_t input, float dt)
 		game.player.bullet.hitbox.start.y = game.player.hitbox.start.y - BULLET_HEIGHT;
 		game.player.bullet.hitbox.end.x = game.player.hitbox.start.x + PLAYER_WIDTH / 2.0f + BULLET_WIDTH / 2.0f;
 		game.player.bullet.hitbox.end.y = game.player.hitbox.start.y;
-		//playSound_play(SOUND_SHOOT);
+		playSound_play(SOUND_SHOOT);
         game.cantPlayerShots++;
 	}
 
@@ -427,8 +455,8 @@ void update_player_bullet(input_t input, float dt)
 
 				game.enemies[row][col].alive = false;
 				game.player.bullet.active = false;
-                //playSound_play(SOUND_EXPLOSION);
-                //playSound_play(SOUND_INVADER_KILLED);
+                playSound_play(SOUND_EXPLOSION);
+                playSound_play(SOUND_INVADER_KILLED);
 
                 game.enemyShotInterval -= ENEMY_SHOOTING_INTERVAL_DECREMENT;
                 if(game.enemyShotInterval < MIN_ENEMY_SHOOTING_INTERVAL)
@@ -554,7 +582,7 @@ static void mothershipUpdate(float dt)
     if(HITBOX_COLLISION(game.player.bullet.hitbox, game.mothership.hitbox))
     {
         game.score += MOTHERSHIP_SCORE;
-       // playSound_play(SOUND_EXPLOSION);
+        playSound_play(SOUND_EXPLOSION);
         game.mothership.alive = false;
         game.player.bullet.active = false;
     }
@@ -732,6 +760,11 @@ void getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX])
 			matEnemy[row][col] = game.enemies[row][col].alive;
 		}
 	}
+}
+
+bool getEnemiesHands(void)
+{
+    return game.enemiesHands;
 }
 
 static void enemiesBulletActive(void)

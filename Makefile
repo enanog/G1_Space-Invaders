@@ -44,13 +44,28 @@ all: space_invaders
 # Link final executable
 space_invaders: $(OBJ)
 	$(CC) -o $@ $^ $(ALLEGRO_LIBS)
+
+# RASPBERRY specific files
 ifeq ($(USER)_$(HOST),pi_raspberrypi)
 obj/main.o:src/main.c include/frontend/raspberry/pi_ui.h
 	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
+obj/frontend/raspberry/font.o: src/frontend/raspberry/font.c include/frontend/raspberry/font.h
+	@mkdir -p obj/frontend/raspberry
+	$(CC) $(CFLAGS) -c $< -o $@
+obj/frontend/raspberry/pi_ui.o: src/frontend/raspberry/pi_ui.c include/frontend/raspberry/pi_ui.h include/frontend/raspberry/disdrv.h include/frontend/raspberry/joydrv.h include/game.h include/entity.h
+	@mkdir -p obj/frontend/raspberry
+	$(CC) $(CFLAGS) -c $< -o $@
 else
+# PC specific files
 obj/main.o:src/main.c include/frontend/pc/pc_ui.h include/playSound.h
 	@mkdir -p obj
+	$(CC) $(CFLAGS) -c $< -o $@
+obj/frontend/pc/font.o: src/frontend/pc/font.c include/frontend/pc/font.h
+	@mkdir -p obj/frontend/pc
+	$(CC) $(CFLAGS) -c $< -o $@
+obj/frontend/pc/pc_ui.o: src/frontend/pc/pc_ui.c include/frontend/pc/pc_ui.h include/game.h
+	@mkdir -p obj/frontend/pc
 	$(CC) $(CFLAGS) -c $< -o $@
 endif
 
@@ -65,20 +80,6 @@ obj/playSound.o: src/playSound.c include/playSound.h
 
 obj/score.o: src/score.c include/score.h
 	@mkdir -p obj
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# PC specific files
-obj/frontend/pc/pc_ui.o: src/frontend/pc/pc_ui.c include/frontend/pc/pc_ui.h include/game.h
-	@mkdir -p obj/frontend/pc
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# RASPBERRY specific files
-obj/frontend/raspberry/pi_ui.o: src/frontend/raspberry/pi_ui.c include/frontend/raspberry/pi_ui.h include/frontend/raspberry/disdrv.h include/frontend/raspberry/joydrv.h include/game.h include/entity.h
-	@mkdir -p obj/frontend/raspberry
-	$(CC) $(CFLAGS) -c $< -o $@
-
-obj/frontend/raspberry/font.o: src/frontend/raspberry/font.c include/frontend/raspberry/font.h
-	@mkdir -p obj/frontend/raspberry
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Clean: remove all object and dependency files (except libAudioSDL2.o)
