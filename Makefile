@@ -6,7 +6,7 @@ USER := $(shell whoami)
 HOST := $(shell hostname)
 
 # Flags
-CFLAGS = -Wall -MMD -MP -Iinclude -Iinclude/frontend
+CFLAGS = -Wall -Iinclude -Iinclude/frontend
 
 # Platform-specific config
 ifeq ($(USER)_$(HOST),pi_raspberrypi)
@@ -25,7 +25,7 @@ CFLAGS += $(FRONTEND_INC)
 
 # Source files (exclude libAudioSDL2.c if exists in raspberry)
 COMMON_SRC := $(wildcard src/*.c)
-FRONTEND_SRC := $(filter-out src/frontend/raspberry/libAudioSDL2.c, $(wildcard $(FRONTEND_DIR)/*.c))
+FRONTEND_SRC := $(wildcard $(FRONTEND_DIR)/*.c)
 SRC := $(COMMON_SRC) $(FRONTEND_SRC)
 
 # Object files
@@ -58,15 +58,7 @@ obj/frontend/pc/%.o: src/frontend/pc/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Dummy rule to avoid trying to compile precompiled .o
-obj/frontend/raspberry/libAudioSDL2.o:
-	@echo "Using precompiled obj/frontend/raspberry/libAudioSDL2.o"
-
 # Clean: remove all object and dependency files (except libAudioSDL2.o)
 clean:
 	rm -f $(filter-out obj/frontend/raspberry/libAudioSDL2.o, $(wildcard obj/**/*.o))
-	rm -f $(wildcard obj/**/*.d)
 	rm -f space_invaders
-
-# Include auto-generated dependency files
--include $(OBJ:.o=.d)

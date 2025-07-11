@@ -33,7 +33,7 @@ const bool BARRIER_SHAPE[BARRIER_ROWS][BARRIER_COLUMNS] = {
 };
 #else
 const bool BARRIER_SHAPE[BARRIER_ROWS][BARRIER_COLUMNS] = {
-    {1,1},
+    {1,1,1}
 };
 #endif
 

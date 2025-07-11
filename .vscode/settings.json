@@ -4,6 +4,7 @@
         "pc_ui.h": "c",
         "allegro_primitives.h": "c",
         "time.h": "c",
-        "pi_ui.h": "c"
+        "pi_ui.h": "c",
+        "joydrv.h": "c"
     }
 }
