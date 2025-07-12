@@ -146,6 +146,8 @@ static int menu_game(bool resumeLastGame)
     printf("Initializing game...\n");
     bool running = true;
     game_init(ENEMIES_ROW,ENEMIES_COLUMN, resumeLastGame);
+    if (game_update(input))//si es una partida ya perdida
+        game_init(ENEMIES_ROW,ENEMIES_COLUMN,false);
     long long lastTime = getTimeMillis();
     long long currentTime;
     int state=GAME;
@@ -163,9 +165,14 @@ static int menu_game(bool resumeLastGame)
                     //printf ("%lld\n",currentTime-lastTime);
                     lastTime = currentTime;
                     disp_clear();
+                    int i;
                 //printf(" ,%d,%d,%d\n", input.direction, input.shot, input.pause);
-                    if(game_update(input)!=RUNNING)
+                    if((i=game_update(input))!=0)//si perdes
+                    {
                         running = false;
+                        state=MENU;
+                        printf("Game over!\n");
+                    }
                     pi_ui_render();
                     disp_update();
                 }

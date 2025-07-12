@@ -317,7 +317,7 @@ int game_update(input_t player)
     if(enemiesMovement > 0.1f)
     {
         playSound_play((game.enemiesHands) ? SOUND_FAST1 : SOUND_FAST2);
-        printf("Enemies hands: %d\n", game.enemiesHands);
+       // printf("Enemies hands: %d\n", game.enemiesHands);
         enemiesMovement = 0;
         game.enemiesHands = !game.enemiesHands;
     }

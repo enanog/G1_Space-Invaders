@@ -157,7 +157,7 @@ void playSound_stop(GameSoundEvent event)
 {
     // // Simple-SDL2-Audio no permite detener un único sonido específico,
     // // así que usamos pauseAudio() para pausar el dispositivo entero.
-    pauseAudio();
+   // pauseAudio();
 }
 
 void playSound_shutdown(void) 
