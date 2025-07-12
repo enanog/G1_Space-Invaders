@@ -174,12 +174,14 @@ static int menu_game(bool resumeLastGame)
                     disp_clear();
                     int i;
                 //printf(" ,%d,%d,%d\n", input.direction, input.shot, input.pause);
-                    if((i=game_update(input))!=0)//si perdes
+                if((i=game_update(input))!=RUNNING)//si perdes
                     {
                         running = false;
                         state=MENU;
                         printf("Game over!\n");
                         disp_write_scroll_string("GAME OVER");
+                        printf("estado: %d",state);
+                        break;
                     }
                     pi_ui_render();
                     disp_update();
@@ -616,6 +618,7 @@ static void disp_write_scroll_string(const char *msg)
         disp_update();
         if (scroll != final_scroll)
             usleep(200000); // 200ms between frames
+        printf("sali de aca\n");
     }
 }
 

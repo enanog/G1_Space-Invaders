@@ -268,9 +268,9 @@ int game_update(input_t player)
         }
 
         long long currentTime = getTimeMillis();
+        game_level_up();
         if(currentTime - lastTimeLevelUp > 3000)
         {
-            game_level_up();
             lastTimeLevelUp = currentTime;
             firstTimeLevelUp = true;
             game.lastTimeUpdated = currentTime;
