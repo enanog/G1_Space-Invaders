@@ -101,11 +101,17 @@ void game_create_enemy_map(int enemiesRow, int enemiesColumn)
 	float start_y = ENEMY_TOP_OFFSET;
 	int row, col;
 
-	for (row = 0; row < enemiesRow; row++) 
+	for (row = 0; row < ENEMIES_ROW_MAX; row++) 
 	{
-		for ( col = 0; col < enemiesColumn; col++) 
+		for (col = 0; col < ENEMIES_COLUMNS_MAX; col++) 
 		{
-
+            if(row >= enemiesRow || col >= enemiesColumn)
+            {
+                game.enemies[row][col].bullet.active = false;
+                game.enemies[row][col].alive = false;
+                continue;
+            }
+            
 			float x = start_x + col * (ENEMY_WIDTH + ENEMY_H_SPACING);
 			float y = start_y + row * (ENEMY_HEIGHT + ENEMY_V_SPACING);
 			game.enemies[row][col].hitbox.start.x = x;

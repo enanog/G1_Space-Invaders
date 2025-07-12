@@ -12,12 +12,14 @@ CFLAGS = -Wall -Iinclude -Iinclude/frontend
 ifeq ($(USER)_$(HOST),pi_raspberrypi)
     FRONTEND_DIR := src/frontend/raspberry
     FRONTEND_INC := -Iinclude/frontend/raspberry
+	SDL2_LIBS   := -lSDL2
     ALLEGRO_LIBS :=
     CFLAGS += -DRASPBERRY
 else
     FRONTEND_DIR := src/frontend/pc
     FRONTEND_INC := -Iinclude/frontend/pc
-    ALLEGRO_LIBS = -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives -lallegro_audio -lallegro_acodec
+    ALLEGRO_LIBS := -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives -lallegro_audio -lallegro_acodec
+	SDL2_LIBS   :=
 endif
 
 # Add frontend includes to flags
@@ -33,7 +35,7 @@ OBJ := $(patsubst src/%, obj/%, $(SRC:.c=.o))
 
 # Manually add precompiled .o if on Raspberry
 ifeq ($(USER)_$(HOST),pi_raspberrypi)
-   # OBJ += obj/frontend/raspberry/libAudioSDL2.o
+   OBJ += obj/frontend/raspberry/libAudioSDL2.o
    OBJ += obj/frontend/raspberry/joydrv.o 
    OBJ += obj/frontend/raspberry/disdrv.o
 endif
@@ -43,7 +45,7 @@ all: space_invaders
 
 # Link final executable
 space_invaders: $(OBJ)
-	$(CC) -o $@ $^ $(ALLEGRO_LIBS)
+	$(CC) -o $@ $^ $(ALLEGRO_LIBS) $(SDL2_LIBS)
 
 # RASPBERRY specific files
 ifeq ($(USER)_$(HOST),pi_raspberrypi)
