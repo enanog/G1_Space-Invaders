@@ -42,6 +42,8 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol);
 static char keyboard_input(void);
 static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *background);
 static hitbox_t clipHitbox(hitbox_t hb, float margin_x, float margin_y, float inner_w, float inner_h);
+static void showGameOver(void);
+static bool isHighScore(int score, score_t topScores[], int count);
 
 bool allegro_init(void) 
 {
@@ -104,6 +106,11 @@ void gameLoop(void)
                 state = gameRender(STATE_RESUME_GAME, DONT_MATTER, DONT_MATTER);
                 break;
 
+            case STATE_GAME_OVER:
+                showGameOver();
+                state = STATE_MENU;
+                break;
+            
             case STATE_SCOREBOARD:
                 break;
 
@@ -434,7 +441,7 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 			{
 				printf("GAME OVER\n");
 				running = false;
-                state = STATE_MENU;
+                state = STATE_GAME_OVER;
                 break;
 			}
 
@@ -616,6 +623,107 @@ void allegro_shutdown(void)
 	{
 		al_destroy_display(display);
 	}
+}
+
+static bool isHighScore(int score, score_t topScores[], int count) 
+{
+    if (count < 10) 
+        return true;
+    return score > topScores[count - 1].score;
+}
+
+static void showGameOver(void)
+{
+    score_t topScores[10];
+    int count = getTopScore(topScores, 10); // cargar top 10
+    
+    bool highscore = isHighScore(getScore(), topScores, count);
+    
+    char name[15] = "";
+    int name_pos = 0;
+
+    ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
+    al_register_event_source(queue, al_get_keyboard_event_source());
+
+    bool done = false;
+    ALLEGRO_EVENT ev;
+
+    while (!done) {
+        al_draw_scaled_bitmap(background, 0, 0, al_get_bitmap_width(background), al_get_bitmap_height(background),
+                                  0, 0, al_get_display_width(display), al_get_display_height(display), 0);
+
+
+        // Título
+        al_draw_text(font, al_map_rgb(255, 255, 255),
+                     al_get_display_width(display)/2,
+                     al_get_display_height(display) * 0.1f,
+                     ALLEGRO_ALIGN_CENTER, "GAME OVER");
+
+        // Puntaje
+        char scoreText[64];
+        snprintf(scoreText, sizeof(scoreText), "Your score: %d", getScore());
+        al_draw_text(font, al_map_rgb(255, 255, 0),
+                     al_get_display_width(display)/2,
+                     al_get_display_height(display) * 0.2f,
+                     ALLEGRO_ALIGN_CENTER, scoreText);
+
+        // TOP 10
+        al_draw_text(font, al_map_rgb(255, 255, 255),
+                     al_get_display_width(display)/2,
+                     al_get_display_height(display) * 0.3f,
+                     ALLEGRO_ALIGN_CENTER, "Top Scores:");
+
+        for (int i = 0; i < count; ++i) {
+            char buffer[64];
+            snprintf(buffer, sizeof(buffer), "%d. %-10s - %d", i + 1, topScores[i].name, topScores[i].score);
+            al_draw_text(font, al_map_rgb(255, 255, 255),
+                         al_get_display_width(display)/2,
+                         al_get_display_height(display) * (0.35f + i * 0.05f),
+                         ALLEGRO_ALIGN_CENTER, buffer);
+        }
+
+        // Si entra en top
+        if (highscore) {
+            al_draw_text(font, al_map_rgb(0, 255, 0),
+                         al_get_display_width(display)/2,
+                         al_get_display_height(display) * 0.85f,
+                         ALLEGRO_ALIGN_CENTER, "New High Score! Enter your name:");
+
+            al_draw_text(font, al_map_rgb(255, 255, 255),
+                         al_get_display_width(display)/2,
+                         al_get_display_height(display) * 0.9f,
+                         ALLEGRO_ALIGN_CENTER, name);
+        } else {
+            al_draw_text(font, al_map_rgb(255, 0, 0),
+                         al_get_display_width(display)/2,
+                         al_get_display_height(display) * 0.85f,
+                         ALLEGRO_ALIGN_CENTER, "Press ENTER to return to menu");
+        }
+
+        al_flip_display();
+
+        al_wait_for_event(queue, &ev);
+
+        if (ev.type == ALLEGRO_EVENT_KEY_CHAR && name_pos < 14) {
+            if (ev.keyboard.unichar >= 32 && ev.keyboard.unichar <= 126) {
+                name[name_pos++] = ev.keyboard.unichar;
+                name[name_pos] = '\0';
+            } else if (ev.keyboard.keycode == ALLEGRO_KEY_BACKSPACE && name_pos > 0) {
+                name[--name_pos] = '\0';
+            }
+        }
+
+        if (ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_ENTER) {
+            if (!highscore || (highscore && name_pos > 0)) {
+                if (highscore)
+                    topScoreUpdate(getScore(), name); // Agregás el nuevo score
+
+                done = true;
+            }
+        }
+    }
+
+    al_destroy_event_queue(queue);
 }
 
 static hitbox_t clipHitbox(hitbox_t hb, float margin_x, float margin_y, float inner_w, float inner_h)

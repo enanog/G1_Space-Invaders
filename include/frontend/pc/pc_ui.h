@@ -29,6 +29,7 @@ typedef enum {
     STATE_CREDITS,
     STATE_EXIT,
     STATE_PAUSE,
+    STATE_GAME_OVER
 } gameState_t;
 
 void gameLoop(void);
