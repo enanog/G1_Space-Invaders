@@ -182,6 +182,7 @@ int game_update(input_t player)
     {
         game.lastTimeUpdated = getTimeMillis();
         //playSound_stop(SOUND_UFO_LOW);
+        printf("pausado");
         saveGameState();
         if(player.exit)
         {
@@ -377,6 +378,10 @@ void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MA
 int getPlayerLives(void)
 {
     return game.player.lives;
+}
+int getLevel(void)
+{
+    return game.level;
 }
 
 void enemyBulletShot(int row, int col)

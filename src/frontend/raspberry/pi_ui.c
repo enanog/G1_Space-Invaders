@@ -6,6 +6,7 @@
 #include "font.h"
 #include <unistd.h>
 #include "score.h"
+#include "game.h"
 
 static input_t joy_get_input(void);
 static void draw_player(void);
@@ -29,7 +30,11 @@ static int debounce_joystick_switch(void) ;
 static void show_top3(void);
 static void disp_write_string_top(const char *str);
 static void disp_write_digit(char digit,dcoord_t cords);
-void disp_write_long_number_center(int number,char const *str);
+static void disp_write_long_number_center(int number,char const *str);
+static void disp_write_scroll_string(const char *msg);
+
+static void show_lives(int lives);
+static void level_up(int level);
 
 static void show_16x16_enemy(void);
 static const uint16_t invader_sprite[16] = {
@@ -151,6 +156,8 @@ static int menu_game(bool resumeLastGame)
     long long lastTime = getTimeMillis();
     long long currentTime;
     int state=GAME;
+    int level=getLevel();
+    int lives=getPlayerLives();
     while (running)
     {
         switch(state)
@@ -172,6 +179,7 @@ static int menu_game(bool resumeLastGame)
                         running = false;
                         state=MENU;
                         printf("Game over!\n");
+                        disp_write_scroll_string("GAME OVER");
                     }
                     pi_ui_render();
                     disp_update();
@@ -183,9 +191,25 @@ static int menu_game(bool resumeLastGame)
                     state=PAUSED;
                    //  printf("Entre pausa\n");
                 }
+                if (level!=getLevel()||lives!=getPlayerLives())
+                {
+                    state=PAUSED;
+                }
             break;
             case PAUSED:
-            if ((state=game_paused(&input))==RESUME)
+            
+            if (level!=getLevel()||lives!=getPlayerLives())
+            {
+                level=getLevel();
+                level_up(level);
+                lives=getPlayerLives();
+                show_lives(lives);
+                state=GAME;
+                lastTime=getTimeMillis();
+                input_t aux={0,0,1,0};
+                game_update(aux);
+            }
+            else if ((state=game_paused(&input))==RESUME)
                 {
                     //for (int i=0;i<100000000;i++);
                     state=GAME;
@@ -193,7 +217,6 @@ static int menu_game(bool resumeLastGame)
                     input_t aux={0,0,1,0};
                     game_update(aux);
                    // printf("Sali pausa\n");
-            
                 }
             else
             {
@@ -516,7 +539,7 @@ static void disp_write_digit(char digit, dcoord_t coord)
         }
     }
 }
-void disp_write_long_number_center(int number, const char *str)
+static void disp_write_long_number_center(int number, const char *str)
 {
     if (number < 0) number = -number;
 
@@ -565,3 +588,42 @@ void disp_write_long_number_center(int number, const char *str)
     }
 }
 
+static void disp_write_scroll_string(const char *msg)
+{
+    int len = 0;
+    while (msg[len] != '\0') len++;
+    int total_width = len * (FONT_COLS + 1) - 1;
+    int start_x = DISP_MAX_X - FONT_COLS;
+    int final_scroll = total_width + DISP_CANT_X_DOTS;
+    int scroll, i;
+
+    for (scroll = 0; scroll <= final_scroll; scroll++)
+    {
+        disp_clear();
+        int x = start_x - scroll;
+        dcoord_t coord = { .x = x, .y = 6 }; // y=6 for vertical centering
+
+        for (i = 0; i < len; i++)
+        {
+            if (msg[i] != ' ')
+            {
+                if (coord.x >= 0 && coord.x <= DISP_CANT_X_DOTS - FONT_COLS)
+                    disp_write_char(msg[i], coord);
+            }
+            coord.x += FONT_COLS + 1;
+        }
+
+        disp_update();
+        if (scroll != final_scroll)
+            usleep(200000); // 200ms between frames
+    }
+}
+
+static void level_up(int level)
+{
+    disp_write_long_number_center(level,"LVL");
+}
+static void show_lives(int lives)
+{
+    disp_write_long_number_center(lives,"LIV");
+}
