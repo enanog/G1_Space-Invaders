@@ -36,6 +36,8 @@ static void disp_write_scroll_string(const char *msg);
 static void show_lives(int lives);
 static void level_up(int level);
 
+void get_name(char *name_out);
+
 static void show_16x16_enemy(void);
 static const uint16_t invader_sprite[16] = {
     0x07E0,
@@ -80,8 +82,10 @@ void pi_ui_menu(void)
 {
     int state=MENU, nextState=START, running=true;
     joyinfo_t joyInfo;
-    //show_16x16_enemy();
-    
+    show_16x16_enemy();
+    char nameOfPlayer[4];
+    get_name(nameOfPlayer);
+    printf("%s\n",nameOfPlayer);
     while(running)
     {
         switch (state)
@@ -490,9 +494,8 @@ static void show_16x16_enemy(void)
         }
     }
     disp_update();
-    usleep(3000000);
+    while(!debounce_joystick_switch());
     disp_clear();
-    disp_update();
 }
 
 static void show_top3(void)
@@ -617,7 +620,7 @@ static void disp_write_scroll_string(const char *msg)
 
         disp_update();
         if (scroll != final_scroll)
-            usleep(200000); // 200ms between frames
+            usleep(100000); // 200ms between frames
         printf("sali de aca\n");
     }
 }
@@ -629,4 +632,52 @@ static void level_up(int level)
 static void show_lives(int lives)
 {
     disp_write_long_number_center(lives,"LIV");
+}
+void get_name(char *name_out) 
+{
+    const char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    int letter_idx = 0;
+    int pos = 0;
+    int len = 26;
+    joyinfo_t joyInfo;
+
+    while (pos < 3) {
+        disp_clear();
+
+        // Mostrar letras ya seleccionadas a la izquierda
+        dcoord_t cords = {1, 6};
+        for (int i = 0; i < pos; i++) {
+            disp_write_char(name_out[i], cords);
+            cords.x += FONT_COLS + 1;
+        }
+
+        // Mostrar la letra seleccionada en la posición actual
+        char letra[2] = {alphabet[letter_idx], '\0'};
+        disp_write_char(letra[0], cords);
+
+        disp_update();
+
+        // Esperar movimiento o selección
+        int moved = 0;
+        long long last_move = getTimeMillis();
+        while (!moved) {
+            joyInfo = joy_read();
+            long long now = getTimeMillis();
+            if (joyInfo.y > 40 && (now - last_move > 80)) { // abajo
+                letter_idx = (letter_idx + 1) % len;
+                last_move = now;
+                moved = 1;
+            } else if (joyInfo.y < -40 && (now - last_move > 80)) { // arriba
+                letter_idx = (letter_idx - 1 + len) % len;
+                last_move = now;
+                moved = 1;
+            } else if (debounce_joystick_switch()) { // Seleccionar letra
+                name_out[pos++] = alphabet[letter_idx];
+                letter_idx = 0; // volver a la A para la siguiente letra
+                moved = 1;
+            }
+            usleep(10000); // 10ms para evitar busy wait
+        }
+    }
+    name_out[3] = '\0';
 }
