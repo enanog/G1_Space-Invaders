@@ -123,11 +123,11 @@ void playSound_restart(GameSoundEvent event)
 static Audio * sounds[SOUND_COUNT];
 
 bool playSound_init(void)
-{
+{/*
      // Inicia el subsistema de audio
      if (initAudio() != READY)
      {
-         fprintf(stderr, "Error: Audio initialization failed\n");
+         printf("Error: Audio initialization failed\n");
          return false;
      }
 
@@ -137,20 +137,20 @@ bool playSound_init(void)
          sounds[i] = createAudio(sound_filenames[i], 0, 100);
          if (!sounds[i])
          {
-             fprintf(stderr, "Error: Failed to load sound: %s\n", sound_filenames[i]);
+             printf("Error: Failed to load sound: %s\n", sound_filenames[i]);
              return false;
          }
      }
-
+*/
      return 0;
 }
 
 void playSound_play(GameSoundEvent event) 
-{
+{/*
     if (event >= 0 && event < SOUND_COUNT)
     {
-         playSoundFromMemory(sounds[event], sounds[event]->volume);
-	}
+         //playSoundFromMemory(sounds[event], sounds[event]->volume);
+	}*/
 }
 
 void playSound_stop(GameSoundEvent event)
@@ -161,13 +161,13 @@ void playSound_stop(GameSoundEvent event)
 }
 
 void playSound_shutdown(void) 
-{
+{/*
 	for (int i = 0; i < SOUND_COUNT; i++)
     {
             freeAudio(sounds[i]);
             sounds[i] = NULL;
     }
-    endAudio();
+    endAudio();*/
 }
 
 void playSound_restart(GameSoundEvent event)
