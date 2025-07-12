@@ -67,10 +67,10 @@ else
 obj/main.o:src/main.c include/frontend/pc/pc_ui.h include/playSound.h 
 	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
-obj/frontend/pc/font.o: src/frontend/pc/font.c include/frontend/pc/font.h include/config.h include/game.h
+obj/frontend/pc/enemyFont.o: src/frontend/pc/enemyFont.c include/frontend/pc/enemyFont.h include/config.h include/game.h
 	@mkdir -p obj/frontend/pc
 	$(CC) $(CFLAGS) -c $< -o $@
-obj/frontend/pc/pc_ui.o: src/frontend/pc/pc_ui.c include/frontend/pc/pc_ui.h include/game.h include/config.h include/entity.h include/playSound.h
+obj/frontend/pc/pc_ui.o: src/frontend/pc/pc_ui.c include/frontend/pc/enemyFont.h include/game.h include/config.h include/entity.h include/playSound.h include/frontend/pc/enemyFont.h
 	@mkdir -p obj/frontend/pc
 	$(CC) $(CFLAGS) -c $< -o $@
 obj/playSound.o: src/playSound.c include/playSound.h

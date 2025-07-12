@@ -18,21 +18,32 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define ENEMIES_ROW_MAX                     10
+#define ENEMIES_COLUMNS_MAX                 20
+#define PLAYER_LIVES                        3
+#define INITIAL_SHOOTING_INTERVAL           2000
+#define MIN_ENEMY_SHOOTING_INTERVAL         500
+#define ENEMY_SHOOTING_INTERVAL_DECREMENT   50
+#define MOTHERSHIP_SCORE                    100
+#define MOTHERSHIP_TRIGGER_SHOTS            5
+#define MAX_PLAYER_LIVES                    5
+
 #ifndef RASPBERRY
 #define OFFSET 			        50
 #define SCREEN_H                900
-#define SCREEN_W 		        (SCREEN_H*16.0f/9.0f)
+#define ASPECT_RATIO            (16.0f / 9.0f)
+#define SCREEN_W 		        (SCREEN_H*ASPECT_RATIO)
 #define ENEMY_DESCENT_STEP      (1.0f/SCREEN_H)*OFFSET
 
-#define PLAYER_WIDTH	        0.06f
 #define PLAYER_HEIGHT	        0.08f
+#define PLAYER_WIDTH	        (PLAYER_HEIGHT / ASPECT_RATIO)
 #define PLAYER_SPEED	        0.0002f
-#define PLAYER_BOTTOM_OFFSET    0.85f
+#define PLAYER_BOTTOM_OFFSET    0.9f
 #define PLAYER_BULLET_SPEED	    0.0015f
 
 #define ENEMY_TOP_OFFSET        0.2f
-#define ENEMY_WIDTH             (0.6f / ENEMIES_COLUMNS_MAX)
 #define ENEMY_HEIGHT            (0.6f / ENEMIES_ROW_MAX)
+#define ENEMY_WIDTH             (0.95f / ENEMIES_COLUMNS_MAX)
 #define ENEMY_H_SPACING         (ENEMY_WIDTH * 1.5f)
 #define ENEMY_V_SPACING         (ENEMY_HEIGHT)
 #define ENEMY_SPEED             0.0001f
@@ -43,15 +54,15 @@
 #define BULLET_WIDTH 	        0.01f
 #define BULLET_HEIGHT	        0.05f
 
-#define MOTHERSHIP_WIDTH        0.115f
 #define MOTHERSHIP_HEIGHT       0.18f
+#define MOTHERSHIP_WIDTH        0.17f
 #define MOTHERSHIP_TOP_OFFSET   0.05f
 #define MOTHERSHIP_SPEED        0.00015f
 
-#define BARRIER_WIDTH           (0.3f / BARRIER_QUANTITY_MAX)
-#define BARRIER_HEIGHT          (0.3f / BARRIER_QUANTITY_MAX)
-#define BARRIER_BOTTOM_OFFSET   0.15f
 #define BARRIER_QUANTITY_MAX    4
+#define BARRIER_HEIGHT          (0.5f / BARRIER_QUANTITY_MAX)
+#define BARRIER_WIDTH           (0.3f / BARRIER_QUANTITY_MAX)
+#define BARRIER_BOTTOM_OFFSET   0.2f
 #define BARRIER_SPACING         (BARRIER_WIDTH * 2.0f)
 #define BARRIER_ROWS	        3
 #define BARRIER_COLUMNS         5
@@ -89,16 +100,5 @@
 #define MOTHERSHIP_TOP_OFFSET   0.0f
 #define MOTHERSHIP_SPEED        0.00045f
 #endif
-
-#define ENEMIES_ROW_MAX                     10
-#define ENEMIES_COLUMNS_MAX                 20
-#define PLAYER_LIVES                        3
-#define INITIAL_SHOOTING_INTERVAL           2000
-#define MIN_ENEMY_SHOOTING_INTERVAL         500
-#define ENEMY_SHOOTING_INTERVAL_DECREMENT   50
-#define MOTHERSHIP_SCORE                    100
-#define MOTHERSHIP_TRIGGER_SHOTS            5
-#define MAX_PLAYER_LIVES                    5
-
 
 #endif // CONFIG_H

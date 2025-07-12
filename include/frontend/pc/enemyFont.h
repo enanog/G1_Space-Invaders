@@ -1,5 +1,5 @@
 /* ---------------------------------------------------
- * font.h
+ * enemyFont.h
  * ---------------------------------------------------
  * GRUPO 1:
  * 	CASTRO, Tomás
@@ -15,8 +15,8 @@
  * fecha: 15/07/2025
  * ---------------------------------------------------*/
 
-#ifndef FONT_H
-#define FONT_H
+#ifndef ENEMYFONT_H_
+#define ENEMYFONT_H_
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
 #include <allegro5/allegro.h>
@@ -33,4 +33,4 @@ void draw_player_died(hitbox_t player, ALLEGRO_DISPLAY *display);
 void draw_bullet(hitbox_t bullet, ALLEGRO_DISPLAY *display);
 void draw_explosion(hitbox_t explosion, ALLEGRO_DISPLAY *display);
 
-#endif // FONT_H
+#endif // ENEMYFONT_H_

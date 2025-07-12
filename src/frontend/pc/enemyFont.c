@@ -15,7 +15,7 @@
  * fecha: 15/07/2025
  * ---------------------------------------------------*/
 
-#include "font.h"
+#include "enemyFont.h"
 #include <stdio.h>
 
 ALLEGRO_FONT *font_enemy = NULL;

@@ -28,7 +28,7 @@
 #include "entity.h"
 #include "pc_ui.h"
 #include "score.h"
-#include "font.h"
+#include "enemyFont.h"
 
 #define DONT_MATTER -1
 
@@ -62,7 +62,7 @@ bool allegro_init(void)
 		return false;
 	}
 
-    font = al_create_builtin_font();
+    font = al_load_ttf_font("assets/fonts/space-invaders-full-version.otf", 0.03f *al_get_display_height(display), 0);
     if (!font) {
         return false;
     }
@@ -624,7 +624,6 @@ static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *backgroun
 
     return STATE_RESUME_GAME;
 }
-
 
 void allegro_shutdown(void) 
 {
