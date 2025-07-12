@@ -34,7 +34,6 @@
 
 static ALLEGRO_DISPLAY *display = NULL;
 ALLEGRO_FONT *font = NULL;
-ALLEGRO_FONT *font_enemies = NULL;
 ALLEGRO_BITMAP *background = NULL;
 
 static gameState_t menuShow(ALLEGRO_DISPLAY *display);
@@ -66,8 +65,6 @@ bool allegro_init(void)
     if (!font) {
         return false;
     }
-
-    initFonts(display);
 
 	return true;
 }
@@ -347,12 +344,6 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 	int row, col;
 	bool fullscreen = false;
 
-	// Definir márgenes relativos
-	float margin_x = al_get_display_width(display) * 0.08f; // 8% horizontal
-	float margin_y = al_get_display_height(display) * 0.10f; // 10% vertical
-	float inner_w = al_get_display_width(display) - 3 * margin_x;
-	float inner_h = al_get_display_height(display) - 2 * margin_y;
-
 	while(running)
 	{	
 		ALLEGRO_EVENT event;
@@ -428,6 +419,11 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 			al_resize_display(display, SCREEN_W, SCREEN_H);
 		}
 
+        float margin_x = al_get_display_width(display) * 0.08f; // 8% horizontal
+        float margin_y = al_get_display_height(display) * 0.10f; // 10% vertical
+        float inner_w = al_get_display_width(display) - 3 * margin_x;
+        float inner_h = al_get_display_height(display) - 2 * margin_y;
+
 		if(redraw && al_is_event_queue_empty(queue))
 		{
 			al_draw_scaled_bitmap(background, 0, 0, al_get_bitmap_width(background), al_get_bitmap_height(background),
@@ -442,16 +438,10 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
                 break;
 			}
 
-            int lives;
-            for(lives = 0; lives < getPlayerLives(); lives++)
-            {
-                if(lives < 3)
-                {
-
-                    
-                }
-            }
-
+            draw_hearts(getPlayerLives(), display);
+            
+            draw_player_score(display, getScore());
+            
             al_set_clipping_rectangle(margin_x, margin_y, inner_w, inner_h);
 			
 			for(row = 0; row < ENEMIES_ROW_MAX; row++)
@@ -495,7 +485,8 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 			}
 
 			bullet_t bullet = getPlayerBulletinfo();
-			if (bullet.active) {
+			if (bullet.active) 
+            {
                 hitbox_t bulletHitbox = clipHitbox(bullet.hitbox, margin_x, margin_y, inner_w, inner_h);
                 draw_bullet(bulletHitbox, display);
 				al_draw_rectangle(bulletHitbox.start.x, bulletHitbox.start.y, bulletHitbox.end.x, bulletHitbox.end.y, al_map_rgb(255, 255, 0), 2.0f);
@@ -530,19 +521,6 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 	al_destroy_timer(timer);
 	al_destroy_event_queue(queue);
 	return state;
-}
-
-static hitbox_t clipHitbox(hitbox_t hb, float margin_x, float margin_y, float inner_w, float inner_h)
-{
-    hitbox_t result;
-
-    result.start.x = margin_x + hb.start.x * inner_w;
-    result.start.y = margin_y + hb.start.y * inner_h;
-
-    result.end.x   = margin_x + hb.end.x * inner_w;
-    result.end.y   = margin_y + hb.end.y * inner_h;
-
-    return result;
 }
 
 static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *background)
@@ -640,3 +618,15 @@ void allegro_shutdown(void)
 	}
 }
 
+static hitbox_t clipHitbox(hitbox_t hb, float margin_x, float margin_y, float inner_w, float inner_h)
+{
+    hitbox_t result;
+
+    result.start.x = margin_x + hb.start.x * inner_w;
+    result.start.y = margin_y + hb.start.y * inner_h;
+
+    result.end.x   = margin_x + hb.end.x * inner_w;
+    result.end.y   = margin_y + hb.end.y * inner_h;
+
+    return result;
+}

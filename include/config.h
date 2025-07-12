@@ -61,7 +61,7 @@
 
 #define BARRIER_QUANTITY_MAX    4
 #define BARRIER_HEIGHT          (0.5f / BARRIER_QUANTITY_MAX)
-#define BARRIER_WIDTH           (0.3f / BARRIER_QUANTITY_MAX)
+#define BARRIER_WIDTH           (0.4f / BARRIER_QUANTITY_MAX)
 #define BARRIER_BOTTOM_OFFSET   0.2f
 #define BARRIER_SPACING         (BARRIER_WIDTH * 2.0f)
 #define BARRIER_ROWS	        3

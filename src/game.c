@@ -265,12 +265,13 @@ int game_update(input_t player)
         {
             lastTimeLevelUp = getTimeMillis();
             firstTimeLevelUp = false;
+            game.level++;
         }
 
         long long currentTime = getTimeMillis();
-        game_level_up();
         if(currentTime - lastTimeLevelUp > 3000)
         {
+            game_level_up();
             lastTimeLevelUp = currentTime;
             firstTimeLevelUp = true;
             game.lastTimeUpdated = currentTime;
@@ -340,7 +341,6 @@ int game_update(input_t player)
 
 void game_level_up()
 {
-    game.level++;
     if(game.player.lives < MAX_PLAYER_LIVES)
     {
         game.player.lives++;
@@ -373,6 +373,11 @@ void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MA
             matEnemy[row][col] = game.enemies[row][col].bullet;
         }
     }
+}
+
+int getScore(void)
+{
+    return game.score;
 }
 
 int getPlayerLives(void)

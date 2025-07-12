@@ -25,9 +25,9 @@
 #include "game.h"
 #include <stdbool.h>
 
-void initFonts(ALLEGRO_DISPLAY *display);
 void draw_title(float x, float y, ALLEGRO_DISPLAY *display);
-void draw_heart(float x, float y, ALLEGRO_DISPLAY *display);
+void draw_hearts(int lives, ALLEGRO_DISPLAY *display);
+void draw_player_score(ALLEGRO_DISPLAY *display, int score);
 void draw_invaders(hitbox_t enemy, int row, ALLEGRO_DISPLAY *display);
 void draw_player(hitbox_t player, ALLEGRO_DISPLAY *display);
 void draw_mothership(hitbox_t mothership, ALLEGRO_DISPLAY *display);
