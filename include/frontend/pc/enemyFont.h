@@ -26,6 +26,8 @@
 #include <stdbool.h>
 
 void initFonts(ALLEGRO_DISPLAY *display);
+void draw_title(float x, float y, ALLEGRO_DISPLAY *display);
+void draw_heart(float x, float y, ALLEGRO_DISPLAY *display);
 void draw_invaders(hitbox_t enemy, int row, ALLEGRO_DISPLAY *display);
 void draw_player(hitbox_t player, ALLEGRO_DISPLAY *display);
 void draw_mothership(hitbox_t mothership, ALLEGRO_DISPLAY *display);

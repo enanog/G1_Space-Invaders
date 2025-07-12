@@ -84,6 +84,7 @@ int getLevel(void);
 int getEnemyTier(int row);
 
 bool getEnemiesHands(void);
+int getPlayerLives(void);
 
 hitbox_t getPlayerPosition(void);
 hitbox_t getEnemyPosition(int row, int column);

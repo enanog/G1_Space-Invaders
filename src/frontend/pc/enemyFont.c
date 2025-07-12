@@ -21,6 +21,7 @@
 ALLEGRO_FONT *font_enemy = NULL;
 ALLEGRO_FONT *font_player = NULL;
 ALLEGRO_FONT *font_mothership = NULL;
+ALLEGRO_FONT *font_title = NULL;
 
 const char TIER_1_HANDS_UP[]    = "\x46";
 const char TIER_1_HANDS_DOWN[]  = "\x47"; 
@@ -33,6 +34,8 @@ const char PLAYER_DIED[]        = "\x58";
 const char MOTHERSHIP[]         = "\x56";
 const char BULLET[]             = "\x59";
 const char ESPLOSION[]          = "\x5A";
+const char TITLE[]              = "\x2E";
+const char HEART[]              = "\x7C";
 
 
 void initFonts(ALLEGRO_DISPLAY *display)
@@ -50,6 +53,21 @@ void initFonts(ALLEGRO_DISPLAY *display)
     {
         fprintf(stderr, "Failed to load font_mothership\n");
     }
+    font_title = al_load_ttf_font("assets/fonts/invaders.ttf", 0.2*al_get_display_height(display), 0);
+    if (!font_mothership) 
+    {
+        fprintf(stderr, "Failed to load font_mothership\n");
+    }
+}
+
+void draw_heart(float x, float y, ALLEGRO_DISPLAY *display)
+{
+    al_draw_text(font_title, al_map_rgb(255, 255, 255),x, y, ALLEGRO_ALIGN_CENTER, TITLE);
+}
+
+void draw_title(float x, float y, ALLEGRO_DISPLAY *display)
+{
+    al_draw_text(font_title, al_map_rgb(255, 255, 255),x, y, ALLEGRO_ALIGN_CENTER, TITLE);
 }
 
 void draw_invaders(hitbox_t enemy, int row, ALLEGRO_DISPLAY *display)

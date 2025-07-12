@@ -365,13 +365,18 @@ void game_level_up()
 void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX])
 {
     int row, col;
-	for(row = 0; row < game.enemiesRow; row++)
+	for(row = 0; row < ENEMIES_ROW_MAX; row++)
 	{
-		for(col = 0; col < game.enemiesColumn; col++)
+		for(col = 0; col < ENEMIES_COLUMNS_MAX; col++)
 		{
             matEnemy[row][col] = game.enemies[row][col].bullet;
         }
     }
+}
+
+int getPlayerLives(void)
+{
+    return game.player.lives;
 }
 
 void enemyBulletShot(int row, int col)

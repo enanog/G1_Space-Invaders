@@ -62,7 +62,7 @@ bool allegro_init(void)
 		return false;
 	}
 
-    font = al_load_ttf_font("assets/fonts/space-invaders-full-version.otf", 0.03f *al_get_display_height(display), 0);
+    font = al_load_ttf_font("assets/fonts/space-invaders-full-version.otf", 0.02f *al_get_display_height(display), 0);
     if (!font) {
         return false;
     }
@@ -176,7 +176,7 @@ static void mainMenu(void)
         }
         if (show_press_enter) 
         {
-            al_draw_text(font, al_map_rgb(255, 255, 255), al_get_display_width(display) / 2, al_get_display_height(display) * 0.8, ALLEGRO_ALIGN_CENTER, "Press ENTER to start");
+            al_draw_text(font, al_map_rgb(255, 255, 255), al_get_display_width(display) * 0.45f, al_get_display_height(display) * 0.8, ALLEGRO_ALIGN_CENTER, "Press ENTER to start");
         }
 
         al_flip_display();
@@ -196,9 +196,11 @@ static void mainMenu(void)
             }
         }
     }
+
     al_destroy_event_queue(queue);
     al_destroy_bitmap(background);
 }
+
 
 static gameState_t menuShow(ALLEGRO_DISPLAY *display) 
 {
@@ -216,31 +218,27 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
     ALLEGRO_EVENT event;
 
     // Screen dimensions
-    int screen_w = al_get_display_width(display);
+    int screen_w = al_get_display_width(display)*0.92;
     int screen_h = al_get_display_height(display);
 
-    // Font size dependent metrics
     float font_size = al_get_font_line_height(font);
 
-    // Positions and sizes scaled to screen
-    float title_y = screen_h * 0.1f;
-    float menu_start_y = screen_h * 0.4f;
-    float option_spacing = screen_h * 0.05f;
+    float title_y = screen_h * 0.07f;
+    float option_spacing = screen_h * 0.08f;
+    float menu_start_y = screen_h * 0.55f;
 
-    float rect_width = screen_w * 0.25f;
-    float rect_height = screen_h * 0.2f;
+    // Puntajes rect: tamaño relativo y centrado arriba del menú
+    float rect_width = screen_w * 0.3f;
+    float rect_height = font_size * 1.2f + topCount * (font_size * 1.1f) + font_size * 0.8f;
     float rect_x = (screen_w - rect_width) / 2;
-    float rect_y = (title_y + menu_start_y) / 2 - rect_height / 2;
+    float rect_y = menu_start_y - rect_height - screen_h * 0.05f;
 
     while (choosing) 
     {
         al_draw_scaled_bitmap(background, 0, 0, al_get_bitmap_width(background), al_get_bitmap_height(background),
                               0, 0, al_get_display_width(display), al_get_display_height(display), 0);
         // Draw title
-        al_draw_text(font, al_map_rgb(255, 0, 0),
-                     screen_w / 2,
-                     title_y,
-                     ALLEGRO_ALIGN_CENTER, "SPACE INVADERS");
+        draw_title(screen_w / 2, title_y, display);
 
         // Draw score box background
         al_draw_filled_rectangle(rect_x, rect_y, rect_x + rect_width, rect_y + rect_height,
@@ -260,12 +258,12 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
         for (int i = 0; i < 5 && i < topCount; ++i) 
         {
             char buffer[64];
-            snprintf(buffer, sizeof(buffer), "%d. %s - %d", i + 1, topScores[i].name, topScores[i].score);
+            snprintf(buffer, sizeof(buffer), "%d. %-15s\t%d", i + 1, topScores[i].name, topScores[i].score);
 
             al_draw_text(font, al_map_rgb(255, 255, 255),
                          rect_x + screen_w * 0.01f,
                          rect_y + font_size * 1.2f + i * (font_size * 1.1f),
-                         ALLEGRO_ALIGN_LEFT, buffer);
+                         0, buffer);
         }
 
         // Draw menu options
@@ -319,7 +317,6 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
 
     return STATE_MENU;
 }
-
 
 static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 {
@@ -444,6 +441,16 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
                 state = STATE_MENU;
                 break;
 			}
+
+            int lives;
+            for(lives = 0; lives < getPlayerLives(); lives++)
+            {
+                if(lives < 3)
+                {
+
+                    
+                }
+            }
 
             al_set_clipping_rectangle(margin_x, margin_y, inner_w, inner_h);
 			
