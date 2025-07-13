@@ -173,6 +173,7 @@ void pi_ui_menu(void) {
 
             case EXIT:
             	disp_clear();
+            	disp_update();
                 running = false;
                 break;
         }

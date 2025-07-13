@@ -40,6 +40,7 @@ int main(void)
     gameLoop();
     allegro_shutdown();
     #else
+    playSound_init();
 	pi_ui_init();
 	pi_ui_menu();
 	#endif

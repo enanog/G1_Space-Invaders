@@ -13,6 +13,7 @@ ifeq ($(USER)_$(HOST),pi_raspberrypi)
     FRONTEND_DIR := src/frontend/raspberry
     FRONTEND_INC := -Iinclude/frontend/raspberry
 	SDL2_LIBS   := -lSDL2
+	PTHREAD_LIBS   := -lpthread
     ALLEGRO_LIBS :=
     CFLAGS += -DRASPBERRY
 else
@@ -45,7 +46,7 @@ all: space_invaders
 
 # Link final executable
 space_invaders: $(OBJ)
-	$(CC) -o $@ $^ $(ALLEGRO_LIBS) $(SDL2_LIBS)
+	$(CC) -o $@ $^ $(ALLEGRO_LIBS) $(SDL2_LIBS) $(PTHREAD_LIBS)
 
 # RASPBERRY specific files
 ifeq ($(USER)_$(HOST),pi_raspberrypi)
