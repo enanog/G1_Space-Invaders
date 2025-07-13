@@ -499,22 +499,104 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 			    al_draw_rectangle(hitboxPlayer.start.x, hitboxPlayer.start.y, hitboxPlayer.end.x, hitboxPlayer.end.y, al_map_rgb(0,255,0), 2.0f);
             draw_player(hitboxPlayer, display);
 
-			for (int barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++) 
-			{
-				for (row = 0; row < BARRIER_ROWS; row++)
-				{
-					for (col = 0; col < BARRIER_COLUMNS; col++) 
-					{
-						if (!getBarrierIsAlive(barrier, row, col)) 
-                        {
-                            continue;
-                        }
-						hitbox_t hitboxBarrier = clipHitbox(getBarrierPosition(barrier, row, col), margin_x, margin_y, inner_w, inner_h);
-                        //if(f3_pressed && b_pressed)
-                        al_draw_rectangle(hitboxBarrier.start.x, hitboxBarrier.start.y, hitboxBarrier.end.x, hitboxBarrier.end.y, al_map_rgb(0,255,0), 2.0f);
-					}
-				}
-			}
+        for (int barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++) 
+        {
+            // First pass: Draw all barrier segments as one connected shape
+            for (row = 0; row < BARRIER_ROWS; row++)
+            {
+                for (col = 0; col < BARRIER_COLUMNS; col++) 
+                {
+                    if (!getBarrierIsAlive(barrier, row, col)) 
+                        continue;
+                    
+                    hitbox_t hb = clipHitbox(getBarrierPosition(barrier, row, col), margin_x, margin_y, inner_w, inner_h);
+                    
+                    // Base glow (purple)
+                    al_draw_filled_rectangle(
+                        hb.start.x, hb.start.y,
+                        hb.end.x, hb.end.y,
+                        al_map_rgba(120, 0, 180, 80)
+                    );
+                }
+            }
+
+            // Second pass: Draw the energy grid
+            for (row = 0; row < BARRIER_ROWS; row++)
+            {
+                for (col = 0; col < BARRIER_COLUMNS; col++) 
+                {
+                    if (!getBarrierIsAlive(barrier, row, col)) 
+                        continue;
+                    
+                    hitbox_t hb = clipHitbox(getBarrierPosition(barrier, row, col), margin_x, margin_y, inner_w, inner_h);
+                    float center_x = (hb.start.x + hb.end.x) / 2;
+                    float center_y = (hb.start.y + hb.end.y) / 2;
+                    
+                    // Energy grid pattern
+                    float time = al_get_time();
+                    float pulse = 0.5f + 0.5f * sin(time * 3.0f);
+                    
+                    // Horizontal energy lines
+                    for (int i = 0; i < 3; i++) {
+                        float y = hb.start.y + (i+1) * (hb.end.y - hb.start.y)/4;
+                        al_draw_line(
+                            hb.start.x, y,
+                            hb.end.x, y,
+                            al_map_rgba_f(0.3f, 0.8f, 1.0f, 0.3f + pulse*0.3f),
+                            1.5f
+                        );
+                    }
+                    
+                    // Connect to neighboring barriers
+                    if (col < BARRIER_COLUMNS-1 && getBarrierIsAlive(barrier, row, col+1)) {
+                        hitbox_t right_hb = clipHitbox(getBarrierPosition(barrier, row, col+1), margin_x, margin_y, inner_w, inner_h);
+                        al_draw_line(
+                            hb.end.x, center_y,
+                            right_hb.start.x, center_y,
+                            al_map_rgba(100, 200, 255, 100),
+                            2.0f
+                        );
+                    }
+                    
+                    if (row < BARRIER_ROWS-1 && getBarrierIsAlive(barrier, row+1, col)) {
+                        hitbox_t bottom_hb = clipHitbox(getBarrierPosition(barrier, row+1, col), margin_x, margin_y, inner_w, inner_h);
+                        al_draw_line(
+                            center_x, hb.end.y,
+                            center_x, bottom_hb.start.y,
+                            al_map_rgba(100, 200, 255, 100),
+                            2.0f
+                        );
+                    }
+                }
+            }
+
+            // Third pass: Add pulsating core
+            for (row = 0; row < BARRIER_ROWS; row++)
+            {
+                for (col = 0; col < BARRIER_COLUMNS; col++) 
+                {
+                    if (!getBarrierIsAlive(barrier, row, col)) 
+                        continue;
+                    
+                    hitbox_t hb = clipHitbox(getBarrierPosition(barrier, row, col), margin_x, margin_y, inner_w, inner_h);
+                    float time = al_get_time();
+                    float pulse_size = 0.8f + 0.2f * sin(time * 4.0f);
+                    float size = (hb.end.x - hb.start.x) * 0.3f * pulse_size;
+                    if(f3_pressed && b_pressed)
+                        al_draw_rectangle(hb.start.x, hb.start.y, hb.end.x, hb.end.y, al_map_rgb(0,255,0), 2.0f);
+                    
+                    // Pulsating core
+                    al_draw_filled_circle(
+                        (hb.start.x + hb.end.x)/2,
+                        (hb.start.y + hb.end.y)/2,
+                        size,
+                        al_map_rgba_f(0.4f, 0.9f, 1.0f, 0.4f)
+                    );
+                }
+            }
+
+            
+        }
 
 			bullet_t bullet = getPlayerBulletinfo();
 			if (bullet.active) 
