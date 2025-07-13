@@ -1,0 +1,50 @@
+SPACE INVADERS: THE REVENGE
+
+A production by:
+THE MOST AWESOME TEAM IN THE GALAXY
+(or at least in this classroom)
+
+CODING MASTERS:
+CASTRO, Tomas Francisco, Legajo: 66905
+FRIGERIO, Dylan Ezequiel, Legajo: 66436
+VALENZUELA, Agustin Tomas, Legajo: 66248
+YAGGI, Lucca Nehuen, Legajo: 66923
+
+OUR FEARLESS LEADERS:
+MAGLIOLA, Nicolas
+JACOBY, Daniel
+VACATELLO, Pablo
+
+SPECIAL THANKS TO:
+Coffee
+Sleep deprivation
+Stack Overflow
+Last-minute coding sessions
+
+FUN FACT:
+This game contains 99.9% fewer bugs
+than actual space invaders!
+(The remaining 0.1% are features)
+
+MEMORY LEAK STATUS:
+We only leaked about 42 bytes this time!
+That's like half a string!
+Probably...
+
+SEGMENTATION FAULT COUNT:
+During development: &#$%&#$%&#$%
+In final version: 0 (we hope)
+
+DISCLAIMER:
+No aliens were harmed in the making
+of this game (that we know of)
+Same can't be said for our sanity
+
+PRESS ANY KEY TO RETURN
+OR WAIT WHILE WE
+FREE() THE MEMORY
+
+
+THE END
+
+OR IS IT?

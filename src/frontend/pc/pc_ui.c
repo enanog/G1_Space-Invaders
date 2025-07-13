@@ -29,12 +29,13 @@
 #include "pc_ui.h"
 #include "score.h"
 #include "enemyFont.h"
-
+#include <math.h>
 
 ALLEGRO_DISPLAY *display = NULL;
 ALLEGRO_FONT *font = NULL;
 ALLEGRO_BITMAP *background = NULL;
 
+static char** readCreditsFile(int* line_count);
 static gameState_t menuShow(ALLEGRO_DISPLAY *display);
 static gameState_t mainMenu(void);
 static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol);
@@ -44,6 +45,7 @@ static hitbox_t clipHitbox(hitbox_t hb, float margin_x, float margin_y, float in
 static gameState_t showGameOver(void);
 static bool isHighScore(int score, score_t topScores[], int count);
 static gameState_t showScoreboard(void);
+static gameState_t showCredits(void);
 
 bool allegro_init(void) 
 {
@@ -126,6 +128,7 @@ void gameLoop(void)
                 break;
 
             case STATE_CREDITS:
+                state = showCredits();
                 break;  
             
             case STATE_PAUSE:
@@ -647,9 +650,8 @@ static gameState_t showScoreboard(void)
     ALLEGRO_EVENT event;
 
     // Load arrow bitmap
-    ALLEGRO_BITMAP *arrow_left = al_load_bitmap("assets/images/arrow_left.png");
-    ALLEGRO_BITMAP *arrow_right = al_load_bitmap("assets/images/arrow_right.png");
-    if (!arrow_left || !arrow_right) {
+    ALLEGRO_BITMAP *arrow = al_load_bitmap("assets/images/arrows.png");
+    if (!arrow) {
         fprintf(stderr, "Failed to load arrow images\n");
         // Handle error - maybe use text arrows instead
     }
@@ -729,26 +731,46 @@ static gameState_t showScoreboard(void)
                          ALLEGRO_ALIGN_RIGHT, score);
         }
 
-        // Draw navigation arrows if needed
-        if (current_page > 0 && arrow_left) {
-            al_draw_scaled_bitmap(arrow_left, 
-                                 0, 0, al_get_bitmap_width(arrow_left), al_get_bitmap_height(arrow_left),
-                                 left_arrow_hb.start.x * al_get_display_width(display),
-                                 left_arrow_hb.start.y * al_get_display_height(display),
-                                 (left_arrow_hb.end.x - left_arrow_hb.start.x) * al_get_display_width(display),
-                                 (left_arrow_hb.end.y - left_arrow_hb.start.y) * al_get_display_height(display),
-                                 0);
+        // Tamaños comunes para las flechas
+        float display_w = al_get_display_width(display);
+        float display_h = al_get_display_height(display);
+
+        // Draw left arrow (flipped horizontally)
+        if (current_page > 0 && arrow) {
+            float arrow_w = (left_arrow_hb.end.x - left_arrow_hb.start.x) * display_w;
+            float arrow_h = (left_arrow_hb.end.y - left_arrow_hb.start.y) * display_h;
+            float draw_x = left_arrow_hb.start.x * display_w;
+            float draw_y = left_arrow_hb.start.y * display_h;
+
+            al_draw_scaled_bitmap(
+                arrow,
+                0, 0,
+                al_get_bitmap_width(arrow), al_get_bitmap_height(arrow),
+                draw_x + arrow_w, draw_y,  // Position adjusted by arrow_w
+                -arrow_w,  // Negative width flips horizontally
+                arrow_h,
+                0
+            );
         }
 
-        if (current_page < total_pages - 1 && arrow_right) {
-            al_draw_scaled_bitmap(arrow_right, 
-                                 0, 0, al_get_bitmap_width(arrow_right), al_get_bitmap_height(arrow_right),
-                                 right_arrow_hb.start.x * al_get_display_width(display),
-                                 right_arrow_hb.start.y * al_get_display_height(display),
-                                 (right_arrow_hb.end.x - right_arrow_hb.start.x) * al_get_display_width(display),
-                                 (right_arrow_hb.end.y - right_arrow_hb.start.y) * al_get_display_height(display),
-                                 0);
+        // Draw right arrow (normal)
+        if (current_page < total_pages - 1 && arrow) {
+            float arrow_w = (right_arrow_hb.end.x - right_arrow_hb.start.x) * display_w;
+            float arrow_h = (right_arrow_hb.end.y - right_arrow_hb.start.y) * display_h;
+            float draw_x = right_arrow_hb.start.x * display_w;
+            float draw_y = right_arrow_hb.start.y * display_h;
+
+            al_draw_scaled_bitmap(
+                arrow,
+                0, 0,
+                al_get_bitmap_width(arrow), al_get_bitmap_height(arrow),
+                draw_x, draw_y,
+                arrow_w,
+                arrow_h,
+                0
+            );
         }
+
 
         // Draw return instruction
         al_draw_text(font, al_map_rgb(200, 200, 200),
@@ -807,8 +829,189 @@ static gameState_t showScoreboard(void)
 
     // Cleanup
     al_destroy_event_queue(queue);
-    if (arrow_left) al_destroy_bitmap(arrow_left);
-    if (arrow_right) al_destroy_bitmap(arrow_right);
+    if (arrow) al_destroy_bitmap(arrow);
+
+    return STATE_MENU;
+}
+
+static char** readCreditsFile(int* line_count) {
+    FILE* file = fopen("data/credits.txt", "r");
+    if (!file) {
+        fprintf(stderr, "Failed to load credits file\n");
+        return NULL;
+    }
+
+    // First count the lines
+    int count = 0;
+    char ch;
+    while (!feof(file)) {
+        ch = fgetc(file);
+        if (ch == '\n') count++;
+    }
+    count++; // For last line without newline
+    rewind(file);
+
+    // Allocate memory
+    char** lines = (char**)malloc(count * sizeof(char*));
+    if (!lines) {
+        fclose(file);
+        return NULL;
+    }
+
+    // Read each line
+    char buffer[256];
+    int i = 0;
+    while (fgets(buffer, sizeof(buffer), file) && i < count) {
+        // Remove trailing newline
+        buffer[strcspn(buffer, "\n")] = 0;
+        
+        lines[i] = strdup(buffer);
+        if (!lines[i]) {
+            // Cleanup if allocation fails
+            for (int j = 0; j < i; j++) free(lines[j]);
+            free(lines);
+            fclose(file);
+            return NULL;
+        }
+        i++;
+    }
+    *line_count = i;
+    fclose(file);
+    return lines;
+}
+static gameState_t showCredits(void)
+{
+    ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
+    al_register_event_source(queue, al_get_keyboard_event_source());
+    al_register_event_source(queue, al_get_display_event_source(display));
+
+    // Load credits from file
+    int credit_count = 0;
+    char** credits = readCreditsFile(&credit_count);
+    if (!credits) {
+        // Fallback to hardcoded credits if file fails
+        const char* fallback_credits[] = {
+            "CREDITS FILE MISSING!",
+            " ",
+            "This is awkward...",
+            "We seem to have misplaced our credits file",
+            " ",
+            "Please imagine something awesome here",
+            " ",
+            "PRESS ANY KEY TO RETURN",
+            NULL
+        };
+
+        // Convert to same format as file reading
+        credit_count = 0;
+        while (fallback_credits[credit_count]) credit_count++;
+
+        credits = (char**)malloc((credit_count+1) * sizeof(char*));
+        for (int i = 0; i < credit_count; i++) {
+            credits[i] = strdup(fallback_credits[i]);
+        }
+        credits[credit_count] = NULL;
+    }
+
+    // Load background
+    ALLEGRO_BITMAP *credits_bg = al_load_bitmap("assets/images/credits_bg.png");
+    if (!credits_bg) {
+        credits_bg = al_load_bitmap("assets/images/backgroundMenu.png");
+    }
+
+    float scroll_pos = al_get_display_height(display);
+    bool credits_done = false;
+    ALLEGRO_EVENT event;
+    ALLEGRO_TIMER *timer = al_create_timer(1.0 / 60.0);
+    al_register_event_source(queue, al_get_timer_event_source(timer));
+    al_start_timer(timer);
+
+    bool shown_segfault_joke = false;
+
+    while (!credits_done)
+    {
+        al_wait_for_event(queue, &event);
+
+        if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+            credits_done = true;
+            allegro_shutdown();
+            exit(0);
+        }
+        else if (event.type == ALLEGRO_EVENT_KEY_DOWN ||
+            event.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+            credits_done = true;
+            }
+            else if (event.type == ALLEGRO_EVENT_TIMER) {
+                scroll_pos -= 0.7f;
+
+                // Check for segfault joke position
+                if (!shown_segfault_joke && scroll_pos < -1500.0f) {
+                    for (int i = 0; i < credit_count; i++) {
+                        if (strstr(credits[i], "*segmentation fault*")) {
+                            playSound_play(SOUND_EXPLOSION);
+                            shown_segfault_joke = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (scroll_pos < -2500.0f) {
+                    credits_done = true;
+                }
+            }
+
+            // Drawing
+            if (credits_bg) {
+                al_draw_scaled_bitmap(credits_bg, 0, 0,
+                                      al_get_bitmap_width(credits_bg),
+                                      al_get_bitmap_height(credits_bg),
+                                      0, 0, al_get_display_width(display),
+                                      al_get_display_height(display), 0);
+            } else {
+                al_clear_to_color(al_map_rgb(0, 0, 0));
+            }
+
+            // Draw credits
+            float y = scroll_pos;
+            for (int i = 0; i < credit_count; i++) {
+                ALLEGRO_COLOR color = al_map_rgb(255, 255, 255);
+                int font_size = al_get_font_line_height(font);
+                float x = al_get_display_width(display) / 2;
+
+                // Apply special formatting
+                if (strstr(credits[i], "SPACE INVADERS")) {
+                    color = al_map_rgb(0, 255, 255);
+                    font_size *= 1.5;
+                }
+                else if (strstr(credits[i], "THE MOST AWESOME") ||
+                    strstr(credits[i], "FEARLESS LEADERS") ||
+                    strstr(credits[i], "SPECIAL THANKS") ||
+                    strstr(credits[i], "FUN FACT") ||
+                    strstr(credits[i], "DISCLAIMER") ||
+                    strstr(credits[i], "MEMORY LEAK") ||
+                    strstr(credits[i], "SEGMENTATION")) {
+                    color = al_map_rgb(255, 255, 0);
+                }
+                else if (strstr(credits[i], "PRESS ANY KEY") ||
+                    strstr(credits[i], "segmentation fault")) {
+                    color = al_map_rgb(255, 0, 0);
+                }
+                al_draw_text(font, color, x, y, ALLEGRO_ALIGN_CENTER, credits[i]);
+                y += font_size * 1.2;
+            }
+            al_flip_display();
+    }
+
+    // Cleanup
+    al_destroy_timer(timer);
+    al_destroy_event_queue(queue);
+    if (credits_bg) al_destroy_bitmap(credits_bg);
+
+    // Free credits lines
+    for (int i = 0; i < credit_count; i++) {
+        free(credits[i]);
+    }
+    free(credits);
 
     return STATE_MENU;
 }
@@ -830,8 +1033,8 @@ static bool isHighScore(int score, score_t topScores[], int count)
 
 static gameState_t showGameOver(void)
 {
-    score_t topScores[10];
-    int count = getTopScore(topScores, 10); // cargar top 10
+    score_t topScores[100];
+    int count = getTopScore(topScores, 100); // cargar top 10
     
     bool highscore = isHighScore(getScore(), topScores, count);
     
@@ -869,7 +1072,7 @@ static gameState_t showGameOver(void)
                      al_get_display_height(display) * 0.3f,
                      ALLEGRO_ALIGN_CENTER, "Top Scores:");
 
-        for (int i = 0; i < count; ++i) {
+        for (int i = 0; i < 10; ++i) {
             char buffer[64];
             snprintf(buffer, sizeof(buffer), "%d. %-15s - %d", i + 1, topScores[i].name, topScores[i].score);
             al_draw_text(font, al_map_rgb(255, 255, 255),

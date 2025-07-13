@@ -16,11 +16,13 @@ ifeq ($(USER)_$(HOST),pi_raspberrypi)
 	PTHREAD_LIBS   := -lpthread
     ALLEGRO_LIBS :=
     CFLAGS += -DRASPBERRY
+	MATH_LIBS    := 
 else
     FRONTEND_DIR := src/frontend/pc
     FRONTEND_INC := -Iinclude/frontend/pc
     ALLEGRO_LIBS := -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives -lallegro_audio -lallegro_acodec
 	SDL2_LIBS   :=
+	MATH_LIBS    := -lm
 endif
 
 # Add frontend includes to flags
@@ -46,17 +48,17 @@ all: space_invaders
 
 # Link final executable
 space_invaders: $(OBJ)
-	$(CC) -o $@ $^ $(ALLEGRO_LIBS) $(SDL2_LIBS) $(PTHREAD_LIBS)
+	$(CC) -o $@ $^ $(ALLEGRO_LIBS) $(SDL2_LIBS) $(PTHREAD_LIBS) $(MATH_LIBS)
 
 # RASPBERRY specific files
 ifeq ($(USER)_$(HOST),pi_raspberrypi)
-obj/main.o:src/main.c include/frontend/raspberry/pi_ui.h
+obj/main.o:src/main.c include/frontend/raspberry/pi_ui.h include/playSound.h
 	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
 obj/frontend/raspberry/font.o: src/frontend/raspberry/font.c include/frontend/raspberry/font.h
 	@mkdir -p obj/frontend/raspberry
 	$(CC) $(CFLAGS) -c $< -o $@
-obj/frontend/raspberry/pi_ui.o: src/frontend/raspberry/pi_ui.c include/frontend/raspberry/pi_ui.h include/frontend/raspberry/disdrv.h include/frontend/raspberry/joydrv.h include/game.h include/entity.h
+obj/frontend/raspberry/pi_ui.o: src/frontend/raspberry/pi_ui.c include/frontend/raspberry/pi_ui.h include/frontend/raspberry/disdrv.h include/frontend/raspberry/joydrv.h include/game.h include/entity.h include/playSound.h
 	@mkdir -p obj/frontend/raspberry
 	$(CC) $(CFLAGS) -c $< -o $@
 obj/playSound.o: src/playSound.c include/playSound.h include/frontend/raspberry/audio.h
