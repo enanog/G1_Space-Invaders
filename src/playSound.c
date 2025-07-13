@@ -276,28 +276,7 @@ void playSound_restart(GameSoundEvent event)
 
 void playSound_playMusic(GameMusicEvent track)
 {
-    if (track < 0 || track >= MUSIC_COUNT)
-        return;
 
-    // Si ya está sonando la misma música, no la reiniciamos
-    if (music_stream && current_music == track)
-        return;
-
-    // Si hay música sonando, la paramos
-    if (music_stream)
-        playSound_stopMusic();
-
-    music_stream = al_load_audio_stream(music_filenames[track], 4, 2048);
-    if (!music_stream)
-    {
-        fprintf(stderr, "Error: No se pudo cargar música %s\n", music_filenames[track]);
-        return;
-    }
-
-    current_music = track;
-    al_attach_audio_stream_to_mixer(music_stream, al_get_default_mixer());
-    al_set_audio_stream_playmode(music_stream, ALLEGRO_PLAYMODE_LOOP);
-    al_set_audio_stream_gain(music_stream, 1.0);
 }
 
 void playSound_stopMusic(void)

@@ -1,15 +1,17 @@
+playSound.h 400
+ARREGLA EL BUG 400
 hola 300
+playSound.c 300
 LUCCAYAGIISISI 280
 sdadadasdadada 280
 Dylan 250
 sodasdadadadad 130
 Alice 100
 prueba 100
-PRUEBA 100
-Bob 90
-Tomas 90
 Nq 351625948
 28774 32066
 ý 487173488
 32764 32765
 0 0
+0 0
+ 0
