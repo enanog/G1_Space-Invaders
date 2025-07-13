@@ -43,6 +43,7 @@ static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *backgroun
 static hitbox_t clipHitbox(hitbox_t hb, float margin_x, float margin_y, float inner_w, float inner_h);
 static gameState_t showGameOver(void);
 static bool isHighScore(int score, score_t topScores[], int count);
+static gameState_t showScoreboard(void);
 
 bool allegro_init(void) 
 {
@@ -100,7 +101,7 @@ void gameLoop(void)
             case STATE_NEW_GAME:
                 playSound_playMusic(GAME_MUSIC);
                 printf("Starting new game...\n");
-                state = gameRender(STATE_NEW_GAME, 1, 1);
+                state = gameRender(STATE_NEW_GAME, 3, 8);
                 break;
 
             case STATE_RESUME_GAME:
@@ -117,6 +118,7 @@ void gameLoop(void)
                 break;
             
             case STATE_SCOREBOARD:
+                state = showScoreboard();
                 break;
 
             case STATE_EXIT:
@@ -231,7 +233,7 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
 
     // Puntajes rect: tamaño relativo y centrado arriba del menú
     float rect_width = screen_w * 0.3f;
-    float rect_height = font_size * 1.2f + topCount * (font_size * 1.1f) + font_size * 0.8f;
+    float rect_height = font_size * 1.2f + 5 * (font_size * 1.1f) + font_size * 0.8f;
     float rect_x = (screen_w - rect_width) / 2;
     float rect_y = menu_start_y - rect_height - screen_h * 0.05f;
 
@@ -626,6 +628,189 @@ static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *backgroun
     }
 
     return state;
+}
+
+static gameState_t showScoreboard(void) 
+{
+    const int SCORES_PER_PAGE = 10;
+    const int MAX_SCORES = 100;
+    score_t scores[MAX_SCORES];
+    int total_scores = getTopScore(scores, MAX_SCORES);
+    int current_page = 0;
+    int total_pages = (total_scores + SCORES_PER_PAGE - 1) / SCORES_PER_PAGE;
+
+    ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
+    al_register_event_source(queue, al_get_keyboard_event_source());
+    al_register_event_source(queue, al_get_display_event_source(display));
+
+    bool viewing = true;
+    ALLEGRO_EVENT event;
+
+    // Load arrow bitmap
+    ALLEGRO_BITMAP *arrow_left = al_load_bitmap("assets/images/arrow_left.png");
+    ALLEGRO_BITMAP *arrow_right = al_load_bitmap("assets/images/arrow_right.png");
+    if (!arrow_left || !arrow_right) {
+        fprintf(stderr, "Failed to load arrow images\n");
+        // Handle error - maybe use text arrows instead
+    }
+
+    // Arrow hitboxes
+    hitbox_t left_arrow_hb = {
+        .start = {.x = 0.05f, .y = 0.85f},
+        .end = {.x = 0.10f, .y = 0.95f}
+    };
+    hitbox_t right_arrow_hb = {
+        .start = {.x = 0.90f, .y = 0.85f},
+        .end = {.x = 0.95f, .y = 0.95f}
+    };
+
+    while (viewing) 
+    {
+        al_draw_scaled_bitmap(background, 0, 0, al_get_bitmap_width(background), al_get_bitmap_height(background),
+                              0, 0, al_get_display_width(display), al_get_display_height(display), 0);
+
+        // Draw semi-transparent overlay
+        al_draw_filled_rectangle(0, 0, al_get_display_width(display), al_get_display_height(display),
+                                al_map_rgba(0, 0, 0, 200));
+
+        // Draw scoreboard background
+        float board_width = al_get_display_width(display) * 0.8f;
+        float board_height = al_get_display_height(display) * 0.7f;
+        float board_x = (al_get_display_width(display) - board_width) / 2;
+        float board_y = (al_get_display_height(display) - board_height) / 2;
+
+        al_draw_filled_rectangle(board_x, board_y, board_x + board_width, board_y + board_height,
+                                al_map_rgb(50, 50, 80));
+        al_draw_rectangle(board_x, board_y, board_x + board_width, board_y + board_height,
+                          al_map_rgb(255, 255, 255), 3);
+
+        // Draw title
+        al_draw_text(font, al_map_rgb(255, 255, 0),
+                     al_get_display_width(display) / 2,
+                     board_y + 20,
+                     ALLEGRO_ALIGN_CENTER, "TOP SCORES");
+
+        // Draw page info
+        char page_info[32];
+        snprintf(page_info, sizeof(page_info), "Page %d/%d", current_page + 1, total_pages);
+        al_draw_text(font, al_map_rgb(200, 200, 200),
+                     al_get_display_width(display) / 2,
+                     board_y + 60,
+                     ALLEGRO_ALIGN_CENTER, page_info);
+
+        // Draw scores for current page
+        int start_idx = current_page * SCORES_PER_PAGE;
+        int end_idx = start_idx + SCORES_PER_PAGE;
+        if (end_idx > total_scores) end_idx = total_scores;
+
+        for (int i = start_idx; i < end_idx; i++) {
+            float y_pos = board_y + 100 + (i - start_idx) * 40;
+            
+            // Rank
+            char rank[16];
+            snprintf(rank, sizeof(rank), "%d.", i + 1);
+            al_draw_text(font, al_map_rgb(255, 255, 255),
+                         board_x + 20,
+                         y_pos,
+                         ALLEGRO_ALIGN_LEFT, rank);
+
+            // Name
+            al_draw_text(font, al_map_rgb(255, 255, 255),
+                         board_x + 90,
+                         y_pos,
+                         ALLEGRO_ALIGN_LEFT, scores[i].name);
+
+            // Score
+            char score[16];
+            snprintf(score, sizeof(score), "%d", scores[i].score);
+            al_draw_text(font, al_map_rgb(255, 255, 255),
+                         board_x + board_width - 50,
+                         y_pos,
+                         ALLEGRO_ALIGN_RIGHT, score);
+        }
+
+        // Draw navigation arrows if needed
+        if (current_page > 0 && arrow_left) {
+            al_draw_scaled_bitmap(arrow_left, 
+                                 0, 0, al_get_bitmap_width(arrow_left), al_get_bitmap_height(arrow_left),
+                                 left_arrow_hb.start.x * al_get_display_width(display),
+                                 left_arrow_hb.start.y * al_get_display_height(display),
+                                 (left_arrow_hb.end.x - left_arrow_hb.start.x) * al_get_display_width(display),
+                                 (left_arrow_hb.end.y - left_arrow_hb.start.y) * al_get_display_height(display),
+                                 0);
+        }
+
+        if (current_page < total_pages - 1 && arrow_right) {
+            al_draw_scaled_bitmap(arrow_right, 
+                                 0, 0, al_get_bitmap_width(arrow_right), al_get_bitmap_height(arrow_right),
+                                 right_arrow_hb.start.x * al_get_display_width(display),
+                                 right_arrow_hb.start.y * al_get_display_height(display),
+                                 (right_arrow_hb.end.x - right_arrow_hb.start.x) * al_get_display_width(display),
+                                 (right_arrow_hb.end.y - right_arrow_hb.start.y) * al_get_display_height(display),
+                                 0);
+        }
+
+        // Draw return instruction
+        al_draw_text(font, al_map_rgb(200, 200, 200),
+                     al_get_display_width(display) / 2,
+                     al_get_display_height(display) * 0.95f,
+                     ALLEGRO_ALIGN_CENTER, "Press ESC to return to menu");
+
+        al_flip_display();
+
+        al_wait_for_event(queue, &event);
+
+        if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+            viewing = false;
+            allegro_shutdown();
+            exit(0);
+        }
+        else if (event.type == ALLEGRO_EVENT_KEY_DOWN) {
+            switch (event.keyboard.keycode) {
+                case ALLEGRO_KEY_ESCAPE:
+                    viewing = false;
+                    break;
+                case ALLEGRO_KEY_LEFT:
+                    if (current_page > 0) {
+                        current_page--;
+                        playSound_play(SOUND_MENU);
+                    }
+                    break;
+                case ALLEGRO_KEY_RIGHT:
+                    if (current_page < total_pages - 1) {
+                        current_page++;
+                        playSound_play(SOUND_MENU);
+                    }
+                    break;
+            }
+        }
+        else if (event.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN) {
+            float mouse_x = event.mouse.x / (float)al_get_display_width(display);
+            float mouse_y = event.mouse.y / (float)al_get_display_height(display);
+
+            // Check if left arrow was clicked
+            if (current_page > 0 && 
+                mouse_x >= left_arrow_hb.start.x && mouse_x <= left_arrow_hb.end.x &&
+                mouse_y >= left_arrow_hb.start.y && mouse_y <= left_arrow_hb.end.y) {
+                current_page--;
+                playSound_play(SOUND_MENU);
+            }
+            // Check if right arrow was clicked
+            else if (current_page < total_pages - 1 &&
+                     mouse_x >= right_arrow_hb.start.x && mouse_x <= right_arrow_hb.end.x &&
+                     mouse_y >= right_arrow_hb.start.y && mouse_y <= right_arrow_hb.end.y) {
+                current_page++;
+                playSound_play(SOUND_MENU);
+            }
+        }
+    }
+
+    // Cleanup
+    al_destroy_event_queue(queue);
+    if (arrow_left) al_destroy_bitmap(arrow_left);
+    if (arrow_right) al_destroy_bitmap(arrow_right);
+
+    return STATE_MENU;
 }
 
 void allegro_shutdown(void) 

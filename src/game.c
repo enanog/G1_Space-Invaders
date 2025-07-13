@@ -52,13 +52,10 @@ void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame)
     if(resumeLastGame)
     {
         loadGameState();
-        if(game.mothership.alive)
-        {
-            playSound_play(SOUND_UFO_LOW);
-        }
         long long currentTime = getTimeMillis();
         game.lastTimeUpdated = currentTime;
         game.lastTimeEnemyShoot = currentTime;
+        game.lastTimeMothershipGenerated = currentTime;
         return;
     }
 
@@ -581,7 +578,6 @@ static void mothershipGenerate(void)
 
         game.cantPlayerShots = 0;
         game.lastTimeMothershipGenerated = getTimeMillis();
-        playSound_play(SOUND_UFO_LOW);
     }
     else if(game.mothership.alive)
     {
@@ -591,15 +587,16 @@ static void mothershipGenerate(void)
 
 static void mothershipUpdate(float dt)
 {
+    long long currenTime = getTimeMillis();
     mothershipGenerate();
 
     if(!game.mothership.alive)
     { 
         return;
     }
-    if (game.prevState != game.state)
+    if (currenTime - game.lastTimeMothershipGenerated > 163)
     {
-        playSound_play(SOUND_UFO_LOW);
+        playSound_play(SOUND_UFO_HIGH);
     }
     
 
@@ -609,7 +606,7 @@ static void mothershipUpdate(float dt)
     if((game.mothership.hitbox.end.x < 0 && game.mothership.speed < 0) ||
        (game.mothership.hitbox.start.x > 1.0f && game.mothership.speed > 0))
     {
-        playSound_stop(SOUND_UFO_LOW);
+        playSound_stop(SOUND_UFO_HIGH);
         game.mothership.alive = false;
         return;
     }
@@ -617,7 +614,7 @@ static void mothershipUpdate(float dt)
     if(HITBOX_COLLISION(game.player.bullet.hitbox, game.mothership.hitbox))
     {
         game.score += MOTHERSHIP_SCORE;
-        playSound_stop(SOUND_UFO_LOW);
+        playSound_stop(SOUND_UFO_HIGH);
         playSound_play(SOUND_MOTHERSHIPDEATH);
         game.mothership.alive = false;
         game.player.bullet.active = false;
