@@ -594,9 +594,10 @@ static void mothershipUpdate(float dt)
     { 
         return;
     }
-    if (currenTime - game.lastTimeMothershipGenerated > 163)
+    if (currenTime - game.lastTimeMothershipGenerated >= 164)
     {
         playSound_play(SOUND_UFO_HIGH);
+        game.lastTimeMothershipGenerated = currenTime;
     }
     
 
