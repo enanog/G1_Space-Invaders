@@ -8,6 +8,7 @@
 #include "score.h"
 #include "game.h"
 #include <ctype.h>  // For toupper()
+#include "playSound.h"
 
 /* ==================== CONSTANTS AND DEFINITIONS ==================== */
 
@@ -30,7 +31,7 @@ enum {
 };
 
 enum {
-    PAUSED = 8,
+    PAUSED_FRONT = 8,
     GAME
 };
 
@@ -113,7 +114,7 @@ void pi_ui_menu(void) {
     // Initial screen - show enemy sprite
     show_invader_sprite();
     disp_clear();  // Clear after showing sprite
-
+    playSound_playMusic(INTRO_MUSIC);
     while (running) {
         joyinfo_t joyInfo = joy_read();
 
@@ -208,7 +209,7 @@ static int menu_game(bool resumeLastGame) {
                 handle_game_state(&input, &lastTime, &state, &running, &level, &lives);
                 break;
                 
-            case PAUSED:
+            case PAUSED_FRONT:
                 handle_pause_state(&input, &lastTime, &state, &running, &level, &lives);
                 break;
         }
@@ -244,10 +245,10 @@ static void handle_game_state(input_t *input, long long *lastTime, int *state,
     
     // Check for pause or state change
     if (input->pause) {
-        *state = PAUSED;
+        *state = PAUSED_FRONT;
     }
     else if (*level != getLevel() || *lives != getPlayerLives()) {
-        *state = PAUSED;
+        *state = PAUSED_FRONT;
     }
 }
 

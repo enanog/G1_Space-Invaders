@@ -240,7 +240,7 @@ void playSound_stop(GameSoundEvent event)
 {
     // // Simple-SDL2-Audio no permite detener un único sonido específico,
     // // así que usamos pauseAudio() para pausar el dispositivo entero.
-    pauseAudio();
+    //pauseAudio();
 }
 
 void playSound_shutdown(void) 
@@ -255,7 +255,7 @@ void playSound_restart(GameSoundEvent event)
 
 void playSound_playMusic(GameMusicEvent track)
 {
-
+	playMusic(music_filenames[track], SDL_MIX_MAXVOLUME);
 }
 
 void playSound_stopMusic(void)
@@ -265,12 +265,12 @@ void playSound_stopMusic(void)
 
 void playSound_pauseMusic(void)
 {
-
+	pauseAudio();
 }
 
 void playSound_resumeMusic(void)
 {
-
+	unpauseAudio();
 }
 
 void playSound_setMusicVolume(float volume)
