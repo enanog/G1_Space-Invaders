@@ -41,33 +41,54 @@ const bool BARRIER_SHAPE[BARRIER_ROWS][BARRIER_COLUMNS] =
 
 static game_t game;
 
-static void player_init(void);
-static void enemies_init(int enemiesRow, int enemiesColumn);
-static void update_player_position(input_t player, long long dt);
-static void shootEnemyBullet(int row, int col);
+
+
+
+static void playerPositionInit(void);
+static void playerInit(void);
+static void enemiesInit(int enemiesRow, int enemiesColumn);
+
+static void updatePlayerPosition(input_t player, long long dt);
+static bool updateEnemiesPosition(long long dt);
+
 static void shootRandomEnemyBullet(void);
-static void updateBarrier(void);
+static void shootEnemyBullet(int row, int col);
+
+static void updateBarriers(void);
+
 static bool collisionEnemyBullet(hitbox_t *hitbox);
 static bool collisionEnemyHitbox(hitbox_t *hitbox);
+
 static void mothershipGenerate(void);
 static void mothershipUpdate(float dt);
+
 static void saveGameState(void);
 static void loadGameState(void);
 
-static void player_init(void)
+static int getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
+
+
+
+
+
+static void playerPositionInit(void)
 {
 	// Initialize the player's position at the bottom center of the screen
 	game.player.hitbox.start.x = 0.5f - PLAYER_WIDTH / 2.0f;
 	game.player.hitbox.start.y = PLAYER_BOTTOM_OFFSET;
 	game.player.hitbox.end.x = 0.5f + PLAYER_WIDTH / 2.0f;
 	game.player.hitbox.end.y = PLAYER_BOTTOM_OFFSET + PLAYER_HEIGHT;
+}
 
+static void playerInit(void)
+{
+	playerPositionInit();
 	game.player.lives = INITIAL_PLAYER_LIVES;
 	game.player.bullet.active = false;
 	game.player.bullet.speed = PLAYER_BULLET_SPEED;
 }
 
-static void enemies_init(int enemiesRow, int enemiesColumn)
+static void enemiesInit(int enemiesRow, int enemiesColumn)
 {
 	game.cantPlayerShots = 0;
 	game.mothership.alive = false;
@@ -82,7 +103,7 @@ static void enemies_init(int enemiesRow, int enemiesColumn)
 	game_create_enemy_map(enemiesRow, enemiesColumn);
 }
 
-static void update_player_position(input_t player, long long dt)
+static void updatePlayerPosition(input_t player, long long dt)
 {
 	game.player.hitbox.start.x += player.direction * dt * PLAYER_SPEED;
 	game.player.hitbox.end.x += player.direction * dt * PLAYER_SPEED;
@@ -99,6 +120,69 @@ static void update_player_position(input_t player, long long dt)
 	}
 }
 
+static bool updateEnemiesPosition(long long dt)
+{
+	float dx = game.enemiesDirection * game.enemiesSpeed * dt;
+	int row, col;
+	int rightLimit;
+	int leftLimit;
+	bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
+
+	if(!getEnemyBitMap(matEnemy))
+	{
+		return 0;
+	}
+
+	for(row = 0, rightLimit = -1, leftLimit = game.enemiesColumn; row < game.enemiesRow; row++)
+	{
+		for(col = 0; col < game.enemiesColumn; col++)
+		{
+			if(matEnemy[row][col])
+			{
+				if(col > rightLimit)
+				{
+					rightLimit = col;
+				}
+				if(col < leftLimit)
+				{
+					leftLimit = col;
+				}
+			}
+		}
+	}
+
+	if((game.enemies[0][rightLimit].hitbox.end.x + dx) > 1.0f || (game.enemies[0][leftLimit].hitbox.start.x + dx) < 0.0f)
+	{
+		game.enemiesDirection *= -1;
+		game.enemiesSpeed += ENEMY_SPEED_INCREMENT;
+		//game.enemiesSpeed = ENEMY_SPEED + game.level * ENEMY_SPEED_INCREMENT;
+		if(game.enemiesSpeed > ENEMY_MAX_SPEED)
+		{
+			game.enemiesSpeed = ENEMY_MAX_SPEED;
+		}
+		for(row = 0; row < game.enemiesRow; row++)
+		{
+			for(col = 0; col < game.enemiesColumn; col++)
+			{
+				game.enemies[row][col].hitbox.start.y += ENEMY_DESCENT_STEP;
+				game.enemies[row][col].hitbox.end.y += ENEMY_DESCENT_STEP;
+			}
+		}
+		dx = game.enemiesDirection * game.enemiesSpeed * dt;
+	}
+
+	for(row = 0; row < game.enemiesRow; row++)
+	{
+		for(col = 0; col < game.enemiesColumn; col++)
+		{
+			game.enemies[row][col].hitbox.start.x += dx;
+			game.enemies[row][col].hitbox.end.x += dx;
+		}
+	}
+
+	return 1;
+}
+
 void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame)
 {
 	if(resumeLastGame)
@@ -111,8 +195,8 @@ void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame)
 		return;
 	}
 
-	player_init();
-	enemies_init(enemiesRow, enemiesColumn);
+	playerInit();
+	enemiesInit(enemiesRow, enemiesColumn);
 	game_create_barriers();
 	srand(time(NULL));
 
@@ -217,51 +301,17 @@ int game_update(input_t player)
 		return RUNNING;
 	}
 
-	bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
-	int row, col;
-	int rightLimit = -1;
-	int bottomLimit = -1;
-	int leftLimit = game.enemiesColumn;
 	long long dt = (getTimeMillis() - game.lastTimeUpdated);
+	static long long lastTimeLevelUp;
+	int row, col;
+	static bool firstTimeLevelUp = true;
 
-	update_player_position(player, dt);
-	getEnemyBitMap(matEnemy);
-
-	for(row = 0; row < game.enemiesRow; row++)
-	{
-		for(col = 0; col < game.enemiesColumn; col++)
-		{
-			if(matEnemy[row][col])
-			{
-				if(col > rightLimit)
-				{
-					rightLimit = col;
-				}
-				if(leftLimit > col)
-				{
-					leftLimit = col;
-				}
-				if(row > bottomLimit)
-				{
-					bottomLimit = row;
-				}
-			}
-		}
-	}
+	updatePlayerPosition(player, dt);
 
 	// Recorrio todo el for y no hay enemigos vivos
-	if(rightLimit == -1 && leftLimit == game.enemiesColumn && bottomLimit == -1)
+	if(!updateEnemiesPosition(dt))
 	{
-		static long long lastTimeLevelUp;
-		static bool firstTimeLevelUp = true;
-		// Reset player position and hitbox
-		hitbox_t playerInitialHitbox =
-		{
-			{0.5f - PLAYER_WIDTH/2.0f, PLAYER_BOTTOM_OFFSET},
-			{0.5f + PLAYER_WIDTH/2.0f, PLAYER_BOTTOM_OFFSET + PLAYER_HEIGHT}
-		};
-
-		game.player.hitbox = playerInitialHitbox;
+		playerPositionInit();
 		game.mothership.alive = false;
 
 		for(row = 0; row < game.enemiesRow; row++)
@@ -291,39 +341,6 @@ int game_update(input_t player)
 		return RUNNING; // No enemies left, game continues
 	}
 
-	float rightmostEnemyNextX = game.enemies[0][rightLimit].hitbox.end.x + game.enemiesDirection * dt * game.enemiesSpeed;
-	float leftmostEnemyNextX = game.enemies[0][leftLimit].hitbox.start.x + game.enemiesDirection * dt * game.enemiesSpeed;
-
-	if(rightmostEnemyNextX > 1 || leftmostEnemyNextX < 0)
-	{
-		game.enemiesDirection = (rightmostEnemyNextX > 1)? -1: 1;
-		game.enemiesSpeed += ENEMY_SPEED_INCREMENT;
-		if(ENEMY_SPEED + game.level * ENEMY_SPEED_INCREMENT > ENEMY_MAX_SPEED)
-		{
-			game.enemiesSpeed = ENEMY_MAX_SPEED;
-		}
-		else
-		{
-			game.enemiesSpeed = ENEMY_SPEED + game.level * ENEMY_SPEED_INCREMENT;
-		}
-		for(row = 0; row < game.enemiesRow; row++)
-		{
-			for(col = 0; col < game.enemiesColumn; col++)
-			{
-				game.enemies[row][col].hitbox.start.y += ENEMY_DESCENT_STEP;
-				game.enemies[row][col].hitbox.end.y += ENEMY_DESCENT_STEP;
-			}
-		}
-	}
-
-	for(row = 0; row < game.enemiesRow; row++)
-	{
-		for(col = 0; col < game.enemiesColumn; col++)
-		{
-			game.enemies[row][col].hitbox.start.x += game.enemiesDirection * dt *  game.enemiesSpeed;
-			game.enemies[row][col].hitbox.end.x += game.enemiesDirection * dt *  game.enemiesSpeed;
-		}
-	}
 	static float enemiesMovement = 0;
 	enemiesMovement += dt * game.enemiesSpeed;
 	if(enemiesMovement > 0.1f)
@@ -338,7 +355,7 @@ int game_update(input_t player)
 	update_player_bullet(player, dt);
 	update_enemy_bullet(dt);
 	mothershipUpdate(dt);
-	updateBarrier();
+	updateBarriers();
 
 	game.lastTimeUpdated = getTimeMillis();
 	game.state = game_over();
@@ -603,7 +620,7 @@ static void mothershipUpdate(float dt)
 	}
 }
 
-static void updateBarrier(void)
+static void updateBarriers(void)
 {
 	int elem, row, col;
 	for(elem = 0; elem < BARRIER_QUANTITY_MAX; elem++)
@@ -617,21 +634,25 @@ static void updateBarrier(void)
 					continue;
 				}
 
+				if(collisionEnemyHitbox(&game.barriers[elem].block[row][col].hitbox))
+				{
+					game.barriers[elem].block[row][col].lives = 0;
+					continue;
+				}
+
+				if(collisionEnemyBullet(&game.barriers[elem].block[row][col].hitbox))
+				{
+					game.barriers[elem].block[row][col].lives--;
+					if(!game.barriers[elem].block[row][col].lives)
+					{
+						continue;
+					}
+				}
+
 				if(HITBOX_COLLISION(game.player.bullet.hitbox, game.barriers[elem].block[row][col].hitbox))
 				{
 					game.barriers[elem].block[row][col].lives--;
 					game.player.bullet.active = false;
-					return;
-				}
-				else if(collisionEnemyBullet(&game.barriers[elem].block[row][col].hitbox))
-				{
-					game.barriers[elem].block[row][col].lives--;
-					return;
-				}
-				else if(collisionEnemyHitbox(&game.barriers[elem].block[row][col].hitbox))
-				{
-					game.barriers[elem].block[row][col].lives = 0;
-					return;
 				}
 			}
 		}
@@ -641,11 +662,11 @@ static void updateBarrier(void)
 static bool collisionEnemyBullet(hitbox_t *hitbox)
 {
 	int row, col;
-	for(row = 0; row < game.enemiesRow; row++)
+	for(row = game.enemiesRow - 1; row >= 0; row--)
 	{
 		for(col = 0; col < game.enemiesColumn; col++)
 		{
-			if(HITBOX_COLLISION(*hitbox, game.enemies[row][col].bullet.hitbox) && game.enemies[row][col].bullet.active)
+			if(game.enemies[row][col].bullet.active && HITBOX_COLLISION(*hitbox, game.enemies[row][col].bullet.hitbox))
 			{
 				game.enemies[row][col].bullet.active = false;
 				return 1;
@@ -658,11 +679,11 @@ static bool collisionEnemyBullet(hitbox_t *hitbox)
 static bool collisionEnemyHitbox(hitbox_t *hitbox)
 {
 	int row, col;
-	for(row = 0; row < game.enemiesRow; row++)
+	for(row = game.enemiesRow - 1; row >= 0; row--)
 	{
 		for(col = 0; col < game.enemiesColumn; col++)
 		{
-			if(HITBOX_COLLISION(*hitbox, game.enemies[row][col].hitbox) && game.enemies[row][col].alive)
+			if(game.enemies[row][col].alive && HITBOX_COLLISION(*hitbox, game.enemies[row][col].hitbox))
 			{
 				return 1;
 			}
@@ -673,10 +694,16 @@ static bool collisionEnemyHitbox(hitbox_t *hitbox)
 
 int game_over(void)
 {
-	int row, col, flag;
-	for(row = game.enemiesRow-1, flag = 0; row >= 0 && !flag; row--)
+	int row, col, gameContinues;
+
+	if(game.player.lives <= 0)
 	{
-		for(col = 0; col < game.enemiesColumn && !flag; col++)
+		return 1;
+	}
+
+	for(row = game.enemiesRow - 1, gameContinues = 0; row >= 0 && !gameContinues; row--)
+	{
+		for(col = 0; col < game.enemiesColumn && !gameContinues; col++)
 		{
 			if(game.enemies[row][col].alive == true)
 			{
@@ -684,14 +711,9 @@ int game_over(void)
 				{
 					return 1;   // Game Over
 				}
-				flag = 1;
+				gameContinues = 1;
 			}
 		}
-	}
-
-	if(game.player.lives == 0)
-	{
-		return 1;
 	}
 
 	return 0;
@@ -704,8 +726,7 @@ int game_over(void)
  */
 hitbox_t getPlayerPosition(void)
 {
-	hitbox_t hitbox = game.player.hitbox;
-	return hitbox;
+	return game.player.hitbox;
 }
 
 /**
@@ -764,17 +785,21 @@ bullet_t getPlayerBulletinfo(void)
 	return game.player.bullet;
 }
 
-void getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX])
+static int getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX])
 {
 	int row, col;
+	int ammountOfEnemiesAlive;
 
-	for(row = 0; row < game.enemiesRow; row++)
+	for(row = 0, ammountOfEnemiesAlive = 0; row < game.enemiesRow; row++)
 	{
 		for(col = 0; col < game.enemiesColumn; col++)
 		{
 			matEnemy[row][col] = game.enemies[row][col].alive;
+			ammountOfEnemiesAlive += matEnemy[row][col];
 		}
 	}
+
+	return ammountOfEnemiesAlive;
 }
 
 bool getEnemiesHands(void)
