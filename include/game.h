@@ -21,31 +21,12 @@
 #include "entity.h"
 #include "config.h"
 
-enum{RUNNING, GAME_OVER,QUIT};
-
-typedef struct 
+enum
 {
-	player_t player;
-	enemy_t enemies[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
-	barrier_t barriers[BARRIER_QUANTITY_MAX];
-	mothership_t mothership;
-	int score;
-	int level;
-	int state;
-	int enemiesRow;
-	int enemiesColumn;
-	float enemiesSpeed;
-	int enemiesDirection;
-	int barrirersQuantity;
-	int barriersRow;
-	int barriersColumn;
-	int enemyShotInterval;
-	int cantPlayerShots;
-	bool enemiesHands;
-	long long lastTimeEnemyShoot;
-	long long lastTimeUpdated;
-	long long lastTimeMothershipGenerated;
-} game_t;
+	RUNNING,
+	GAME_OVER,
+	QUIT
+};
 
 typedef struct
 {

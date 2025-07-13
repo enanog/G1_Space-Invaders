@@ -39,10 +39,31 @@ const bool BARRIER_SHAPE[BARRIER_ROWS][BARRIER_COLUMNS] =
 };
 #endif
 
+typedef struct
+{
+	player_t player;
+	enemy_t enemies[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
+	barrier_t barriers[BARRIER_QUANTITY_MAX];
+	mothership_t mothership;
+	int score;
+	int level;
+	int state;
+	int enemiesRow;
+	int enemiesColumn;
+	float enemiesSpeed;
+	int enemiesDirection;
+	int barrirersQuantity;
+	int barriersRow;
+	int barriersColumn;
+	int enemyShotInterval;
+	int cantPlayerShots;
+	bool enemiesHands;
+	long long lastTimeEnemyShoot;
+	long long lastTimeUpdated;
+	long long lastTimeMothershipGenerated;
+} game_t;
+
 static game_t game;
-
-
-
 
 static void playerPositionInit(void);
 static void playerInit(void);
@@ -69,8 +90,6 @@ static int getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
 
 
 
-
-
 static void playerPositionInit(void)
 {
 	// Initialize the player's position at the bottom center of the screen
@@ -93,7 +112,7 @@ static void enemiesInit(int enemiesRow, int enemiesColumn)
 	game.cantPlayerShots = 0;
 	game.mothership.alive = false;
 	game.enemiesDirection = 1;
-	game.enemiesSpeed = ENEMY_SPEED;
+	game.enemiesSpeed = ENEMY_INITIAL_SPEED;
 	game.enemiesRow = enemiesRow;
 	game.enemiesColumn = enemiesColumn;
 	game.enemiesHands = false;
@@ -154,8 +173,7 @@ static bool updateEnemiesPosition(long long dt)
 	if((game.enemies[0][rightLimit].hitbox.end.x + dx) > 1.0f || (game.enemies[0][leftLimit].hitbox.start.x + dx) < 0.0f)
 	{
 		game.enemiesDirection *= -1;
-		game.enemiesSpeed += ENEMY_SPEED_INCREMENT;
-		//game.enemiesSpeed = ENEMY_SPEED + game.level * ENEMY_SPEED_INCREMENT;
+		game.enemiesSpeed += ENEMY_SPEED_INCREMENT_PER_ROW;
 		if(game.enemiesSpeed > ENEMY_MAX_SPEED)
 		{
 			game.enemiesSpeed = ENEMY_MAX_SPEED;
@@ -341,7 +359,7 @@ void game_level_up()
 {
 	game.level++;
 	game.player.lives += game.player.lives < MAX_PLAYER_LIVES;
-	game.enemiesSpeed += ENEMY_SPEED_INCREMENT;
+	game.enemiesSpeed = ENEMY_INITIAL_SPEED + game.level * ENEMY_SPEED_INCREMENT_PER_LEVEL;
 	game.enemiesSpeed = (game.enemiesSpeed > ENEMY_MAX_SPEED) ? ENEMY_MAX_SPEED : game.enemiesSpeed;
 
 	game.enemiesDirection = 1;
