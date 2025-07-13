@@ -607,7 +607,6 @@ static void mothershipUpdate(float dt)
     if((game.mothership.hitbox.end.x < 0 && game.mothership.speed < 0) ||
        (game.mothership.hitbox.start.x > 1.0f && game.mothership.speed > 0))
     {
-        playSound_stop(SOUND_UFO_HIGH);
         game.mothership.alive = false;
         return;
     }
@@ -615,7 +614,6 @@ static void mothershipUpdate(float dt)
     if(HITBOX_COLLISION(game.player.bullet.hitbox, game.mothership.hitbox))
     {
         game.score += MOTHERSHIP_SCORE;
-        playSound_stop(SOUND_UFO_HIGH);
         playSound_play(SOUND_MOTHERSHIPDEATH);
         game.mothership.alive = false;
         game.player.bullet.active = false;

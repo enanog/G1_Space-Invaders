@@ -613,9 +613,11 @@ static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *backgroun
             {
                 case ALLEGRO_KEY_UP:
                     selected = (selected - 1 + option_count) % option_count;
+                    playSound_play(SOUND_MENU);
                     break;
                 case ALLEGRO_KEY_DOWN:
                     selected = (selected + 1) % option_count;
+                    playSound_play(SOUND_MENU);
                     break;
                 case ALLEGRO_KEY_ENTER:
                 case ALLEGRO_KEY_SPACE:
