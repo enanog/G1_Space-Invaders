@@ -356,6 +356,9 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 	int row, col;
 	bool fullscreen = false;
 
+    bool f3_pressed = false;
+    bool b_pressed = false;
+
 	while(running)
 	{	
 		ALLEGRO_EVENT event;
@@ -402,6 +405,14 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
                 allegro_shutdown();
                 exit(0); // Exit the game when Alt+F4 is pressed
 			}
+            else if(event.keyboard.keycode == ALLEGRO_KEY_F3)
+            {
+                f3_pressed = !f3_pressed;
+            }
+            else if(event.keyboard.keycode == ALLEGRO_KEY_B)
+            {
+                b_pressed = !b_pressed;
+            }
 			else if(event.keyboard.keycode == ALLEGRO_KEY_F11)
 			{
 				fullscreen = !fullscreen;
@@ -478,12 +489,14 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 						default: break;
 					}
                     draw_invaders(hitbox, row, display);
-					al_draw_rectangle(hitbox.start.x, hitbox.start.y, hitbox.end.x, hitbox.end.y, color, 2.0f);
+                    if(f3_pressed && b_pressed)
+					    al_draw_rectangle(hitbox.start.x, hitbox.start.y, hitbox.end.x, hitbox.end.y, color, 2.0f);
 				}
 			}
 
 			hitbox_t hitboxPlayer = clipHitbox(getPlayerPosition(), margin_x, margin_y, inner_w, inner_h);
-			al_draw_rectangle(hitboxPlayer.start.x, hitboxPlayer.start.y, hitboxPlayer.end.x, hitboxPlayer.end.y, al_map_rgb(0,255,0), 2.0f);
+            if(f3_pressed && b_pressed)
+			    al_draw_rectangle(hitboxPlayer.start.x, hitboxPlayer.start.y, hitboxPlayer.end.x, hitboxPlayer.end.y, al_map_rgb(0,255,0), 2.0f);
             draw_player(hitboxPlayer, display);
 
 			for (int barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++) 
@@ -497,6 +510,7 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
                             continue;
                         }
 						hitbox_t hitboxBarrier = clipHitbox(getBarrierPosition(barrier, row, col), margin_x, margin_y, inner_w, inner_h);
+                        //if(f3_pressed && b_pressed)
                         al_draw_rectangle(hitboxBarrier.start.x, hitboxBarrier.start.y, hitboxBarrier.end.x, hitboxBarrier.end.y, al_map_rgb(0,255,0), 2.0f);
 					}
 				}
@@ -507,7 +521,8 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
             {
                 hitbox_t bulletHitbox = clipHitbox(bullet.hitbox, margin_x, margin_y, inner_w, inner_h);
                 draw_bullet(bulletHitbox, display);
-				al_draw_rectangle(bulletHitbox.start.x, bulletHitbox.start.y, bulletHitbox.end.x, bulletHitbox.end.y, al_map_rgb(255, 255, 0), 2.0f);
+                if(f3_pressed && b_pressed)
+				    al_draw_rectangle(bulletHitbox.start.x, bulletHitbox.start.y, bulletHitbox.end.x, bulletHitbox.end.y, al_map_rgb(255, 255, 0), 2.0f);
 			}
 
 			bullet_t enemyBulletBitMap[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
@@ -519,7 +534,8 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 					if(!enemyBulletBitMap[row][col].active) continue;
                     hitbox_t enemyBulletHitbox = clipHitbox(enemyBulletBitMap[row][col].hitbox, margin_x, margin_y, inner_w, inner_h);
                     draw_bullet(enemyBulletHitbox, display);
-					al_draw_rectangle(enemyBulletHitbox.start.x, enemyBulletHitbox.start.y, enemyBulletHitbox.end.x, enemyBulletHitbox.end.y, al_map_rgb(255, 255, 0), 2.0f);
+                    if(f3_pressed && b_pressed)
+					    al_draw_rectangle(enemyBulletHitbox.start.x, enemyBulletHitbox.start.y, enemyBulletHitbox.end.x, enemyBulletHitbox.end.y, al_map_rgb(255, 255, 0), 2.0f);
 				}
 			}
 
@@ -527,7 +543,8 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
             if(getIsMothershipAlive())
             {
                 draw_mothership(mothershipHitbox, display);
-                al_draw_rectangle(mothershipHitbox.start.x, mothershipHitbox.start.y, mothershipHitbox.end.x, mothershipHitbox.end.y, al_map_rgb(255, 255, 0), 2.0f);
+                if(f3_pressed && b_pressed) 
+                    al_draw_rectangle(mothershipHitbox.start.x, mothershipHitbox.start.y, mothershipHitbox.end.x, mothershipHitbox.end.y, al_map_rgb(255, 255, 0), 2.0f);
             }
 
             al_reset_clipping_rectangle();
