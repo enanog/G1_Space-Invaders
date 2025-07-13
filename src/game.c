@@ -301,59 +301,30 @@ int game_update(input_t player)
 		return RUNNING;
 	}
 
+	static float enemiesMovement = 0;
 	long long dt = (getTimeMillis() - game.lastTimeUpdated);
-	static long long lastTimeLevelUp;
-	int row, col;
-	static bool firstTimeLevelUp = true;
 
 	updatePlayerPosition(player, dt);
 
-	// Recorrio todo el for y no hay enemigos vivos
-	if(!updateEnemiesPosition(dt))
+	if(!updateEnemiesPosition(dt)) // Si no quedan enemigos vivos -> level up
 	{
-		playerPositionInit();
-		game.mothership.alive = false;
-
-		for(row = 0; row < game.enemiesRow; row++)
-		{
-			for(col = 0; col < game.enemiesColumn; col++)
-			{
-				game.enemies[row][col].bullet.active = false;
-			}
-		}
-
-		if(firstTimeLevelUp)
-		{
-			lastTimeLevelUp = getTimeMillis();
-			firstTimeLevelUp = false;
-		}
-
-		long long currentTime = getTimeMillis();
-		if(currentTime - lastTimeLevelUp > 3000)
-		{
-			game_level_up();
-			lastTimeLevelUp = currentTime;
-			firstTimeLevelUp = true;
-			game.lastTimeUpdated = currentTime;
-			return RUNNING;
-		}
-
+		game_level_up();
+		game.lastTimeUpdated = getTimeMillis();
 		return RUNNING; // No enemies left, game continues
 	}
 
-	static float enemiesMovement = 0;
 	enemiesMovement += dt * game.enemiesSpeed;
 	if(enemiesMovement > 0.1f)
 	{
 		playSound_play((game.enemiesHands) ? SOUND_FAST1 : SOUND_FAST2);
-		printf("Enemies hands: %d\n", game.enemiesHands);
+		//printf("Enemies hands: %d\n", game.enemiesHands);
 		enemiesMovement = 0;
 		game.enemiesHands = !game.enemiesHands;
 	}
 
-	shootRandomEnemyBullet();
-	update_player_bullet(player, dt);
 	update_enemy_bullet(dt);
+	update_player_bullet(player, dt);
+	shootRandomEnemyBullet();
 	mothershipUpdate(dt);
 	updateBarriers();
 
@@ -377,8 +348,10 @@ void game_level_up()
 	game.enemyShotInterval = INITIAL_SHOOTING_INTERVAL;
 
 	game.cantPlayerShots = 0;
-	game_create_enemy_map(game.enemiesRow, game.enemiesColumn);
+	game.mothership.alive = false;
+	playerPositionInit();
 	game_create_barriers();
+	game_create_enemy_map(game.enemiesRow, game.enemiesColumn);
 	mothershipGenerate();
 }
 

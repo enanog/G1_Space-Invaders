@@ -95,7 +95,6 @@ bool getBarrierIsAlive(int barrier, int row, int column);
 bullet_t getPlayerBulletinfo(void);
 
 bool getIsEnemyAlive(int row, int column);
-void getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
 void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
 
 
