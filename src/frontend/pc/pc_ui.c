@@ -357,7 +357,9 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 	bool fullscreen = false;
 
     bool f3_pressed = false;
+    bool show_hitboxes=false;
     bool b_pressed = false;
+    bool flag_hitboxes=true;
 
 	while(running)
 	{	
@@ -405,13 +407,15 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
                 allegro_shutdown();
                 exit(0); // Exit the game when Alt+F4 is pressed
 			}
+
+
             else if(event.keyboard.keycode == ALLEGRO_KEY_F3)
             {
-                f3_pressed = !f3_pressed;
+                f3_pressed = 1;
             }
             else if(event.keyboard.keycode == ALLEGRO_KEY_B)
             {
-                b_pressed = !b_pressed;
+                b_pressed = 1;
             }
 			else if(event.keyboard.keycode == ALLEGRO_KEY_F11)
 			{
@@ -429,7 +433,22 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 			{
 				player.shot = 0;
 			}
-		}
+            else if(event.keyboard.keycode == ALLEGRO_KEY_F3)
+            {
+                f3_pressed = 0;
+                flag_hitboxes=true;
+            }
+            else if(event.keyboard.keycode == ALLEGRO_KEY_B)
+            {
+                b_pressed = 0; 
+		    }
+        }
+        if (f3_pressed&&b_pressed &&flag_hitboxes)
+        {
+            show_hitboxes = !show_hitboxes;
+            flag_hitboxes=false;
+        }
+    
 
 		if(fullscreen)
 		{
@@ -489,13 +508,13 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 						default: break;
 					}
                     draw_invaders(hitbox, row, display);
-                    if(f3_pressed && b_pressed)
+                    if(show_hitboxes)
 					    al_draw_rectangle(hitbox.start.x, hitbox.start.y, hitbox.end.x, hitbox.end.y, color, 2.0f);
 				}
 			}
 
 			hitbox_t hitboxPlayer = clipHitbox(getPlayerPosition(), margin_x, margin_y, inner_w, inner_h);
-            if(f3_pressed && b_pressed)
+            if(show_hitboxes)
 			    al_draw_rectangle(hitboxPlayer.start.x, hitboxPlayer.start.y, hitboxPlayer.end.x, hitboxPlayer.end.y, al_map_rgb(0,255,0), 2.0f);
             draw_player(hitboxPlayer, display);
 
@@ -582,7 +601,7 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
                     float time = al_get_time();
                     float pulse_size = 0.8f + 0.2f * sin(time * 4.0f);
                     float size = (hb.end.x - hb.start.x) * 0.3f * pulse_size;
-                    if(f3_pressed && b_pressed)
+                    if(show_hitboxes)
                         al_draw_rectangle(hb.start.x, hb.start.y, hb.end.x, hb.end.y, al_map_rgb(0,255,0), 2.0f);
                     
                     // Pulsating core
@@ -603,7 +622,7 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
             {
                 hitbox_t bulletHitbox = clipHitbox(bullet.hitbox, margin_x, margin_y, inner_w, inner_h);
                 draw_bullet(bulletHitbox, display);
-                if(f3_pressed && b_pressed)
+                if(show_hitboxes)
 				    al_draw_rectangle(bulletHitbox.start.x, bulletHitbox.start.y, bulletHitbox.end.x, bulletHitbox.end.y, al_map_rgb(255, 255, 0), 2.0f);
 			}
 
@@ -616,7 +635,7 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 					if(!enemyBulletBitMap[row][col].active) continue;
                     hitbox_t enemyBulletHitbox = clipHitbox(enemyBulletBitMap[row][col].hitbox, margin_x, margin_y, inner_w, inner_h);
                     draw_bullet(enemyBulletHitbox, display);
-                    if(f3_pressed && b_pressed)
+                    if(show_hitboxes)
 					    al_draw_rectangle(enemyBulletHitbox.start.x, enemyBulletHitbox.start.y, enemyBulletHitbox.end.x, enemyBulletHitbox.end.y, al_map_rgb(255, 255, 0), 2.0f);
 				}
 			}
@@ -625,7 +644,7 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
             if(getIsMothershipAlive())
             {
                 draw_mothership(mothershipHitbox, display);
-                if(f3_pressed && b_pressed) 
+                if(show_hitboxes) 
                     al_draw_rectangle(mothershipHitbox.start.x, mothershipHitbox.start.y, mothershipHitbox.end.x, mothershipHitbox.end.y, al_map_rgb(255, 255, 0), 2.0f);
             }
 
