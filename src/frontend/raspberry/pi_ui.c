@@ -262,8 +262,9 @@ static void handle_game_state(input_t *input, long long *lastTime, int *state,
  * @brief Handle game over scenario
  */
 static void handle_game_over(void) {
+	playSound_play(SOUND_GAMEOVER);
     draw_scrolling_text("GAME OVER");
-    
+
     score_t topScores[3];
     int count = getTopScore(topScores, 3);
     int newScore = getScore();
@@ -755,11 +756,13 @@ void get_name(char *name_out) {
                 letter_idx = (letter_idx + 1) % 26;
                 last_move = now;
                 moved = true;
+                playSound_play(SOUND_MENU);
             }
             else if (joyInfo.y < -40 && (now - last_move > 80)) {
                 letter_idx = (letter_idx - 1 + 26) % 26;
                 last_move = now;
                 moved = true;
+                playSound_play(SOUND_MENU);
             }
             else if (debounce_joystick_switch()) {
                 name_out[pos++] = alphabet[letter_idx];
