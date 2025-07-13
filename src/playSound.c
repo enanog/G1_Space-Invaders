@@ -120,6 +120,7 @@ void playSound_stop(GameSoundEvent event)
 
 void playSound_shutdown(void) 
 {
+	playSound_stopMusic();
     for (int i = 0; i < SOUND_COUNT; i++) 
     {
     	motherWasPlaying = false;

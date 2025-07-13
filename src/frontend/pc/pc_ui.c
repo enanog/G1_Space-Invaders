@@ -147,6 +147,7 @@ void gameLoop(void)
     }
 
     al_destroy_font(font);
+    playSound_stopMusic();
     playSound_shutdown();
 }
 
