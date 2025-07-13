@@ -41,7 +41,11 @@ const bool BARRIER_SHAPE[BARRIER_ROWS][BARRIER_COLUMNS] =
 
 static game_t game;
 
-static void enemiesBulletActive(void);
+static void player_init(void);
+static void enemies_init(int enemiesRow, int enemiesColumn);
+static void update_player_position(input_t player, long long dt);
+static void shootEnemyBullet(int row, int col);
+static void shootRandomEnemyBullet(void);
 static void updateBarrier(void);
 static bool collisionEnemyBullet(hitbox_t *hitbox);
 static bool collisionEnemyHitbox(hitbox_t *hitbox);
@@ -49,6 +53,51 @@ static void mothershipGenerate(void);
 static void mothershipUpdate(float dt);
 static void saveGameState(void);
 static void loadGameState(void);
+
+static void player_init(void)
+{
+	// Initialize the player's position at the bottom center of the screen
+	game.player.hitbox.start.x = 0.5f - PLAYER_WIDTH / 2.0f;
+	game.player.hitbox.start.y = PLAYER_BOTTOM_OFFSET;
+	game.player.hitbox.end.x = 0.5f + PLAYER_WIDTH / 2.0f;
+	game.player.hitbox.end.y = PLAYER_BOTTOM_OFFSET + PLAYER_HEIGHT;
+
+	game.player.lives = INITIAL_PLAYER_LIVES;
+	game.player.bullet.active = false;
+	game.player.bullet.speed = PLAYER_BULLET_SPEED;
+}
+
+static void enemies_init(int enemiesRow, int enemiesColumn)
+{
+	game.cantPlayerShots = 0;
+	game.mothership.alive = false;
+	game.enemiesDirection = 1;
+	game.enemiesSpeed = ENEMY_SPEED;
+	game.enemiesRow = enemiesRow;
+	game.enemiesColumn = enemiesColumn;
+	game.enemiesHands = false;
+	game.enemyShotInterval = INITIAL_SHOOTING_INTERVAL;
+	game.lastTimeEnemyShoot = getTimeMillis();
+
+	game_create_enemy_map(enemiesRow, enemiesColumn);
+}
+
+static void update_player_position(input_t player, long long dt)
+{
+	game.player.hitbox.start.x += player.direction * dt * PLAYER_SPEED;
+	game.player.hitbox.end.x += player.direction * dt * PLAYER_SPEED;
+
+	if(game.player.hitbox.start.x < 0)
+	{
+		game.player.hitbox.start.x = 0;
+		game.player.hitbox.end.x = PLAYER_WIDTH;
+	}
+	else if(game.player.hitbox.end.x > 1)
+	{
+		game.player.hitbox.start.x = 1.0f - PLAYER_WIDTH;
+		game.player.hitbox.end.x = 1.0f;
+	}
+}
 
 void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame)
 {
@@ -58,38 +107,15 @@ void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame)
 		long long currentTime = getTimeMillis();
 		game.lastTimeUpdated = currentTime;
 		game.lastTimeEnemyShoot = currentTime;
+		game.lastTimeMothershipGenerated = currentTime;		// Chequear si es necesario.
 		return;
 	}
 
-	// Initialize the player's position at the bottom center of the screen
-	hitbox_t playerInitialHitbox =
-	{
-		{0.5f - PLAYER_WIDTH/2.0f, PLAYER_BOTTOM_OFFSET},
-		{0.5f + PLAYER_WIDTH/2.0f, PLAYER_BOTTOM_OFFSET + PLAYER_HEIGHT}
-	};
-
-	game.player.hitbox = playerInitialHitbox;
-
-	game.player.lives = 3;
-	game.player.bullet.speed = PLAYER_BULLET_SPEED;
-	game.player.bullet.active = false;
-	game.cantPlayerShots = 0;
-
-	game.enemiesDirection = 1;
-	game.enemiesSpeed = ENEMY_SPEED;
-	game.enemiesRow = enemiesRow;
-	game.enemiesColumn = enemiesColumn;
-
-	game.enemyShotInterval = INITIAL_SHOOTING_INTERVAL;
-	game.lastTimeEnemyShoot = getTimeMillis();
+	player_init();
+	enemies_init(enemiesRow, enemiesColumn);
+	game_create_barriers();
 	srand(time(NULL));
 
-	game.enemiesHands = false;
-	game_create_enemy_map(enemiesRow,enemiesColumn);
-
-	game_create_barriers();
-
-	game.mothership.alive = false;
 	game.score = 0;
 	game.level = 0;
 	game.state = RUNNING;
@@ -100,12 +126,8 @@ void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame)
 void game_create_enemy_map(int enemiesRow, int enemiesColumn)
 {
 	float total_width = enemiesColumn * ENEMY_WIDTH + (enemiesColumn - 1) * ENEMY_H_SPACING;
-
 	float start_x = (1.0f - total_width) / 2.0f;
-	float start_y = ENEMY_TOP_OFFSET;
 	float frow;
-	float x;
-	float y;
 	int row, col;
 
 	for(row = 0; row < ENEMIES_ROW_MAX; row++)
@@ -119,12 +141,10 @@ void game_create_enemy_map(int enemiesRow, int enemiesColumn)
 				continue;
 			}
 
-			x = start_x + col * (ENEMY_WIDTH + ENEMY_H_SPACING);
-			y = start_y + row * (ENEMY_HEIGHT + ENEMY_V_SPACING);
-			game.enemies[row][col].hitbox.start.x = x;
-			game.enemies[row][col].hitbox.start.y = y;
-			game.enemies[row][col].hitbox.end.x = x + ENEMY_WIDTH;
-			game.enemies[row][col].hitbox.end.y = y + ENEMY_HEIGHT;
+			game.enemies[row][col].hitbox.start.x = start_x + col * (ENEMY_WIDTH + ENEMY_H_SPACING);
+			game.enemies[row][col].hitbox.start.y = ENEMY_TOP_OFFSET + row * (ENEMY_HEIGHT + ENEMY_V_SPACING);
+			game.enemies[row][col].hitbox.end.x = game.enemies[row][col].hitbox.start.x + ENEMY_WIDTH;
+			game.enemies[row][col].hitbox.end.y = game.enemies[row][col].hitbox.start.y + ENEMY_HEIGHT;
 			game.enemies[row][col].alive = true;
 
 			// Tipo de enemigo según la proporción de la fila
@@ -149,33 +169,34 @@ void game_create_enemy_map(int enemiesRow, int enemiesColumn)
 
 void game_create_barriers()
 {
-	float total_width = BARRIER_QUANTITY_MAX * BARRIER_WIDTH + (BARRIER_QUANTITY_MAX-1) * BARRIER_SPACING;
-	float start_x = (1.0f - total_width) / 2;
-	float base_y = 1.0f - BARRIER_BOTTOM_OFFSET - BARRIER_HEIGHT;
-	float barrier_x;
+	#define TOTAL_WIDTH (BARRIER_QUANTITY_MAX * BARRIER_WIDTH + (BARRIER_QUANTITY_MAX-1) * BARRIER_SPACING)
+	#define START_X ((1.0f - TOTAL_WIDTH) / 2.0f)
+	#define BASE_Y (1.0f - BARRIER_BOTTOM_OFFSET - BARRIER_HEIGHT)
 
+	float barrier_x;
 	int elem, row, col;
+
 	for(elem = 0; elem < BARRIER_QUANTITY_MAX; elem++)
 	{
-		barrier_x = start_x + elem * (BARRIER_WIDTH + BARRIER_SPACING);
+		barrier_x = START_X + elem * (BARRIER_WIDTH + BARRIER_SPACING);
 		for(row = 0; row < BARRIER_ROWS; row++) 
 		{
 			for(col = 0; col < BARRIER_COLUMNS; col++)
 			{
-			if(!BARRIER_SHAPE[row][col])
-			{
-				game.barriers[elem].mat[row][col].lives = 0;
-				continue;
-			}
-			game.barriers[elem].mat[row][col].hitbox.start.x = barrier_x + col * (BARRIER_WIDTH / BARRIER_COLUMNS);
-			game.barriers[elem].mat[row][col].hitbox.start.y = base_y + row * (BARRIER_HEIGHT / BARRIER_ROWS);
-			game.barriers[elem].mat[row][col].hitbox.end.x = barrier_x + (col+1) * (BARRIER_WIDTH / BARRIER_COLUMNS);
-			game.barriers[elem].mat[row][col].hitbox.end.y = base_y + (row+1) * (BARRIER_HEIGHT / BARRIER_ROWS);
-			#ifndef RASPBERRY
-				game.barriers[elem].mat[row][col].lives = 1;
-			#else
-				game.barriers[elem].mat[row][col].lives = BARRIER_LIVES;
-			#endif
+				if(!BARRIER_SHAPE[row][col])
+				{
+					game.barriers[elem].block[row][col].lives = 0;
+					continue;
+				}
+				game.barriers[elem].block[row][col].hitbox.start.x = barrier_x + col * BLOCK_WIDTH;
+				game.barriers[elem].block[row][col].hitbox.start.y = BASE_Y + row * BLOCK_HEIGHT;
+				game.barriers[elem].block[row][col].hitbox.end.x = barrier_x + (col+1) * BLOCK_WIDTH;
+				game.barriers[elem].block[row][col].hitbox.end.y = BASE_Y + (row+1) * BLOCK_HEIGHT;
+				#ifndef RASPBERRY
+					game.barriers[elem].block[row][col].lives = 1;
+				#else
+					game.barriers[elem].block[row][col].lives = BARRIER_LIVES;
+				#endif
 			}
 		}
 	}
@@ -196,27 +217,14 @@ int game_update(input_t player)
 		return RUNNING;
 	}
 
-	long long dt = (getTimeMillis()-game.lastTimeUpdated);
-	game.player.hitbox.start.x += player.direction * dt * PLAYER_SPEED;
-	game.player.hitbox.end.x += player.direction * dt * PLAYER_SPEED;
-
-	if(game.player.hitbox.start.x < 0)
-	{
-		game.player.hitbox.start.x = 0;
-		game.player.hitbox.end.x = PLAYER_WIDTH;
-	}
-	else if(game.player.hitbox.end.x > 1)
-	{
-		game.player.hitbox.start.x = 1.0f - PLAYER_WIDTH;
-		game.player.hitbox.end.x = 1.0f;
-	}
-	//printf("estoy en game_update");
-
-	int row, col;
-	int rightLimit = -1, leftLimit = game.enemiesColumn, bottomLimit = -1;
-
 	bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
+	int row, col;
+	int rightLimit = -1;
+	int bottomLimit = -1;
+	int leftLimit = game.enemiesColumn;
+	long long dt = (getTimeMillis() - game.lastTimeUpdated);
 
+	update_player_position(player, dt);
 	getEnemyBitMap(matEnemy);
 
 	for(row = 0; row < game.enemiesRow; row++)
@@ -241,7 +249,7 @@ int game_update(input_t player)
 		}
 	}
 
-	// Recorrio todo el fory no hay enemigos vivos
+	// Recorrio todo el for y no hay enemigos vivos
 	if(rightLimit == -1 && leftLimit == game.enemiesColumn && bottomLimit == -1)
 	{
 		static long long lastTimeLevelUp;
@@ -326,7 +334,7 @@ int game_update(input_t player)
 		game.enemiesHands = !game.enemiesHands;
 	}
 
-	enemiesBulletActive();
+	shootRandomEnemyBullet();
 	update_player_bullet(player, dt);
 	update_enemy_bullet(dt);
 	mothershipUpdate(dt);
@@ -344,18 +352,9 @@ int game_update(input_t player)
 void game_level_up()
 {
 	game.level++;
-	if(game.player.lives < MAX_PLAYER_LIVES)
-	{
-		game.player.lives++;
-	}
-	if(ENEMY_SPEED + game.level * ENEMY_SPEED_INCREMENT > ENEMY_MAX_SPEED)
-	{
-		game.enemiesSpeed = ENEMY_MAX_SPEED;
-	}
-	else
-	{
-		game.enemiesSpeed = ENEMY_SPEED + game.level * ENEMY_SPEED_INCREMENT;
-	}
+	game.player.lives += game.player.lives < MAX_PLAYER_LIVES;
+	game.enemiesSpeed += ENEMY_SPEED_INCREMENT;
+	game.enemiesSpeed = (game.enemiesSpeed > ENEMY_MAX_SPEED) ? ENEMY_MAX_SPEED : game.enemiesSpeed;
 
 	game.enemiesDirection = 1;
 	game.enemyShotInterval = INITIAL_SHOOTING_INTERVAL;
@@ -383,7 +382,7 @@ int getPlayerLives(void)
 	return game.player.lives;
 }
 
-void enemyBulletShot(int row, int col)
+void shootEnemyBullet(int row, int col)
 {
 	if(game.enemies[row][col].bullet.active)
 		return;
@@ -396,7 +395,7 @@ void enemyBulletShot(int row, int col)
 }
 
 void update_enemy_bullet(float dt)
-{	
+{
 	int row, col;
 	for(row = 0; row < game.enemiesColumn; row++)
 	{
@@ -456,11 +455,11 @@ void update_player_bullet(input_t input, float dt)
 
 	int row, col;
 	// Colisión con aliens
-	for(row = 0; row < game.enemiesRow; row++) 
+	for(row = 0; row < game.enemiesRow; row++)
 	{
-		for(col = 0; col < game.enemiesColumn; col++) 
+		for(col = 0; col < game.enemiesColumn; col++)
 		{
-			if(!game.enemies[row][col].alive) 
+			if(!game.enemies[row][col].alive)
 			{
 				continue;
 			}
@@ -541,32 +540,33 @@ static void loadGameState(void)
 
 static void mothershipGenerate(void)
 {
-	if(game.cantPlayerShots >= MOTHERSHIP_TRIGGER_SHOTS && !game.mothership.alive)
-	{
-		game.mothership.alive = true;
-		game.mothership.speed = (rand() % 2) ? MOTHERSHIP_SPEED : -MOTHERSHIP_SPEED;
-		if(game.mothership.speed < 0)
-		{
-			game.mothership.hitbox.start.x = 1.0f;
-			game.mothership.hitbox.end.x = 1.0f + MOTHERSHIP_WIDTH;
-		}
-		else
-		{
-			game.mothership.hitbox.start.x = 0.0f - MOTHERSHIP_WIDTH;
-			game.mothership.hitbox.end.x = 0.0f;
-		}
-
-		game.mothership.hitbox.start.y = MOTHERSHIP_TOP_OFFSET;
-		game.mothership.hitbox.end.y = MOTHERSHIP_TOP_OFFSET + MOTHERSHIP_HEIGHT;
-
-		game.cantPlayerShots = 0;
-		game.lastTimeMothershipGenerated = getTimeMillis();
-		// playSound_restart(SOUND_UFO_LOW);
-	}
-	else if(game.mothership.alive)
+	if(game.mothership.alive)
 	{
 		game.cantPlayerShots = 0;
+		return;
 	}
+	if(game.cantPlayerShots < MOTHERSHIP_TRIGGER_SHOTS)
+		return;
+
+	game.mothership.alive = true;
+	game.mothership.speed = (rand() % 2) ? MOTHERSHIP_SPEED : -MOTHERSHIP_SPEED;
+	if(game.mothership.speed < 0)
+	{
+		game.mothership.hitbox.start.x = 1.0f;
+		game.mothership.hitbox.end.x = 1.0f + MOTHERSHIP_WIDTH;
+	}
+	else
+	{
+		game.mothership.hitbox.start.x = 0.0f - MOTHERSHIP_WIDTH;
+		game.mothership.hitbox.end.x = 0.0f;
+	}
+
+	game.mothership.hitbox.start.y = MOTHERSHIP_TOP_OFFSET;
+	game.mothership.hitbox.end.y = MOTHERSHIP_TOP_OFFSET + MOTHERSHIP_HEIGHT;
+
+	game.cantPlayerShots = 0;
+	game.lastTimeMothershipGenerated = getTimeMillis();
+	// playSound_restart(SOUND_UFO_LOW);
 }
 
 static void mothershipUpdate(float dt)
@@ -612,25 +612,25 @@ static void updateBarrier(void)
 		{
 			for(col = 0; col < BARRIER_COLUMNS; col++)
 			{
-				if(!game.barriers[elem].mat[row][col].lives)
+				if(!game.barriers[elem].block[row][col].lives)
 				{
 					continue;
 				}
 
-				if(HITBOX_COLLISION(game.player.bullet.hitbox, game.barriers[elem].mat[row][col].hitbox))
+				if(HITBOX_COLLISION(game.player.bullet.hitbox, game.barriers[elem].block[row][col].hitbox))
 				{
-					game.barriers[elem].mat[row][col].lives--;
+					game.barriers[elem].block[row][col].lives--;
 					game.player.bullet.active = false;
 					return;
 				}
-				else if(collisionEnemyBullet(&game.barriers[elem].mat[row][col].hitbox))
+				else if(collisionEnemyBullet(&game.barriers[elem].block[row][col].hitbox))
 				{
-					game.barriers[elem].mat[row][col].lives--;
+					game.barriers[elem].block[row][col].lives--;
 					return;
 				}
-				else if(collisionEnemyHitbox(&game.barriers[elem].mat[row][col].hitbox))
+				else if(collisionEnemyHitbox(&game.barriers[elem].block[row][col].hitbox))
 				{
-					game.barriers[elem].mat[row][col].lives = 0;
+					game.barriers[elem].block[row][col].lives = 0;
 					return;
 				}
 			}
@@ -739,12 +739,12 @@ bool getIsEnemyAlive(int row, int column)
 
 bool getBarrierIsAlive(int barrier, int row, int column)
 {
-	return game.barriers[barrier].mat[row][column].lives > 0;
+	return game.barriers[barrier].block[row][column].lives > 0;
 }
 
 hitbox_t getBarrierPosition(int barrier, int row, int column)
 {
-	return game.barriers[barrier].mat[row][column].hitbox;
+	return game.barriers[barrier].block[row][column].hitbox;
 }
 
 int getEnemyTier(int row)
@@ -782,26 +782,42 @@ bool getEnemiesHands(void)
 	return game.enemiesHands;
 }
 
-static void enemiesBulletActive(void)
+static void shootRandomEnemyBullet(void)
 {
 	long long time = getTimeMillis();
 	long long dt = time - game.lastTimeEnemyShoot;
-	if(dt > game.enemyShotInterval)
+	int columnHasEnemiesThatCanShoot[game.enemiesColumn];
+	int thereIsAtLeastOneThatCanShoot;
+	int col;
+	int row;
+
+	if(dt < game.enemyShotInterval)
+		return;
+
+	for(col = 0, thereIsAtLeastOneThatCanShoot = 0; col < game.enemiesColumn; col++)
 	{
-		int col = rand() % game.enemiesColumn;
-		int row;
-		for(row = game.enemiesRow-1; row >= 0; row--)
+		columnHasEnemiesThatCanShoot[col] = 0;
+		for(row = 0; row < game.enemiesRow; row++)
 		{
-			if(game.enemies[row][col].alive)
+			if(game.enemies[row][col].alive && !game.enemies[row][col].bullet.active)
 			{
-				if(game.enemies[row][col].bullet.active)
-				{
+				columnHasEnemiesThatCanShoot[col] = 1;
+				thereIsAtLeastOneThatCanShoot = 1;
 				break;
-				}
-				enemyBulletShot(row, col);
-				game.lastTimeEnemyShoot = time;
-				return;
 			}
 		}
 	}
+
+	if(!thereIsAtLeastOneThatCanShoot)
+		return;
+
+	do
+	{
+		col = rand() % game.enemiesColumn;
+	} while(!columnHasEnemiesThatCanShoot[col]);
+
+	for(row = game.enemiesRow - 1; row >= 0 && !game.enemies[row][col].alive; row--);
+
+	shootEnemyBullet(row, col);
+	game.lastTimeEnemyShoot = time;
 }
