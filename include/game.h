@@ -21,7 +21,7 @@
 #include "entity.h"
 #include "config.h"
 
-enum{RUNNING, GAME_OVER,QUIT};
+enum{RUNNING, GAME_OVER, QUIT, PAUSED};
 
 typedef struct 
 {
@@ -32,6 +32,7 @@ typedef struct
     int score;
     int level;
     int state;
+    int prevState;
     int enemiesRow;
     int enemiesColumn;
     float enemiesSpeed;

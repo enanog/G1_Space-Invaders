@@ -30,14 +30,13 @@
 #include "score.h"
 #include "enemyFont.h"
 
-#define DONT_MATTER -1
 
-static ALLEGRO_DISPLAY *display = NULL;
+ALLEGRO_DISPLAY *display = NULL;
 ALLEGRO_FONT *font = NULL;
 ALLEGRO_BITMAP *background = NULL;
 
 static gameState_t menuShow(ALLEGRO_DISPLAY *display);
-static void mainMenu(void);
+static gameState_t mainMenu(void);
 static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol);
 static char keyboard_input(void);
 static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *background);
@@ -67,7 +66,12 @@ bool allegro_init(void)
     if (!font) {
         return false;
     }
-
+    
+    background = al_load_bitmap("assets/images/backgroundGame.png");
+    if (!background) {
+        fprintf(stderr, "Failed to load background image.\n");
+        return false;
+    }
 	return true;
 }
 
@@ -79,18 +83,13 @@ void gameLoop(void)
     {
         if(state != STATE_SPLASH)
         {
-            background = al_load_bitmap("assets/images/backgroundGame.png");
-            if (!background) {
-                fprintf(stderr, "Failed to load background image.\n");
-                return;
-            }
+            
         }
         switch (state) 
         {
             case STATE_SPLASH: 
                 playSound_playMusic(INTRO_MUSIC);
-                mainMenu();
-                state = STATE_MENU;
+                state = mainMenu();
                 break;
 
             case STATE_MENU:
@@ -107,7 +106,7 @@ void gameLoop(void)
             case STATE_RESUME_GAME:
                 playSound_playMusic(GAME_MUSIC);
                 printf("Resuming game...\n");
-                state = gameRender(STATE_RESUME_GAME, DONT_MATTER, DONT_MATTER);
+                state = gameRender(STATE_RESUME_GAME, -1, -1);
                 break;
 
             case STATE_GAME_OVER:
@@ -121,7 +120,6 @@ void gameLoop(void)
                 break;
 
             case STATE_EXIT:
-                printf("Entre");
                 running = false;
                 break;
 
@@ -134,7 +132,6 @@ void gameLoop(void)
                 al_set_target_bitmap(snapshot);
                 al_draw_bitmap(al_get_backbuffer(display), 0, 0, 0); // Captura del frame actual
                 al_set_target_backbuffer(display);
-                printf("Game paused. Showing pause menu...\n");
                 state = pauseMenu(display, snapshot);
                 al_destroy_bitmap(snapshot);
                 playSound_resumeMusic();
@@ -151,8 +148,9 @@ void gameLoop(void)
     playSound_shutdown();
 }
 
-static void mainMenu(void) 
+static gameState_t mainMenu(void) 
 {
+    gameState_t state;
     ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
     al_register_event_source(queue, al_get_keyboard_event_source());
     al_register_event_source(queue, al_get_display_event_source(display));
@@ -161,12 +159,7 @@ static void mainMenu(void)
     background = al_load_bitmap("assets/images/backgroundMenu.png");
     if (!background) {
         fprintf(stderr, "Failed to load background image.\n");
-        return;
-    }
-    
-    if (!background) {
-        fprintf(stderr, "Failed to load background image.\n");
-        return;
+        return STATE_EXIT;
     }
 
     bool running = true;
@@ -196,20 +189,20 @@ static void mainMenu(void)
             if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE) 
             {
                 running = false;
-                allegro_shutdown();
-                exit(0);
+                state = STATE_EXIT;
             }
             if (show_press_enter && event.keyboard.keycode == ALLEGRO_KEY_ENTER) 
             {
                 running = false;
+                state = STATE_MENU;
             }
         }
     }
 
     al_destroy_event_queue(queue);
     al_destroy_bitmap(background);
+    return state;
 }
-
 
 static gameState_t menuShow(ALLEGRO_DISPLAY *display) 
 {
@@ -324,10 +317,8 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
         case 3: 
             return STATE_CREDITS;
         case 4: 
-            printf("EXIT");
             return STATE_EXIT;
     }
-    printf("NO SALI JEJE");
     return STATE_MENU;
 }
 
@@ -446,6 +437,12 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
                                   0, 0, al_get_display_width(display), al_get_display_height(display), 0);
 
 			int gameState = game_update(player);
+            if(gameState == GAME_OVER && state == STATE_RESUME_GAME)
+            {
+                state = STATE_MENU;
+                running = false;
+                break;
+            }
 			if(gameState == GAME_OVER)
 			{
 				printf("GAME OVER\n");
@@ -611,25 +608,24 @@ static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *backgroun
     }
 
     al_destroy_event_queue(queue);
-    printf("eNTRE");
     // Devolver estado según opción
     switch (selected) 
     {
         case 0: 
-            printf("Resume");
             state = STATE_RESUME_GAME;
+            break;
         case 1: 
-            printf("New");
             state = STATE_NEW_GAME;
+            break;
         case 2: 
-            printf("Menu");
             state = STATE_MENU;
+            break;
         case 3: 
-            printf("EXIT");
             state = STATE_EXIT;
+            break;
     }
 
-    return STATE_RESUME_GAME;
+    return state;
 }
 
 void allegro_shutdown(void) 

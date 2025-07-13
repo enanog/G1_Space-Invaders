@@ -6,6 +6,7 @@
         "allegro_image.h": "c",
         "config.h": "c",
         "allegro_font.h": "c",
-        "allegro_ttf.h": "c"
+        "allegro_ttf.h": "c",
+        "stdbool.h": "c"
     }
 }

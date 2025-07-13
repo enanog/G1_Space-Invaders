@@ -52,6 +52,10 @@ void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame)
     if(resumeLastGame)
     {
         loadGameState();
+        if(game.mothership.alive)
+        {
+            playSound_play(SOUND_UFO_LOW);
+        }
         long long currentTime = getTimeMillis();
         game.lastTimeUpdated = currentTime;
         game.lastTimeEnemyShoot = currentTime;
@@ -180,8 +184,9 @@ int game_update(input_t player)
 {
     if(player.pause)
     {
+        game.prevState = PAUSED;
         game.lastTimeUpdated = getTimeMillis();
-        //playSound_stop(SOUND_UFO_LOW);
+        playSound_stop(SOUND_UFO_LOW);
         printf("pausado");
         saveGameState();
         if(player.exit)
@@ -191,6 +196,7 @@ int game_update(input_t player)
         }
         return RUNNING;
     }
+    game.prevState = game.state;
 
 	long long dt = (getTimeMillis()-game.lastTimeUpdated);
 	game.player.hitbox.start.x += player.direction * dt * PLAYER_SPEED;
@@ -266,6 +272,7 @@ int game_update(input_t player)
             lastTimeLevelUp = getTimeMillis();
             firstTimeLevelUp = false;
             game.level++;
+            playSound_stop(SOUND_UFO_LOW);
             playSound_setMusicVolume(0.2);
             playSound_play(SOUND_LEVELUP);
         }
@@ -342,6 +349,7 @@ int game_update(input_t player)
     {
         saveGameState();
     }
+    
 	return game.state;
 }
 
@@ -586,9 +594,14 @@ static void mothershipUpdate(float dt)
     mothershipGenerate();
 
     if(!game.mothership.alive)
-    {
+    { 
         return;
     }
+    if (game.prevState != game.state)
+    {
+        playSound_play(SOUND_UFO_LOW);
+    }
+    
 
     game.mothership.hitbox.start.x += game.mothership.speed * dt;
     game.mothership.hitbox.end.x += game.mothership.speed * dt;
@@ -596,6 +609,7 @@ static void mothershipUpdate(float dt)
     if((game.mothership.hitbox.end.x < 0 && game.mothership.speed < 0) ||
        (game.mothership.hitbox.start.x > 1.0f && game.mothership.speed > 0))
     {
+        playSound_stop(SOUND_UFO_LOW);
         game.mothership.alive = false;
         return;
     }
