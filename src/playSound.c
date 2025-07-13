@@ -57,6 +57,7 @@ static ALLEGRO_SAMPLE_ID sound_ids[SOUND_COUNT];
 static ALLEGRO_AUDIO_STREAM *music_stream = NULL;
 static GameMusicEvent current_music = -1;
 
+static bool motherWasPlaying = false;
 
 bool playSound_init(void) 
 {
@@ -95,7 +96,12 @@ void playSound_play(GameSoundEvent event)
 {
     if (event >= 0 && event < SOUND_COUNT && sounds[event]) 
     {
-        al_play_sample(sounds[event], 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, NULL);
+        al_play_sample(sounds[event], 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, &sound_ids[event]);
+    }
+
+    if (event == SOUND_UFO_LOW)
+    {
+    	motherWasPlaying = true;
     }
 }
 
@@ -105,15 +111,22 @@ void playSound_stop(GameSoundEvent event)
     {
         al_stop_sample(&sound_ids[event]);
     }
+
+    if (event == SOUND_UFO_LOW)
+	{
+		motherWasPlaying = false;
+	}
 }
 
 void playSound_shutdown(void) 
 {
     for (int i = 0; i < SOUND_COUNT; i++) 
     {
+    	motherWasPlaying = false;
         if (sounds[i]) 
         {
             al_destroy_sample(sounds[i]);
+
             sounds[i] = NULL;
         }
     }
@@ -172,12 +185,22 @@ void playSound_pauseMusic(void)
 {
     if (music_stream)
         al_set_audio_stream_playing(music_stream, false);
+
+    if(motherWasPlaying)
+	{
+    	al_stop_sample(&sound_ids[SOUND_UFO_LOW]);
+	}
 }
 
 void playSound_resumeMusic(void)
 {
     if (music_stream)
         al_set_audio_stream_playing(music_stream, true);
+
+    if(motherWasPlaying)
+    {
+    	playSound_play(SOUND_UFO_LOW);
+    }
 }
 
 void playSound_setMusicVolume(float volume)
