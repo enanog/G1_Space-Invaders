@@ -114,23 +114,25 @@ void pi_ui_menu(void) {
     // Initial screen - show enemy sprite
     show_invader_sprite();
     disp_clear();  // Clear after showing sprite
-    playSound_playMusic(INTRO_MUSIC);
     while (running) {
         joyinfo_t joyInfo = joy_read();
 
         switch (state) {
             case MENU:
+            	playSound_playMusic(INTRO_MUSIC);
                 // Handle joystick navigation
                 if (joyInfo.y > 40) {  // Joystick down
                     selectedOption = (selectedOption == START) ? CONTINUE :
                     (selectedOption == CONTINUE) ? EXIT :
                     (selectedOption == EXIT) ? SCOREBOARD : START;
+                    playSound_play(SOUND_MENU);
                     usleep(200000);  // Small delay to prevent rapid scrolling
                 }
                 else if (joyInfo.y < -40) {  // Joystick up
                     selectedOption = (selectedOption == START) ? SCOREBOARD :
                     (selectedOption == SCOREBOARD) ? EXIT :
                     (selectedOption == EXIT) ? CONTINUE : START;
+                    playSound_play(SOUND_MENU);
                     usleep(200000);  // Small delay to prevent rapid scrolling
                 }
 
@@ -203,13 +205,17 @@ static int menu_game(bool resumeLastGame) {
     int level = getLevel();
     int lives = getPlayerLives();
     
+	playSound_playMusic(GAME_MUSIC);
+
     while (running) {
         switch (state) {
             case GAME:
+            	playSound_resumeMusic();
                 handle_game_state(&input, &lastTime, &state, &running, &level, &lives);
                 break;
                 
             case PAUSED_FRONT:
+            	playSound_pauseMusic();
                 handle_pause_state(&input, &lastTime, &state, &running, &level, &lives);
                 break;
         }

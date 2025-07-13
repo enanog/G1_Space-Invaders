@@ -217,6 +217,8 @@ void playSound_setMusicVolume(float volume)
 #include "audio.h"
 
 static Audio * sounds[SOUND_COUNT];
+static char musicPlaying = MUSIC_COUNT;
+static bool isPaussed = 0;
 
 bool playSound_init(void)
 {
@@ -255,7 +257,12 @@ void playSound_restart(GameSoundEvent event)
 
 void playSound_playMusic(GameMusicEvent track)
 {
-	playMusic(music_filenames[track], SDL_MIX_MAXVOLUME);
+	if(musicPlaying != track)
+	{
+		playMusic(music_filenames[track], SDL_MIX_MAXVOLUME);
+		musicPlaying = track;
+	}
+
 }
 
 void playSound_stopMusic(void)
@@ -265,12 +272,21 @@ void playSound_stopMusic(void)
 
 void playSound_pauseMusic(void)
 {
-	pauseAudio();
+	if(isPaussed == 0)
+	{
+		pauseAudio();
+		isPaussed = 1;
+	}
 }
 
 void playSound_resumeMusic(void)
 {
-	unpauseAudio();
+	if(isPaussed == 1)
+	{
+		unpauseAudio();
+		isPaussed = 0;
+	}
+
 }
 
 void playSound_setMusicVolume(float volume)
