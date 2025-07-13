@@ -30,6 +30,9 @@ typedef enum {
     SOUND_FAST2,
     SOUND_FAST3,
     SOUND_FAST4,
+	SOUND_LEVELUP,
+	SOUND_GAMEOVER,
+	SOUND_MENU,
     SOUND_COUNT
 } GameSoundEvent;
 

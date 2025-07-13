@@ -30,7 +30,10 @@ static const char *sound_filenames[SOUND_COUNT] =
     [SOUND_FAST1] = "assets/sounds/fastinvader1.wav",
     [SOUND_FAST2] = "assets/sounds/fastinvader2.wav",
     [SOUND_FAST3] = "assets/sounds/fastinvader3.wav",
-    [SOUND_FAST4] = "assets/sounds/fastinvader4.wav"
+    [SOUND_FAST4] = "assets/sounds/fastinvader4.wav",
+	[SOUND_LEVELUP] = "assets/sounds/levelup.wav",
+	[SOUND_GAMEOVER] = "assets/sounds/gameover.wav",
+	[SOUND_MENU] = "assets/sounds/menu.wav"
 };
 
 static const char *music_filenames[MUSIC_COUNT] =
