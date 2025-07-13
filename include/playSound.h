@@ -56,5 +56,11 @@ void playSound_stopMusic(void);
 
 void playSound_playMusic(GameMusicEvent track);
 
+void playSound_pauseMusic(void);
+
+void playSound_resumeMusic(void);
+
+void playSound_setMusicVolume(float volume);
+
 #endif
 
