@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "font.h"
-
+#include <ctype.h>
 void mostrar_letra(int letra) {
     for (int i = 0; i < FONT_ROWS; i++) {
         for (int j = 0; j < FONT_COLS; j++) {
@@ -9,6 +9,22 @@ void mostrar_letra(int letra) {
         printf("\n");
     }
 }
+
+int get_letter_bitmap(char letter) {
+    letter = toupper(letter);
+    if (letter >= 'A' && letter <= 'Z') {
+        return letter - 'A';
+    }
+    return -1;  // Invalid character
+}
+
+int get_number_bitmap(char digit) {
+    if (digit >= '0' && digit <= '9') {
+        return digit - '0';
+    }
+    return -1;  // Invalid digit
+}
+
 
 const int letras_5x4[NUM_LETRAS][FONT_ROWS][FONT_COLS] =
 {

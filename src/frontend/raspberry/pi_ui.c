@@ -7,705 +7,771 @@
 #include <unistd.h>
 #include "score.h"
 #include "game.h"
+#include <ctype.h>  // For toupper()
 
+/* ==================== CONSTANTS AND DEFINITIONS ==================== */
+
+#define BITCHECK(x,n) (((x)>>(n))&1)
+#define ENEMIES_ROW 2
+#define ENEMIES_COLUMN 3
+#define DEBOUNCE_DELAY_MS 20
+#define FRAME_DELAY_MS (1000/60)  // 60 FPS
+#define SCROLL_DELAY_US 40000
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+// Menu state enumerations
+enum {
+    RESUME,
+    START,
+    SCOREBOARD,
+    EXIT,
+    MENU,
+    CONTINUE
+};
+
+enum {
+    PAUSED = 8,
+    GAME
+};
+
+// Menu strings
+static const char *menu_strings[] = {"RSM", "STA", "TOP", "EXT", "MEN", "CON"};
+
+// Invader sprite pattern
+static const uint16_t invader_sprite[16] = {
+    0x07E0, 0x1FF8, 0x3FFC, 0x6F6C, 0xFFFE, 0xFFFE, 0xFFFE, 0xF7DE,
+    0xFFFE, 0x1C38, 0x3C3C, 0xE6DE, 0xCFF3, 0xC631, 0x3C3C, 0x180C
+};
+
+/* ==================== STATIC VARIABLES ==================== */
+
+static char nameOfPlayer[4];  // Buffer for player name input
+
+/* ==================== FORWARD DECLARATIONS ==================== */
+
+// Input handling
 static input_t joy_get_input(void);
+static int debounce_joystick_switch(void);
+
+// Menu and game state
+static int menu_game(bool resumeLastGame);
+static int game_paused(input_t *input);
+static void handle_game_state(input_t *input, long long *lastTime, int *state, 
+                            bool *running, int *level, int *lives);
+static void handle_pause_state(input_t *input, long long *lastTime, int *state, 
+                             bool *running, int *level, int *lives);
+static void handle_game_over(void);
+
+// Drawing functions
+static void draw_entity(hitbox_t hitbox);
 static void draw_player(void);
 static void draw_enemies(void);
 static void draw_barriers(void);
-static void draw_enemies_bullets(void);
+static void draw_bullets(void);
 static void draw_player_bullet(void);
-
+static void draw_enemies_bullets(void);
 static void draw_mothership(void);
-
-static int menu_game(bool resumeLastGame);
 static void pi_ui_render(void);
 
-static void draw_hitbox_filled(hitbox_t hitbox);
-static void disp_write_string(const char *str);
-const char * menu_strings[]={"RSM","STA","TOP","EXT","MEN","CON"};
-static void disp_write_char(const char c,dcoord_t cords);
-static int game_paused (input_t * input);
+// Display helpers
+static void draw_char(char c, dcoord_t cords);
+static void draw_string(const char *str, dcoord_t cords);
+static void draw_number_centered(int number, const char *prefix);
+static void draw_scrolling_text(const char *msg);
 
-static int debounce_joystick_switch(void) ;
-static void show_top3(void);
-static void disp_write_string_top(const char *str);
-static void disp_write_digit(char digit,dcoord_t cords);
-static void disp_write_long_number_center(int number,char const *str);
-static void disp_write_scroll_string(const char *msg);
+// UI screens
+static void show_invader_sprite(void);
+static void show_top_scores(void);
+static void show_level_up(int level);
+static void show_lives_remaining(int lives);
 
-static void show_lives(int lives);
-static void level_up(int level);
-static bool isHighScore(int score, score_t topScores[], int count);
-
+// Utility functions
+static bool is_high_score(int score, score_t topScores[], int count);
 void get_name(char *name_out);
 
-static void show_16x16_enemy(void);
-static const uint16_t invader_sprite[16] = {
-    0x07E0,
-    0x1FF8,
-    0x3FFC,
-    0x6F6C,
-    0xFFFE,
-    0xFFFE,
-    0xFFFE,
-    0xF7DE,
-    0xFFFE,
-    0x1C38,
-    0x3C3C,
-    0xE6DE,
-    0xCFF3,
-    0xC631,
-    0x3C3C,
-    0x180C
-};
+/* ==================== PUBLIC FUNCTIONS ==================== */
 
-#define BITCHECK(x,n) (((x)>>(n))&1)
-
-
-#define ENEMIES_ROW 2
-#define ENEMIES_COLUMN 3
-
-enum {
-      RESUME,
-      START,
-      SCOREBOARD,
-      EXIT,MENU,CONTINUE};
-enum{
-    PAUSED=8,GAME
-};
-
-void pi_ui_init(void) 
-{
+/**
+ * @brief Initialize the PI UI system
+ */
+void pi_ui_init(void) {
     disp_init();
     joy_init();
 }
- char nameOfPlayer[4];
-void pi_ui_menu(void)
-{
-    int state=MENU, nextState=START, running=true;
-    joyinfo_t joyInfo;
-    show_16x16_enemy();
-    printf("%s\n",nameOfPlayer);
-    while(running)
-    {
-        switch (state)
-        {
-        case MENU:
-            joyInfo = joy_read();
-            if (debounce_joystick_switch())
-            {
-                state=nextState;
-                break;
-            }
-            if (joyInfo.y > 40)
-            {
-                if (nextState==START)
-                    nextState=CONTINUE;
-                else if ( nextState==CONTINUE)
-                    nextState=EXIT;
-                else if (nextState==EXIT)
-                    nextState=SCOREBOARD;
-                else if (nextState==SCOREBOARD)
-                    nextState=START;
-            }
-            else if (joyInfo.y<-40)
-            {
-                if (nextState==START)
-                    nextState=SCOREBOARD;
-                else if ( nextState==SCOREBOARD)
-                    nextState=EXIT;
-                else if (nextState==EXIT)
-                    nextState=CONTINUE;
-                else if (nextState==CONTINUE)
-                    nextState=START;
-            }
-            else
-            {
-                disp_clear();
-                disp_write_string(menu_strings[nextState]);
-                disp_update();
-            }
-            
-            break;
-        
-        case START:
-            state=menu_game(false);
-            break;
-        case CONTINUE:
-            state=menu_game(true);
-            break;
-        case SCOREBOARD:
-            printf("Showing top 3 scores...\n");
-            show_top3();
-            state=MENU;
-            break;
-        case EXIT:
-            show_16x16_enemy();
-            running=false;
-            break;
-        default:
-            break;
-        }
-    }
-}
 
-static int menu_game(bool resumeLastGame)
-{
-    input_t input={0,0,0,0};
-    printf("Initializing game...\n");
+/**
+ * @brief Main menu loop
+ */
+/**
+ * @brief Main menu loop
+ */
+void pi_ui_menu(void) {
+    int state = MENU;
+    int selectedOption = START;  // Start with "STA" selected
     bool running = true;
-    game_init(ENEMIES_ROW,ENEMIES_COLUMN, resumeLastGame);
-    if (game_update(input))//si es una partida ya perdida
-        game_init(ENEMIES_ROW,ENEMIES_COLUMN,false);
-    long long lastTime = getTimeMillis();
-    long long currentTime;
-    int state=GAME;
-    int level=getLevel();
-    int lives=getPlayerLives();
-    while (running)
-    {
-        switch(state)
-        {   
-            case GAME:
-           /// printf("ENTRO?%d\n",input.pause);
-                input=joy_get_input();
-                //printf("ENTRO?%d\n",input.pause);
-                currentTime= getTimeMillis();
-                if (currentTime - lastTime > 1000/60) // 60 FPS
-                {
-                    //printf ("%lld\n",currentTime-lastTime);
-                    lastTime = currentTime;
-                    disp_clear();
-                    int i;
-                //printf(" ,%d,%d,%d\n", input.direction, input.shot, input.pause);
-                if((i=game_update(input))!=RUNNING)//si perdes
-                    {
-                        running = false;
-                        state=SCOREBOARD;
-                        printf("Game over!\n");
-                        disp_write_scroll_string("GAME OVER");
-                        printf("estado: %d",state);
-                        score_t topScores[3];
-                        int count=getTopScore(topScores,3);//cargo top 3
-                        int newScore=getScore();
 
-                        bool highscore=isHighScore(newScore,topScores,count);
-                        if (highscore)
-                        {
-                            get_name(nameOfPlayer);
-                            topScoreUpdate(newScore,nameOfPlayer);
+    // Initial screen - show enemy sprite
+    show_invader_sprite();
+    disp_clear();  // Clear after showing sprite
+
+    while (running) {
+        joyinfo_t joyInfo = joy_read();
+
+        switch (state) {
+            case MENU:
+                // Handle joystick navigation
+                if (joyInfo.y > 40) {  // Joystick down
+                    selectedOption = (selectedOption == START) ? CONTINUE :
+                    (selectedOption == CONTINUE) ? EXIT :
+                    (selectedOption == EXIT) ? SCOREBOARD : START;
+                    usleep(200000);  // Small delay to prevent rapid scrolling
+                }
+                else if (joyInfo.y < -40) {  // Joystick up
+                    selectedOption = (selectedOption == START) ? SCOREBOARD :
+                    (selectedOption == SCOREBOARD) ? EXIT :
+                    (selectedOption == EXIT) ? CONTINUE : START;
+                    usleep(200000);  // Small delay to prevent rapid scrolling
+                }
+
+                // Draw current selection
+                disp_clear();
+                draw_string(menu_strings[selectedOption], (dcoord_t){1, 6});
+                disp_update();
+
+                // Handle selection with switch button
+                if (debounce_joystick_switch()) {
+                    if (selectedOption == CONTINUE) {
+                        // Check if saved game is over
+                        input_t dummyInput = {0};
+                        if (game_update(dummyInput) == RUNNING) {
+                            // Game can be continued
+                            state = menu_game(true);  // Resume saved game
+                        } else {
+                            // Game over - start new game
+                            state = menu_game(false);
                         }
-                        
-
-                        break;
+                    } else {
+                        state = selectedOption;  // For other options
                     }
-                    pi_ui_render();
-                    disp_update();
+                    usleep(200000);  // Debounce delay
                 }
-                if (input.pause)
-                {
-                    game_update(input);
-                    printf(" ,%d,%d,%d\n", input.direction, input.shot, input.pause);
-                    state=PAUSED;
-                   //  printf("Entre pausa\n");
-                }
-                if (level!=getLevel()||lives!=getPlayerLives())
-                {
-                    state=PAUSED;
-                }
-            break;
+                break;
+
+            case START:
+                state = menu_game(false);  // Always start new game
+                break;
+
+            case CONTINUE:
+                // This should never be reached as CONTINUE is handled above
+                state = menu_game(true);
+                break;
+
+            case SCOREBOARD:
+                show_top_scores();
+                state = MENU;  // Return to menu after showing scores
+                break;
+
+            case EXIT:
+                running = false;
+                break;
+        }
+    }
+}
+
+/* ==================== PRIVATE FUNCTIONS ==================== */
+
+/**
+ * @brief Main game loop
+ * @param resumeLastGame Whether to resume previous game
+ * @return Next state after game ends
+ */
+static int menu_game(bool resumeLastGame) {
+    input_t input = {0};
+    int state = GAME;
+    bool running = true;
+    
+    // Initialize game state
+    game_init(ENEMIES_ROW, ENEMIES_COLUMN, resumeLastGame);
+    if (game_update(input)) {  // Check if game was already lost
+        game_init(ENEMIES_ROW, ENEMIES_COLUMN, false);
+    }
+    
+    long long lastTime = getTimeMillis();
+    int level = getLevel();
+    int lives = getPlayerLives();
+    
+    while (running) {
+        switch (state) {
+            case GAME:
+                handle_game_state(&input, &lastTime, &state, &running, &level, &lives);
+                break;
+                
             case PAUSED:
-            
-            if (level!=getLevel())
-            {
-                level=getLevel();
-                level_up(level);
-                state=GAME;
-                lastTime=getTimeMillis();
-                input_t aux={0,0,1,0};
-                game_update(aux);
-            }
-            else if (lives!=getPlayerLives())
-            {
-                lives=getPlayerLives();
-                show_lives(lives);
-                state=GAME;
-                lastTime=getTimeMillis();
-                input_t aux={0,0,1,0};
-                game_update(aux);
-
-            }
-            else if ((state=game_paused(&input))==RESUME)
-                {
-                    //for (int i=0;i<100000000;i++);
-                    state=GAME;
-                    lastTime=getTimeMillis();
-                    input_t aux={0,0,1,0};
-                    game_update(aux);
-                   // printf("Sali pausa\n");
-                }
-            else
-            {
-                running=false;
-            }
-            break;
+                handle_pause_state(&input, &lastTime, &state, &running, &level, &lives);
+                break;
         }
     }
+    
     return state;
 }
 
+/**
+ * @brief Handle game running state
+ */
+static void handle_game_state(input_t *input, long long *lastTime, int *state, 
+                            bool *running, int *level, int *lives) {
+    *input = joy_get_input();
+    long long currentTime = getTimeMillis();
+    
+    if (currentTime - *lastTime > FRAME_DELAY_MS) {
+        *lastTime = currentTime;
+        
+        disp_clear();
+        int gameStatus = game_update(*input);
+        
+        if (gameStatus != RUNNING) {
+            handle_game_over();
+            *running = false;
+            *state = SCOREBOARD;
+            return;
+        }
+        
+        pi_ui_render();
+        disp_update();
+    }
+    
+    // Check for pause or state change
+    if (input->pause) {
+        *state = PAUSED;
+    }
+    else if (*level != getLevel() || *lives != getPlayerLives()) {
+        *state = PAUSED;
+    }
+}
 
-static int game_paused(input_t *input)
-{
-    int state=RESUME;
+/**
+ * @brief Handle game over scenario
+ */
+static void handle_game_over(void) {
+    draw_scrolling_text("GAME OVER");
+    
+    score_t topScores[3];
+    int count = getTopScore(topScores, 3);
+    int newScore = getScore();
+    
+    if (is_high_score(newScore, topScores, count)) {
+        get_name(nameOfPlayer);
+        topScoreUpdate(newScore, nameOfPlayer);
+    }
+}
+
+/**
+ * @brief Handle pause state
+ */
+static void handle_pause_state(input_t *input, long long *lastTime, int *state,
+                               bool *running, int *level, int *lives) {
+    if (*level != getLevel()) {
+        *level = getLevel();
+        show_level_up(*level);
+        *state = GAME;
+        *lastTime = getTimeMillis();
+        input_t aux = {0, 0, 1, 0};
+        game_update(aux);
+    }
+    else if (*lives != getPlayerLives()) {
+        *lives = getPlayerLives();
+        show_lives_remaining(*lives);
+        *state = GAME;
+        *lastTime = getTimeMillis();
+        input_t aux = {0, 0, 1, 0};
+        game_update(aux);
+    }
+    else {
+        int newState = game_paused(input);
+        if (newState == RESUME) {
+            *state = GAME;
+            *lastTime = getTimeMillis();
+            input_t aux = {0, 0, 1, 0};
+            game_update(aux);
+        }
+        else if (newState == MENU) {
+            *running = false;  // Exit to main menu
+            *state = MENU;
+        }
+        else if (newState == EXIT) {
+            *running = false;  // Exit game completely
+            *state = EXIT;
+        }
+    }
+}
+
+/**
+ * @brief Pause menu handler
+ * @param input Pointer to input structure
+ * @return Selected menu option
+ */
+static int game_paused(input_t *input) {
+    int state = RESUME;
     joyinfo_t joyInfo;
-    while (!debounce_joystick_switch())
-    {
+    bool selectionMade = false;
+
+    while (!selectionMade) {
+        // Handle joystick navigation
         joyInfo = joy_read();
-        if (joyInfo.y > 40)
-        {
-            if (state==RESUME)
-                state=MENU;
-            else if (state==MENU)
-                state=EXIT;
-            else if (state==EXIT)
-                state=RESUME;
+
+        if (joyInfo.y > 40) {  // Joystick down
+            state = (state == RESUME) ? MENU :
+            (state == MENU) ? EXIT : RESUME;
+            usleep(200000);  // Small delay to prevent rapid scrolling
         }
-        else if (joyInfo.y<-40)
-        {
-            if (state==RESUME)
-                state=EXIT;
-            else if (state==EXIT)
-                state=MENU;
-            else if (state==MENU)
-                state=RESUME;
+        else if (joyInfo.y < -40) {  // Joystick up
+            state = (state == RESUME) ? EXIT :
+            (state == EXIT) ? MENU : RESUME;
+            usleep(200000);  // Small delay to prevent rapid scrolling
         }
-        else
-        {
-            disp_clear();
-            disp_write_string(menu_strings[state]);
-            disp_update();
+
+        // Draw current selection
+        disp_clear();
+        draw_string(menu_strings[state], (dcoord_t){1, 6});
+        disp_update();
+
+        // Handle selection with switch button
+        if (debounce_joystick_switch()) {
+            switch (state) {
+                case RESUME:
+                    selectionMade = true;
+                    break;
+
+                case MENU:  // Return to main menu
+                    return MENU;
+
+                case EXIT:  // Exit game
+                    return EXIT;
+            }
+            usleep(200000);  // Debounce delay
         }
+
+        usleep(10000);  // Small delay to prevent CPU overuse
     }
-    return state;
+
+    return RESUME;
 }
 
-static void pi_ui_render(void)
-{
-    draw_player();
-    draw_enemies();
-    draw_barriers();
-    draw_player_bullet();
-    draw_enemies_bullets();
-    draw_mothership();
+/**
+ * @brief Get joystick input with debouncing
+ * @return Current input state
+ */
+static input_t joy_get_input(void) {
+    input_t input = {0};
+    joyinfo_t joyInfo = joy_read();
+    
+    input.direction = (joyInfo.x > 40) - (joyInfo.x < -40);
+    input.shot = (joyInfo.y > 40 || joyInfo.y < -40);
+    
+    if (debounce_joystick_switch()) {
+        input.pause = !input.pause;
+    }
+    
+    return input;
 }
+
+/**
+ * @brief Debounce joystick switch
+ * @return 1 if switch pressed, 0 otherwise
+ */
 static int debounce_joystick_switch(void) {
-    static int last_state = 1; // Assume switch starts HIGH (not pressed)
+    static int last_state = 1;
     static int debounced_state = 1;
     static long long last_debounce_time = 0;
-    const long long debounce_delay = 20; // ms
-
+    
     int current_state = joy_read().sw;
     long long now = getTimeMillis();
-
+    
     if (current_state != last_state) {
         last_debounce_time = now;
     }
-
-    if ((now - last_debounce_time) > debounce_delay) {
+    
+    if ((now - last_debounce_time) > DEBOUNCE_DELAY_MS) {
         if (debounced_state != current_state) {
             debounced_state = current_state;
             if (debounced_state == J_PRESS) {
                 last_state = current_state;
-                return 1; // Falling edge detected
+                return 1;
             }
         }
     }
-
+    
     last_state = current_state;
     return 0;
 }
-static input_t joy_get_input(void)
-{
-    //printf("entre\n");
-    input_t input = {0, 0, 0, 0};
-    joyinfo_t joyInfo = joy_read();
 
-    input.direction = (joyInfo.x>40) - (joyInfo.x<-40);
+/* ==================== DRAWING FUNCTIONS ==================== */
 
-    input.shot = (joyInfo.y>40 || joyInfo.y<-40);
-   // printf("x:%d,y:%d,shot:%d\n",joyInfo.x,joyInfo.y,input.shot);
-    //printf("direction:%d\n",input.direction);
-    if (debounce_joystick_switch())
-    {
-        input.pause=!input.pause;
-        printf("debouce %d\n",input.pause);
-    }
-    return input;
-    
+/**
+ * @brief Render all game entities
+ */
+static void pi_ui_render(void) {
+    draw_player();
+    draw_enemies();
+    draw_barriers();
+    draw_bullets();
+    draw_mothership();
 }
 
-static void draw_player(void)
-{
+/**
+ * @brief Draw player entity
+ */
+static void draw_player(void) {
     hitbox_t playerHitbox = getPlayerPosition();
-    // Coordenada inicial del jugador
-    uint8_t base_x = (uint8_t)(playerHitbox.start.x * DISP_CANT_X_DOTS);
-    uint8_t base_y = (uint8_t)(playerHitbox.start.y * DISP_CANT_Y_DOTS);
-    //printf("x:%f,y:%f\n",playerHitbox.start.x,playerHitbox.start.y);
-    int x, y;
-    for (x=0;x<PLAYER_WIDTH * DISP_CANT_X_DOTS; x++)
-    {
-        for (y=0;y<PLAYER_HEIGHT * DISP_CANT_Y_DOTS; y++)
-        {
-           // printf("basex:%d,basey:%d\n",base_x+x,base_y+y);
-            if((y==0&&x==0)||(y==0 && x==(PLAYER_WIDTH*DISP_CANT_X_DOTS)-1))
-                continue;
-            dcoord_t cord={base_x+x,base_y+y};
-            disp_write(cord,D_ON);  
-        }
-    }
+    draw_entity(playerHitbox);
 }
-static void draw_enemies(void)
-{
-    hitbox_t enemyHitbox;
-    int row, col;
-    for (row = 0; row < ENEMIES_ROW_MAX; row++)
-    {
-        for (col = 0; col < ENEMIES_COLUMNS_MAX; col++)
-        {
-           
-            if (getIsEnemyAlive(row,col))
-            {
-                enemyHitbox = getEnemyPosition(row, col);
-                draw_hitbox_filled(enemyHitbox);
+
+/**
+ * @brief Draw all active enemies
+ */
+static void draw_enemies(void) {
+    for (int row = 0; row < ENEMIES_ROW_MAX; row++) {
+        for (int col = 0; col < ENEMIES_COLUMNS_MAX; col++) {
+            if (getIsEnemyAlive(row, col)) {
+                draw_entity(getEnemyPosition(row, col));
             }
         }
     }
 }
-static void draw_barriers(void)
-{
-    hitbox_t barrierHitbox;
-    int barrier, row, col;
-    for (barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++)
-    {
-        for (row = 0; row < BARRIER_ROWS; row++)
-        {
-            for (col = 0; col < BARRIER_COLUMNS; col++)
-            {
-                if (!getBarrierIsAlive(barrier, row, col))
-                {
-                    continue;
+
+/**
+ * @brief Draw all active barriers
+ */
+static void draw_barriers(void) {
+    for (int barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++) {
+        for (int row = 0; row < BARRIER_ROWS; row++) {
+            for (int col = 0; col < BARRIER_COLUMNS; col++) {
+                if (getBarrierIsAlive(barrier, row, col)) {
+                    draw_entity(getBarrierPosition(barrier, row, col));
                 }
-                barrierHitbox = getBarrierPosition(barrier, row, col);
-               draw_hitbox_filled(barrierHitbox);
             }
         }
     }
 }
-static void draw_hitbox_filled(hitbox_t hitbox)
-{
+
+/**
+ * @brief Draw all active bullets (player and enemies)
+ */
+static void draw_bullets(void) {
+    draw_player_bullet();
+    draw_enemies_bullets();
+}
+
+/**
+ * @brief Draw player bullet if active
+ */
+static void draw_player_bullet(void) {
+    bullet_t playerBullet = getPlayerBulletinfo();
+    if (playerBullet.active) {
+        draw_entity(playerBullet.hitbox);
+    }
+}
+
+/**
+ * @brief Draw all active enemy bullets
+ */
+static void draw_enemies_bullets(void) {
+    bullet_t enemyBulletBitMap[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
+    getEnemiesBulletsInfo(enemyBulletBitMap);
+    
+    for (int row = 0; row < ENEMIES_ROW; row++) {
+        for (int col = 0; col < ENEMIES_COLUMN; col++) {
+            if (enemyBulletBitMap[row][col].active) {
+                draw_entity(enemyBulletBitMap[row][col].hitbox);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Draw mothership if active
+ */
+static void draw_mothership(void) {
+    if (getIsMothershipAlive()) {
+        draw_entity(getMothershipPosition());
+    }
+}
+
+/**
+ * @brief Generic entity drawing function
+ * @param hitbox Entity's hitbox coordinates
+ */
+static void draw_entity(hitbox_t hitbox) {
     uint8_t start_x = (uint8_t)(hitbox.start.x * DISP_CANT_X_DOTS);
     uint8_t start_y = (uint8_t)(hitbox.start.y * DISP_CANT_Y_DOTS);
     uint8_t end_x = (uint8_t)(hitbox.end.x * DISP_CANT_X_DOTS);
     uint8_t end_y = (uint8_t)(hitbox.end.y * DISP_CANT_Y_DOTS);
-
+    
     // Clamp to display bounds
-    if (start_x >= DISP_CANT_X_DOTS) start_x = DISP_CANT_X_DOTS - 1;
-    if (end_x >= DISP_CANT_X_DOTS) end_x = DISP_CANT_X_DOTS - 1;
-    if (start_y >= DISP_CANT_Y_DOTS) start_y = DISP_CANT_Y_DOTS - 1;
-    if (end_y >= DISP_CANT_Y_DOTS) end_y = DISP_CANT_Y_DOTS - 1;
-
+    start_x = MIN(start_x, DISP_CANT_X_DOTS - 1);
+    end_x = MIN(end_x, DISP_CANT_X_DOTS - 1);
+    start_y = MIN(start_y, DISP_CANT_Y_DOTS - 1);
+    end_y = MIN(end_y, DISP_CANT_Y_DOTS - 1);
+    
     for (uint8_t x = start_x; x <= end_x; x++) {
         for (uint8_t y = start_y; y <= end_y; y++) {
-            dcoord_t coord = {x, y};
-            disp_write(coord, D_ON);
+            disp_write((dcoord_t){x, y}, D_ON);
         }
     }
 }
 
-static void draw_enemies_bullets(void)
-{
-    bullet_t enemyBulletBitMap[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
-    getEnemiesBulletsInfo(enemyBulletBitMap);
-    int row, col;
-    for (row = 0; row < ENEMIES_ROW; row++)
-    {
-        for (col = 0; col < ENEMIES_COLUMN; col++)
-        {
-            if (!enemyBulletBitMap[row][col].active)
-            {
-                continue;
-            }
-    
-            hitbox_t bulletHitbox = enemyBulletBitMap[row][col].hitbox;
-            draw_hitbox_filled(bulletHitbox);
-        }
-    }
-}
-static void draw_player_bullet(void)
-{
-    bullet_t playerBullet = getPlayerBulletinfo();
-    if (playerBullet.active)
-     {
-        hitbox_t bulletHitbox = playerBullet.hitbox;
-        draw_hitbox_filled(bulletHitbox);
-    }
-}
-static void draw_mothership(void)
-{
-    if (getIsMothershipAlive())
-    {
-        hitbox_t mothershipHitbox = getMothershipPosition();
-     
-            draw_hitbox_filled(mothershipHitbox);
-    }
-}
-static void disp_write_char(const char c,dcoord_t cords)
-{
-    int row, col;
-    dcoord_t pixel;
-    for (row=0;row<FONT_ROWS;row++)
-    {
-        for(col=0;col<FONT_COLS;col++)
-        {
-            pixel.x=cords.x+col;
-            pixel.y=cords.y+row;
-            if(pixel.x<0 || pixel.x>DISP_MAX_X)
-                continue;
-            if(letras_5x4[c-'A'][row][col])
-                 disp_write(pixel, D_ON);
-        }
-    }
-}
+/* ==================== DISPLAY HELPERS ==================== */
 
-static void disp_write_string(const char *str)
-{
-    int i;
-    dcoord_t cords={1,6};
-    for (i=0;str[i]!='\0' && i<3;i++)
-    {
-        disp_write_char(str[i],cords);
-        cords.x+=FONT_COLS+1;
-    }
-}
-static void disp_write_string_top(const char *str)
-{
-    int i;
-    dcoord_t cords={1,0};
-    for (i=0;str[i]!='\0' && i<3;i++)
-    {
-        disp_write_char(str[i],cords);
-        cords.x+=FONT_COLS+1;
-    }
-}
+/**
+ * @brief Draw a character at specified coordinates
+ * @param c Character to draw
+ * @param cords Drawing coordinates
+ */
+void draw_char(char c, dcoord_t cords) {
+    int char_index = -1;
 
-
-static void show_16x16_enemy(void)
-{
-     disp_clear();
-     uint8_t y, x;
-    for (y=0; y < 16; y++) 
-    {
-        for (x = 0; x < 16; x++) 
-        {
-            if (invader_sprite[y] & (1 << (15 - x))) 
-            {
-                dcoord_t coord = {x, y};
-                disp_write(coord, D_ON);
+    if (c >= 'A' && c <= 'Z') {
+        char_index = get_letter_bitmap(c);
+    }
+    else if (c >= '0' && c <= '9') {
+        char_index = get_number_bitmap(c);
+        // Use the numbers array instead of letters
+        for (int row = 0; row < FONT_ROWS; row++) {
+            for (int col = 0; col < FONT_COLS; col++) {
+                dcoord_t pixel = {cords.x + col, cords.y + row};
+                if (pixel.x < 0 || pixel.x > DISP_MAX_X) continue;
+                if (numeros_5x4[char_index][row][col]) {
+                    disp_write(pixel, D_ON);
+                }
             }
         }
-    }
-    disp_update();
-    while(!debounce_joystick_switch());
-    disp_clear();
-}
-
-static void show_top3(void)
-{
-    score_t topScores[3];
-    int topCount = getTopScore(topScores, 3);
-    printf("%d aa\n", topCount);
-    char aux[4];
-    int i,j;
-    disp_clear();
-    disp_update();;
-    for(i=0;i<topCount;i++)
-    {
-        for (j=0;topScores[i].name[j]!='\0' && j<3;j++)
-        {
-            aux[j]=topScores[i].name[j];
-            if (aux[j]>'a' && aux[j]<'z')
-                aux[j]-=32; // Convert to upperca
-        }
-        aux[j]='\0';
-        
-        disp_write_long_number_center(topScores[i].score, aux);
-        disp_clear();
-        disp_update();
+        return;
     }
 
-}
-
-static void disp_write_digit(char digit, dcoord_t coord)
-{
-    if (digit < '0' || digit > '9') return;
-
-    int row,col;
-    for (row = 0; row < FONT_ROWS; row++) 
-    {
-        for (col = 0; col < FONT_COLS; col++) 
-        {
-            if (!numeros_5x4[digit - '0'][row][col]) continue;
-
-            int px = coord.x + col;
-            int py = coord.y + row;
-            if (px >= 0 && px <= DISP_MAX_X && py >= 0 && py <= DISP_MAX_Y) 
-            {
-                disp_write((dcoord_t){px, py}, D_ON);
+    // Default to letters if not a number
+    if (char_index >= 0) {
+        for (int row = 0; row < FONT_ROWS; row++) {
+            for (int col = 0; col < FONT_COLS; col++) {
+                dcoord_t pixel = {cords.x + col, cords.y + row};
+                if (pixel.x < 0 || pixel.x > DISP_MAX_X) continue;
+                if (letras_5x4[char_index][row][col]) {
+                    disp_write(pixel, D_ON);
+                }
             }
         }
     }
 }
-static void disp_write_long_number_center(int number, const char *str)
-{
+
+/**
+ * @brief Draw a string at specified coordinates
+ * @param str String to draw
+ * @param cords Drawing coordinates
+ */
+static void draw_string(const char *str, dcoord_t cords) {
+    for (int i = 0; str[i] != '\0' && i < 3; i++) {
+        draw_char(str[i], cords);
+        cords.x += FONT_COLS + 1;
+    }
+}
+
+/**
+ * @brief Draw a number centered with prefix
+ * @param number Number to display
+ * @param prefix Prefix text (3 chars max)
+ */
+static void draw_number_centered(int number, const char *prefix) {
     if (number < 0) number = -number;
-
+    
+    // Convert number to string
     char buffer[12];
     int len = 0;
-
-    // Convert number to string in reverse
     do {
         buffer[len++] = '0' + (number % 10);
         number /= 10;
     } while (number > 0);
-
-    // Reverse digits to print left to right
+    
+    // Reverse digits
     for (int i = 0; i < len / 2; i++) {
         char tmp = buffer[i];
         buffer[i] = buffer[len - 1 - i];
         buffer[len - 1 - i] = tmp;
     }
-
+    
+    // Calculate scrolling animation
     const uint8_t y_center = 7;
-    const uint8_t FONT_WIDTH = FONT_COLS;
-    const uint8_t DIGIT_SPACING = 1;
-
-    int total_width = len * FONT_WIDTH + (len - 1) * DIGIT_SPACING;
-    int start_x = DISP_MAX_X + 1; // Empieza fuera de la pantalla a la derecha
-    int end_x = -total_width; // Cambiado: permite que los dígitos salgan de a poco por la izquierda
-    int scroll_x,i;
-    for (scroll_x = start_x; scroll_x >= end_x; scroll_x--) 
-    {
+    const int total_width = len * FONT_COLS + (len - 1) * 1;
+    const int start_x = DISP_MAX_X + 1;
+    const int end_x = -total_width;
+    
+    for (int scroll_x = start_x; scroll_x >= end_x; scroll_x--) {
         disp_clear();
-        disp_write_string_top(str);
-
+        draw_string(prefix, (dcoord_t){1, 0});
+        
         int digit_x = scroll_x;
-        for (i = 0; i < len; i++) 
-        {
-              dcoord_t coord = { .x = digit_x, .y = y_center };  
-                disp_write_digit(buffer[i], coord);
-            digit_x += FONT_WIDTH + DIGIT_SPACING;
+        for (int i = 0; i < len; i++) {
+            draw_char(buffer[i], (dcoord_t){digit_x, y_center});
+            digit_x += FONT_COLS + 1;
         }
-
+        
         disp_update();
-        if (scroll_x != end_x)
-            usleep(80000); 
+        if (scroll_x != end_x) usleep(80000);
     }
 }
 
-static void disp_write_scroll_string(const char *msg)
-{
+/**
+ * @brief Draw scrolling text message
+ * @param msg Message to display
+ */
+static void draw_scrolling_text(const char *msg) {
     int len = 0;
     while (msg[len] != '\0') len++;
+    
     int total_width = len * (FONT_COLS + 1) - 1;
-    int start_x = DISP_MAX_X - FONT_COLS;
     int final_scroll = total_width + DISP_CANT_X_DOTS;
-    int scroll, i;
-
-    for (scroll = 0; scroll <= final_scroll; scroll++)
-    {
+    
+    for (int scroll = 0; scroll <= final_scroll; scroll++) {
         disp_clear();
-        int x = start_x - scroll;
-        dcoord_t coord = { .x = x, .y = 6 }; // y=6 for vertical centering
-
-        for (i = 0; i < len; i++)
-        {
-            if (msg[i] != ' ')
-            {
-                //if (coord.x >= 0 && coord.x <= DISP_CANT_X_DOTS - FONT_COLS)
-                    disp_write_char(msg[i], coord);
+        int x = (DISP_MAX_X - FONT_COLS) - scroll;
+        dcoord_t coord = {x, 6};
+        
+        for (int i = 0; i < len; i++) {
+            if (msg[i] != ' ') {
+                draw_char(msg[i], coord);
             }
             coord.x += FONT_COLS + 1;
         }
-
+        
         disp_update();
-        if (scroll != final_scroll)
-            usleep(40000); 
-        printf("sali de aca\n");
+        if (scroll != final_scroll) usleep(SCROLL_DELAY_US);
     }
 }
 
-static void level_up(int level)
-{
-    disp_write_long_number_center(level,"LVL");
+/* ==================== UI SCREENS ==================== */
+
+/**
+ * @brief Show invader sprite on screen
+ */
+static void show_invader_sprite(void) {
+    disp_clear();
+    
+    for (uint8_t y = 0; y < 16; y++) {
+        for (uint8_t x = 0; x < 16; x++) {
+            if (invader_sprite[y] & (1 << (15 - x))) {
+                disp_write((dcoord_t){x, y}, D_ON);
+            }
+        }
+    }
+    
+    disp_update();
+    
+    // Wait for button press but with timeout to prevent hanging
+    long long startTime = getTimeMillis();
+    while (!debounce_joystick_switch() && 
+          (getTimeMillis() - startTime < 3000)) {
+        usleep(10000);
+    }
 }
-static void show_lives(int lives)
-{
-    disp_write_long_number_center(lives,"LIV");
+
+/**
+ * @brief Display top 3 scores
+ */
+static void show_top_scores(void) {
+    score_t topScores[3];
+    int topCount = getTopScore(topScores, 3);
+    
+    for (int i = 0; i < topCount; i++) {
+        char name[4];
+        for (int j = 0; j < 3 && topScores[i].name[j] != '\0'; j++) {
+            name[j] = toupper(topScores[i].name[j]);
+        }
+        name[3] = '\0';
+        
+        draw_number_centered(topScores[i].score, name);
+        disp_clear();
+        disp_update();
+    }
 }
-void get_name(char *name_out) 
-{
+
+/**
+ * @brief Show level up notification
+ * @param level New level number
+ */
+static void show_level_up(int level) {
+    draw_number_centered(level, "LVL");
+}
+
+/**
+ * @brief Show remaining lives
+ * @param lives Number of lives remaining
+ */
+static void show_lives_remaining(int lives) {
+    draw_number_centered(lives, "LIV");
+}
+
+/**
+ * @brief Get player name input
+ * @param name_out Buffer to store name (must be at least 4 chars)
+ */
+void get_name(char *name_out) {
     const char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     int letter_idx = 0;
     int pos = 0;
-    int len = 26;
-    joyinfo_t joyInfo;
-    disp_write_scroll_string("YOU ARE IN THE TOP THREE PUT YOUR THREE LETTER NICKNAME");
-
+    
+    draw_scrolling_text("YOU ARE IN THE TOP THREE PUT YOUR THREE LETTER NICKNAME");
+    
     while (pos < 3) {
         disp_clear();
-
-        // Mostrar letras ya seleccionadas a la izquierda
+        
+        // Show already selected letters
         dcoord_t cords = {1, 6};
         for (int i = 0; i < pos; i++) {
-            disp_write_char(name_out[i], cords);
+            draw_char(name_out[i], cords);
             cords.x += FONT_COLS + 1;
         }
-
-        // Mostrar la letra seleccionada en la posición actual
-        char letra[2] = {alphabet[letter_idx], '\0'};
-        disp_write_char(letra[0], cords);
-
+        
+        // Show current letter selection
+        draw_char(alphabet[letter_idx], cords);
         disp_update();
-
-        // Esperar movimiento o selección
-        int moved = 0;
+        
+        // Handle input
+        joyinfo_t joyInfo;
         long long last_move = getTimeMillis();
+        bool moved = false;
+        
         while (!moved) {
             joyInfo = joy_read();
             long long now = getTimeMillis();
-            if (joyInfo.y > 40 && (now - last_move > 80)) { // abajo
-                letter_idx = (letter_idx + 1) % len;
+            
+            if (joyInfo.y > 40 && (now - last_move > 80)) {
+                letter_idx = (letter_idx + 1) % 26;
                 last_move = now;
-                moved = 1;
-            } else if (joyInfo.y < -40 && (now - last_move > 80)) { // arriba
-                letter_idx = (letter_idx - 1 + len) % len;
-                last_move = now;
-                moved = 1;
-            } else if (debounce_joystick_switch()) { // Seleccionar letra
-                name_out[pos++] = alphabet[letter_idx];
-                letter_idx = 0; // volver a la A para la siguiente letra
-                moved = 1;
+                moved = true;
             }
-            usleep(10000); // 10ms para evitar busy wait
+            else if (joyInfo.y < -40 && (now - last_move > 80)) {
+                letter_idx = (letter_idx - 1 + 26) % 26;
+                last_move = now;
+                moved = true;
+            }
+            else if (debounce_joystick_switch()) {
+                name_out[pos++] = alphabet[letter_idx];
+                letter_idx = 0;
+                moved = true;
+            }
+            
+            usleep(10000);
         }
     }
+    
     name_out[3] = '\0';
 }
 
-static bool isHighScore(int score, score_t topScores[], int count) 
-{
-    if (count < 3) 
-        return true;
-    return score > topScores[count - 1].score;
+/**
+ * @brief Check if score qualifies as high score
+ * @param score Score to check
+ * @param topScores Array of top scores
+ * @param count Number of scores in array
+ * @return true if score is high score, false otherwise
+ */
+static bool is_high_score(int score, score_t topScores[], int count) {
+    return (count < 3) || (score > topScores[count - 1].score);
 }
