@@ -566,7 +566,7 @@ static void mothershipGenerate(void)
 
         game.cantPlayerShots = 0;
         game.lastTimeMothershipGenerated = getTimeMillis();
-       // playSound_restart(SOUND_UFO_LOW);
+        playSound_play(SOUND_UFO_LOW);
     }
     else if(game.mothership.alive)
     {
@@ -584,9 +584,9 @@ static void mothershipUpdate(float dt)
     }
 
     long long currentTime = getTimeMillis();
-    if(currentTime - game.lastTimeMothershipGenerated > 860)
+    if(currentTime - game.lastTimeMothershipGenerated > 690)
     {
-        //playSound_restart(SOUND_UFO_LOW);
+        playSound_play(SOUND_UFO_LOW);
         game.lastTimeMothershipGenerated = currentTime;
     }
     
