@@ -33,6 +33,12 @@ static const char *sound_filenames[SOUND_COUNT] =
     [SOUND_FAST4] = "assets/sounds/fastinvader4.wav"
 };
 
+static const char *music_filenames[MUSIC_COUNT] =
+{
+    [INTRO_MUSIC] = "assets/sounds/spaceinvaders2.wav",
+    [GAME_MUSIC] = "assets/sounds/spaceinvaders1.wav"
+};
+
 #ifndef RASPBERRY
 
 #include <allegro5/allegro.h>
@@ -42,6 +48,10 @@ static const char *sound_filenames[SOUND_COUNT] =
 static ALLEGRO_SAMPLE *sounds[SOUND_COUNT] = {0};
 
 static ALLEGRO_SAMPLE_ID sound_ids[SOUND_COUNT];
+
+static ALLEGRO_AUDIO_STREAM *music_stream = NULL;
+static GameMusicEvent current_music = -1;
+
 
 bool playSound_init(void) 
 {
@@ -115,6 +125,44 @@ void playSound_restart(GameSoundEvent event)
         al_play_sample(sounds[event], 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, &sound_ids[event]);
     }
 }
+
+
+void playSound_playMusic(GameMusicEvent track)
+{
+    if (track < 0 || track >= MUSIC_COUNT)
+        return;
+
+    // Si ya está sonando la misma música, no la reiniciamos
+    if (music_stream && current_music == track)
+        return;
+
+    // Si hay música sonando, la paramos
+    if (music_stream)
+        playSound_stopMusic();
+
+    music_stream = al_load_audio_stream(music_filenames[track], 4, 2048);
+    if (!music_stream)
+    {
+        fprintf(stderr, "Error: No se pudo cargar música %s\n", music_filenames[track]);
+        return;
+    }
+
+    current_music = track;
+    al_attach_audio_stream_to_mixer(music_stream, al_get_default_mixer());
+    al_set_audio_stream_playmode(music_stream, ALLEGRO_PLAYMODE_LOOP);
+    al_set_audio_stream_gain(music_stream, 1.0);
+}
+
+void playSound_stopMusic(void)
+{
+    if (music_stream)
+    {
+        al_destroy_audio_stream(music_stream);
+        music_stream = NULL;
+        current_music = -1;
+    }
+}
+
 
 #else
 

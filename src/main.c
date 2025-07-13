@@ -37,6 +37,7 @@ int main(void)
 	{
 		return -1;
 	}
+	playSound_playMusic(INTRO_MUSIC);
     gameLoop();
     #else
 	pi_ui_init();

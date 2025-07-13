@@ -33,6 +33,12 @@ typedef enum {
     SOUND_COUNT
 } GameSoundEvent;
 
+typedef enum {
+	INTRO_MUSIC,
+	GAME_MUSIC,
+	MUSIC_COUNT
+} GameMusicEvent;
+
 // Inicializa Audio y carga los sonidos
 bool playSound_init(void);
 
@@ -46,6 +52,9 @@ void playSound_restart(GameSoundEvent event);
 // Libera todos los sonidos cargados
 void playSound_shutdown(void);
 
+void playSound_stopMusic(void);
+
+void playSound_playMusic(GameMusicEvent track);
 
 #endif
 
