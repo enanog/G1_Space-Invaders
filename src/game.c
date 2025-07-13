@@ -266,9 +266,15 @@ int game_update(input_t player)
             lastTimeLevelUp = getTimeMillis();
             firstTimeLevelUp = false;
             game.level++;
+            playSound_setMusicVolume(0.2);
+            playSound_play(SOUND_LEVELUP);
         }
 
         long long currentTime = getTimeMillis();
+        if(currentTime - lastTimeLevelUp > 1000)
+        {
+            playSound_setMusicVolume(1);
+        }
         if(currentTime - lastTimeLevelUp > 3000)
         {
             game_level_up();
@@ -424,6 +430,7 @@ void update_enemy_bullet(float dt)
 
             if (HITBOX_COLLISION(game.enemies[row][col].bullet.hitbox, game.player.hitbox))
             {
+                playSound_play(SOUND_DEATH);
                 game.player.lives--;
                 game.enemies[row][col].bullet.active = false;
             }
@@ -583,13 +590,6 @@ static void mothershipUpdate(float dt)
         return;
     }
 
-    long long currentTime = getTimeMillis();
-    if(currentTime - game.lastTimeMothershipGenerated > 690)
-    {
-        playSound_play(SOUND_UFO_LOW);
-        game.lastTimeMothershipGenerated = currentTime;
-    }
-    
     game.mothership.hitbox.start.x += game.mothership.speed * dt;
     game.mothership.hitbox.end.x += game.mothership.speed * dt;
 
@@ -603,9 +603,11 @@ static void mothershipUpdate(float dt)
     if(HITBOX_COLLISION(game.player.bullet.hitbox, game.mothership.hitbox))
     {
         game.score += MOTHERSHIP_SCORE;
-        playSound_play(SOUND_EXPLOSION);
+        playSound_stop(SOUND_UFO_LOW);
+        playSound_play(SOUND_MOTHERSHIPDEATH);
         game.mothership.alive = false;
         game.player.bullet.active = false;
+
     }
 }
 

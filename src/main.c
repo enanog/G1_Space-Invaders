@@ -37,8 +37,8 @@ int main(void)
 	{
 		return -1;
 	}
-	playSound_playMusic(INTRO_MUSIC);
     gameLoop();
+    allegro_shutdown();
     #else
 	pi_ui_init();
 	pi_ui_menu();
