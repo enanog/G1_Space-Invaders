@@ -35,6 +35,7 @@ static void disp_write_scroll_string(const char *msg);
 
 static void show_lives(int lives);
 static void level_up(int level);
+static bool isHighScore(int score, score_t topScores[], int count);
 
 void get_name(char *name_out);
 
@@ -78,13 +79,12 @@ void pi_ui_init(void)
     disp_init();
     joy_init();
 }
+ char nameOfPlayer[4];
 void pi_ui_menu(void)
 {
     int state=MENU, nextState=START, running=true;
     joyinfo_t joyInfo;
     show_16x16_enemy();
-    char nameOfPlayer[4];
-    get_name(nameOfPlayer);
     printf("%s\n",nameOfPlayer);
     while(running)
     {
@@ -181,10 +181,22 @@ static int menu_game(bool resumeLastGame)
                 if((i=game_update(input))!=RUNNING)//si perdes
                     {
                         running = false;
-                        state=MENU;
+                        state=SCOREBOARD;
                         printf("Game over!\n");
                         disp_write_scroll_string("GAME OVER");
                         printf("estado: %d",state);
+                        score_t topScores[3];
+                        int count=getTopScore(topScores,3);//cargo top 3
+                        int newScore=getScore();
+
+                        bool highscore=isHighScore(newScore,topScores,count);
+                        if (highscore)
+                        {
+                            get_name(nameOfPlayer);
+                            topScoreUpdate(newScore,nameOfPlayer);
+                        }
+                        
+
                         break;
                     }
                     pi_ui_render();
@@ -204,16 +216,24 @@ static int menu_game(bool resumeLastGame)
             break;
             case PAUSED:
             
-            if (level!=getLevel()||lives!=getPlayerLives())
+            if (level!=getLevel())
             {
                 level=getLevel();
                 level_up(level);
+                state=GAME;
+                lastTime=getTimeMillis();
+                input_t aux={0,0,1,0};
+                game_update(aux);
+            }
+            else if (lives!=getPlayerLives())
+            {
                 lives=getPlayerLives();
                 show_lives(lives);
                 state=GAME;
                 lastTime=getTimeMillis();
                 input_t aux={0,0,1,0};
                 game_update(aux);
+
             }
             else if ((state=game_paused(&input))==RESUME)
                 {
@@ -450,6 +470,8 @@ static void disp_write_char(const char c,dcoord_t cords)
         {
             pixel.x=cords.x+col;
             pixel.y=cords.y+row;
+            if(pixel.x<0 || pixel.x>DISP_MAX_X)
+                continue;
             if(letras_5x4[c-'A'][row][col])
                  disp_write(pixel, D_ON);
         }
@@ -537,7 +559,7 @@ static void disp_write_digit(char digit, dcoord_t coord)
 
             int px = coord.x + col;
             int py = coord.y + row;
-            if (px >= 0 && px <= 15 && py >= 0 && py <= 15) 
+            if (px >= 0 && px <= DISP_MAX_X && py >= 0 && py <= DISP_MAX_Y) 
             {
                 disp_write((dcoord_t){px, py}, D_ON);
             }
@@ -566,30 +588,28 @@ static void disp_write_long_number_center(int number, const char *str)
 
     const uint8_t y_center = 7;
     const uint8_t FONT_WIDTH = FONT_COLS;
+    const uint8_t DIGIT_SPACING = 1;
 
-    int total_width = len * FONT_WIDTH + (len - 1);
-    int start_x = DISP_MAX_X - FONT_WIDTH;  // comienza al borde visible derecho
-    int final_scroll = total_width + DISP_CANT_X_DOTS;  // cuanto tengo que moverme para sacarlo del todo
-    int scroll, i;
-    for ( scroll= 0; scroll <= final_scroll; scroll++) 
+    int total_width = len * FONT_WIDTH + (len - 1) * DIGIT_SPACING;
+    int start_x = DISP_MAX_X + 1; // Empieza fuera de la pantalla a la derecha
+    int end_x = -total_width; // Cambiado: permite que los dígitos salgan de a poco por la izquierda
+    int scroll_x,i;
+    for (scroll_x = start_x; scroll_x >= end_x; scroll_x--) 
     {
         disp_clear();
         disp_write_string_top(str);
 
-        int x = start_x - scroll;
-        for (i = 0; i < len; i++)
+        int digit_x = scroll_x;
+        for (i = 0; i < len; i++) 
         {
-            if (x >= DISP_MIN - FONT_WIDTH && x <= DISP_MAX_X) 
-            {
-                dcoord_t coord = { .x = x, .y = y_center };
+              dcoord_t coord = { .x = digit_x, .y = y_center };  
                 disp_write_digit(buffer[i], coord);
-            }
-            x += FONT_WIDTH;
+            digit_x += FONT_WIDTH + DIGIT_SPACING;
         }
 
         disp_update();
-        if(scroll!= final_scroll)
-            usleep(200000);  // 200ms entre frames
+        if (scroll_x != end_x)
+            usleep(80000); 
     }
 }
 
@@ -612,7 +632,7 @@ static void disp_write_scroll_string(const char *msg)
         {
             if (msg[i] != ' ')
             {
-                if (coord.x >= 0 && coord.x <= DISP_CANT_X_DOTS - FONT_COLS)
+                //if (coord.x >= 0 && coord.x <= DISP_CANT_X_DOTS - FONT_COLS)
                     disp_write_char(msg[i], coord);
             }
             coord.x += FONT_COLS + 1;
@@ -620,7 +640,7 @@ static void disp_write_scroll_string(const char *msg)
 
         disp_update();
         if (scroll != final_scroll)
-            usleep(100000); // 200ms between frames
+            usleep(40000); 
         printf("sali de aca\n");
     }
 }
@@ -640,6 +660,7 @@ void get_name(char *name_out)
     int pos = 0;
     int len = 26;
     joyinfo_t joyInfo;
+    disp_write_scroll_string("YOU ARE IN THE TOP THREE PUT YOUR THREE LETTER NICKNAME");
 
     while (pos < 3) {
         disp_clear();
@@ -680,4 +701,11 @@ void get_name(char *name_out)
         }
     }
     name_out[3] = '\0';
+}
+
+static bool isHighScore(int score, score_t topScores[], int count) 
+{
+    if (count < 3) 
+        return true;
+    return score > topScores[count - 1].score;
 }
