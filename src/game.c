@@ -701,6 +701,7 @@ int game_update(input_t player)
 	{
 		game.lastTimeUpdated = getTimeMillis();
 		//playSound_stop(SOUND_UFO_LOW);
+		printf("pausado");
 		saveGameState();
 		if(player.exit)
 		{
@@ -842,4 +843,9 @@ bullet_t getPlayerBulletinfo(void)
 bool getEnemiesHands(void)
 {
 	return game.enemiesHands;
+}
+
+int getLevel(void)
+{
+	return game.level;
 }
