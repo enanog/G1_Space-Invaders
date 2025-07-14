@@ -45,7 +45,6 @@ static void setup_event_queue(ALLEGRO_EVENT_QUEUE *queue, ALLEGRO_DISPLAY *disp)
 static void draw_scaled_background(ALLEGRO_BITMAP *bg);
 static void draw_game_entities(float margin_x, float margin_y, float inner_w, float inner_h, bool show_hitboxes);
 static void draw_barriers(int barrier, float margin_x, float margin_y, float inner_w, float inner_h, bool show_hitboxes);
-static void draw_navigation_arrows(ALLEGRO_BITMAP *arrow, hitbox_t left_arrow_hb, hitbox_t right_arrow_hb, int current_page, int total_pages);
 
 /* ---------------------------------------------------
  * @brief Initialize Allegro subsystems and resources
@@ -78,148 +77,6 @@ bool allegro_init(void)
 
     return true;
 }
-
-/* ---------------------------------------------------
- * @brief Main game loop handling state transitions
- * ---------------------------------------------------*/
-static gameState_t mainMenu(void) 
-{
-    ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
-    setup_event_queue(queue, display);
-
-    ALLEGRO_BITMAP *bg = al_load_bitmap("assets/images/backgroundMenu.png");
-    if (!bg) {
-        al_destroy_event_queue(queue);
-        return STATE_EXIT;
-    }
-
-    bool running = true;
-    bool show_prompt = false;
-    const double start_time = al_get_time();
-    gameState_t next_state = STATE_EXIT;
-
-    while (running) 
-    {
-        draw_scaled_background(bg);
-
-        // Show "Press ENTER" after 2 seconds
-        if (al_get_time() - start_time > 2.0) show_prompt = true;
-        if (show_prompt) {
-            draw_centered_text(0.45f, 0.8f, "Press ENTER to start", al_map_rgb(255, 255, 255));
-        }
-
-        al_flip_display();
-
-        ALLEGRO_EVENT event;
-        if (al_wait_for_event_timed(queue, &event, 0.05)) 
-        {
-            if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
-                running = false;
-            }
-            else if (show_prompt && event.keyboard.keycode == ALLEGRO_KEY_ENTER) {
-                running = false;
-                next_state = STATE_MENU;
-            }
-        }
-    }
-
-    al_destroy_event_queue(queue);
-    al_destroy_bitmap(bg);
-    return next_state;
-}
-static gameState_t menuShow(ALLEGRO_DISPLAY *display) 
-{
-    const char *options[] = {"Start Game", "Resume", "ScoreBoard", "Credits", "Exit"};
-    const int option_count = sizeof(options)/sizeof(options[0]);
-    int selected = 0;
-
-    score_t topScores[5];
-    const int topCount = getTopScore(topScores, 5);
-
-    ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
-    al_register_event_source(queue, al_get_keyboard_event_source());
-
-    const float title_y = 0.07f;
-    const float menu_start_y = 0.55f;
-    const float option_spacing = 0.08f;
-    const float rect_width = 0.3f;
-    const float font_size = al_get_font_line_height(font);
-    const float rect_height = font_size * 1.2f + 5 * (font_size * 1.1f) + font_size * 0.8f;
-    const float rect_x = (al_get_display_width(display) - rect_width * al_get_display_width(display)) / 2;
-    const float rect_y = menu_start_y * al_get_display_height(display) - rect_height - 0.05f * al_get_display_height(display);
-
-    bool choosing = true;
-    gameState_t next_state = STATE_MENU;
-
-    while (choosing) 
-    {
-        draw_scaled_background(background);
-
-        // Draw title
-        draw_title(al_get_display_width(display) / 2, title_y * al_get_display_height(display), display);
-
-        // Draw score box
-        al_draw_filled_rectangle(rect_x, rect_y, rect_x + rect_width * al_get_display_width(display), 
-                                rect_y + rect_height, al_map_rgb(100, 100, 100));
-        al_draw_rectangle(rect_x, rect_y, rect_x + rect_width * al_get_display_width(display), 
-                          rect_y + rect_height, al_map_rgb(255, 255, 255), 2);
-
-        // Draw scores
-        draw_centered_text(rect_x + rect_width * al_get_display_width(display) / 2, 
-                          rect_y + font_size * 0.2f, "TOP SCORES", al_map_rgb(255, 255, 255));
-
-        for (int i = 0; i < 5 && i < topCount; ++i) 
-        {
-            char buffer[64];
-            snprintf(buffer, sizeof(buffer), "%d. %-15s\t%d", i + 1, topScores[i].name, topScores[i].score);
-            al_draw_text(font, al_map_rgb(255, 255, 255), rect_x + 0.01f * al_get_display_width(display),
-                         rect_y + font_size * 1.2f + i * (font_size * 1.1f), 0, buffer);
-        }
-
-        // Draw menu options
-        draw_menu_options(options, option_count, selected, 
-                         menu_start_y * al_get_display_height(display), 
-                         option_spacing * al_get_display_height(display));
-
-        al_flip_display();
-
-        ALLEGRO_EVENT event;
-        al_wait_for_event(queue, &event);
-
-        if (event.type == ALLEGRO_EVENT_KEY_DOWN) 
-        {
-            switch (event.keyboard.keycode) 
-            {
-                case ALLEGRO_KEY_UP:
-                    playSound_play(SOUND_MENU);
-                    selected = (selected - 1 + option_count) % option_count;
-                    break;
-                case ALLEGRO_KEY_DOWN:
-                    playSound_play(SOUND_MENU);
-                    selected = (selected + 1) % option_count;
-                    break;
-                case ALLEGRO_KEY_ENTER:
-                case ALLEGRO_KEY_SPACE:
-                    choosing = false;
-                    break;
-            }
-        }
-    }
-
-    al_destroy_event_queue(queue);
-
-    // Map selection to game state
-    switch (selected) 
-    {
-        case 0: return STATE_NEW_GAME;
-        case 1: return STATE_RESUME_GAME;
-        case 2: return STATE_SCOREBOARD;
-        case 3: return STATE_CREDITS;
-        case 4: return STATE_EXIT;
-        default: return STATE_MENU;
-    }
-}
-
 
 void gameLoop(void)
 {
@@ -300,6 +157,164 @@ void gameLoop(void)
 void allegro_shutdown(void) 
 {
     if (display) al_destroy_display(display);
+}
+
+/* ---------------------------------------------------
+ * @brief Main menu game loop handling state transitions
+ * ---------------------------------------------------*/
+static gameState_t mainMenu(void) 
+{
+    ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
+    setup_event_queue(queue, display);
+
+    ALLEGRO_BITMAP *bg = al_load_bitmap("assets/images/backgroundMenu.png");
+    if (!bg) {
+        al_destroy_event_queue(queue);
+        return STATE_EXIT;
+    }
+
+    bool running = true;
+    bool show_prompt = false;
+    const double start_time = al_get_time();
+    gameState_t next_state = STATE_EXIT;
+
+    while (running) 
+    {
+        draw_scaled_background(bg);
+
+        // Show "Press ENTER" after 2 seconds
+        if (al_get_time() - start_time > 2.0) show_prompt = true;
+        if (show_prompt) {
+            draw_centered_text(0.45f, 0.8f, "Press ENTER to start", al_map_rgb(255, 255, 255));
+        }
+
+        al_flip_display();
+
+        ALLEGRO_EVENT event;
+        if (al_wait_for_event_timed(queue, &event, 0.05)) 
+        {
+            if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+                running = false;
+            }
+            else if (show_prompt && event.keyboard.keycode == ALLEGRO_KEY_ENTER) {
+                running = false;
+                next_state = STATE_MENU;
+            }
+        }
+    }
+
+    al_destroy_event_queue(queue);
+    al_destroy_bitmap(bg);
+    return next_state;
+}
+
+/* ---------------------------------------------------
+ * @brief Displays and handles the main menu interface
+ * 
+ * Renders the game's main menu with options, scoreboard, 
+ * and processes user navigation input. Returns the next 
+ * game state based on selection.
+ * 
+ * @param display Pointer to the Allegro display window
+ * @return Next game state (gameState_t enum)
+ * 
+ * Menu Options:
+ * - Start Game: Begins new game (STATE_NEW_GAME)
+ * - Resume: Continues saved game (STATE_RESUME_GAME)
+ * - ScoreBoard: Shows high scores (STATE_SCOREBOARD)
+ * - Credits: Displays credits screen (STATE_CREDITS)
+ * - Exit: Quits application (STATE_EXIT)
+ * ---------------------------------------------------*/
+static gameState_t menuShow(ALLEGRO_DISPLAY *display) 
+{
+    const char *options[] = {"Start Game", "Resume", "ScoreBoard", "Credits", "Exit"};
+    const int option_count = sizeof(options)/sizeof(options[0]);
+    int selected = 0;
+
+    score_t topScores[5];
+    const int topCount = getTopScore(topScores, 5);
+
+    ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
+    al_register_event_source(queue, al_get_keyboard_event_source());
+
+    const float title_y = 0.07f;
+    const float menu_start_y = 0.55f;
+    const float option_spacing = 0.08f;
+    const float rect_width = 0.3f;
+    const float font_size = al_get_font_line_height(font);
+    const float rect_height = font_size * 1.2f + 5 * (font_size * 1.1f) + font_size * 0.8f;
+    const float rect_x = (al_get_display_width(display) - rect_width * al_get_display_width(display)) / 2;
+    const float rect_y = menu_start_y * al_get_display_height(display) - rect_height - 0.05f * al_get_display_height(display);
+
+    bool choosing = true;
+
+    while (choosing) 
+    {
+        draw_scaled_background(background);
+
+        // Draw title
+        draw_title(al_get_display_width(display) / 2, title_y * al_get_display_height(display), display);
+
+        // Draw score box
+        al_draw_filled_rectangle(rect_x, rect_y, rect_x + rect_width * al_get_display_width(display), 
+                                rect_y + rect_height, al_map_rgb(100, 100, 100));
+        al_draw_rectangle(rect_x, rect_y, rect_x + rect_width * al_get_display_width(display), 
+                          rect_y + rect_height, al_map_rgb(255, 255, 255), 2);
+
+        // Draw scores
+        draw_centered_text(rect_x + rect_width * al_get_display_width(display) / 2, 
+                          rect_y + font_size * 0.2f, "TOP SCORES", al_map_rgb(255, 255, 255));
+
+        for (int i = 0; i < 5 && i < topCount; ++i) 
+        {
+            char buffer[64];
+            snprintf(buffer, sizeof(buffer), "%d. %-15s\t%d", i + 1, topScores[i].name, topScores[i].score);
+            al_draw_text(font, al_map_rgb(255, 255, 255), rect_x + 0.01f * al_get_display_width(display),
+                         rect_y + font_size * 1.2f + i * (font_size * 1.1f), 0, buffer);
+        }
+
+        // Draw menu options
+        draw_menu_options(options, option_count, selected, 
+                         menu_start_y * al_get_display_height(display), 
+                         option_spacing * al_get_display_height(display));
+
+        al_flip_display();
+
+        ALLEGRO_EVENT event;
+        al_wait_for_event(queue, &event);
+
+        if (event.type == ALLEGRO_EVENT_KEY_DOWN) 
+        {
+            switch (event.keyboard.keycode) 
+            {
+                case ALLEGRO_KEY_UP:
+                    playSound_play(SOUND_MENU);
+                    selected = (selected - 1 + option_count) % option_count;
+                    break;
+                case ALLEGRO_KEY_DOWN:
+                    playSound_play(SOUND_MENU);
+                    selected = (selected + 1) % option_count;
+                    break;
+                case ALLEGRO_KEY_ENTER:
+                case ALLEGRO_KEY_SPACE:
+                    choosing = false;
+                    break;
+            }
+        }
+    }
+
+    al_destroy_event_queue(queue);
+
+    // Map selection to game state
+    switch (selected) 
+    {
+        case 0: return STATE_NEW_GAME;
+        case 1: return STATE_RESUME_GAME;
+        case 2: return STATE_SCOREBOARD;
+        case 3: return STATE_CREDITS;
+        case 4: return STATE_EXIT;
+        default: return STATE_MENU;
+    }
 }
 
 /* ---------------------------------------------------
@@ -628,7 +643,6 @@ static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *backgroun
     const float rect_y = (screen_h - rect_height) / 2;
 
     bool choosing = true;
-    gameState_t state = STATE_RESUME_GAME;  // Changed from next_state to state to fix warning
 
     while (choosing) 
     {
@@ -901,46 +915,6 @@ static gameState_t showScoreboard(void)
     if (arrow) al_destroy_bitmap(arrow);
 
     return STATE_MENU;
-}
-/* ---------------------------------------------------
- * @brief Draw navigation arrows for scoreboard
- * @param arrow Bitmap containing arrow graphics
- * @param left_arrow_hb Left arrow hitbox
- * @param right_arrow_hb Right arrow hitbox
- * @param current_page Current page index
- * @param total_pages Total number of pages
- * ---------------------------------------------------*/
-static void draw_navigation_arrows(ALLEGRO_BITMAP *arrow, hitbox_t left_arrow_hb, hitbox_t right_arrow_hb, 
-                                 int current_page, int total_pages)
-{
-    if (!arrow) return;
-
-    const float display_w = al_get_display_width(display);
-    const float display_h = al_get_display_height(display);
-
-    // Draw left arrow (flipped horizontally) if not on first page
-    if (current_page > 0) 
-    {
-        const float arrow_w = (left_arrow_hb.end.x - left_arrow_hb.start.x) * display_w;
-        const float arrow_h = (left_arrow_hb.end.y - left_arrow_hb.start.y) * display_h;
-        const float draw_x = left_arrow_hb.start.x * display_w;
-        const float draw_y = left_arrow_hb.start.y * display_h;
-
-        al_draw_scaled_bitmap(arrow, 0, 0, al_get_bitmap_width(arrow), al_get_bitmap_height(arrow),
-                            draw_x + arrow_w, draw_y, -arrow_w, arrow_h, 0);
-    }
-
-    // Draw right arrow if not on last page
-    if (current_page < total_pages - 1) 
-    {
-        const float arrow_w = (right_arrow_hb.end.x - right_arrow_hb.start.x) * display_w;
-        const float arrow_h = (right_arrow_hb.end.y - right_arrow_hb.start.y) * display_h;
-        const float draw_x = right_arrow_hb.start.x * display_w;
-        const float draw_y = right_arrow_hb.start.y * display_h;
-
-        al_draw_scaled_bitmap(arrow, 0, 0, al_get_bitmap_width(arrow), al_get_bitmap_height(arrow),
-                            draw_x, draw_y, arrow_w, arrow_h, 0);
-    }
 }
 
 /* ---------------------------------------------------
