@@ -25,7 +25,8 @@ enum
 {
 	RUNNING,
 	GAME_OVER,
-	QUIT
+	QUIT,
+	PAUSED
 };
 
 typedef struct

@@ -48,6 +48,7 @@ typedef struct
 	int score;
 	int level;
 	int state;
+	int prevState;
 	int enemiesRow;
 	int enemiesColumn;
 	float enemiesSpeed;
@@ -305,12 +306,17 @@ static void mothershipUpdate(float dt)
 	{
 		return;
 	}
+	if(game.prevState != game.state)
+	{
+		playSound_play(SOUND_UFO_LOW);
+	}
 
 	game.mothership.hitbox.start.x += game.mothership.speed * dt;
 	game.mothership.hitbox.end.x += game.mothership.speed * dt;
 
 	if((game.mothership.hitbox.end.x < 0 && game.mothership.speed < 0) || (game.mothership.hitbox.start.x > 1.0f && game.mothership.speed > 0))
 	{
+		playSound_stop(SOUND_UFO_LOW);
 		game.mothership.alive = false;
 		return;
 	}
@@ -623,7 +629,7 @@ static void update_player_bullet(input_t input, float dt)
 
 static void game_level_up()
 {
-	game.level++;
+	//game.level++;
 	game.player.lives += game.player.lives < MAX_PLAYER_LIVES;
 	game.enemiesSpeed = ENEMY_INITIAL_SPEED + game.level * ENEMY_SPEED_INCREMENT_PER_LEVEL;
 	game.enemiesSpeed = (game.enemiesSpeed > ENEMY_MAX_SPEED) ? ENEMY_MAX_SPEED : game.enemiesSpeed;
@@ -671,6 +677,10 @@ void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame)
 	if(resumeLastGame)
 	{
 		loadGameState();
+		if(game.mothership.alive)
+		{
+			playSound_play(SOUND_UFO_LOW);
+		}
 		long long currentTime = getTimeMillis();
 		game.lastTimeUpdated = currentTime;
 		game.lastTimeEnemyShoot = currentTime;
@@ -694,8 +704,9 @@ int game_update(input_t player)
 {
 	if(player.pause)
 	{
+		game.prevState = PAUSED;
 		game.lastTimeUpdated = getTimeMillis();
-		//playSound_stop(SOUND_UFO_LOW);
+		playSound_stop(SOUND_UFO_LOW);
 		printf("pausado");
 		saveGameState();
 		if(player.exit)
@@ -705,6 +716,8 @@ int game_update(input_t player)
 		}
 		return RUNNING;
 	}
+
+	game.prevState = game.state;
 
 	static int LevelUpState = 0;
 	static long long lastTimeLevelUp = 0;
@@ -719,6 +732,8 @@ int game_update(input_t player)
 		case 0:
 			lastTimeLevelUp = getTimeMillis();
 			LevelUpState = 1;
+			game.level++;
+			playSound_play(SOUND_UFO_LOW);
 			playSound_setMusicVolume(0.2);
 			playSound_play(SOUND_LEVELUP);
 			break;
