@@ -849,3 +849,8 @@ int getLevel(void)
 {
 	return game.level;
 }
+
+int getScore(void)
+{
+	return game.score;
+}
