@@ -46,7 +46,7 @@ typedef struct
  * @param barrierRows Number of rows per barrier
  * @param barrierColumns Number of columns per barrier
  */
-void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame);
+bool game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame);
 long long getTimeMillis(void);
 
 int game_update(input_t player);
