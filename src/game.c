@@ -45,18 +45,19 @@ static bool collisionEnemyHitbox(hitbox_t *hitbox);
 static void mothershipGenerate(void);
 static void mothershipUpdate(float dt);
 static void saveGameState(void);
-static void loadGameState(void);
+static bool loadGameState(void);
 
-void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame) 
+bool game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame) 
 {
     if(resumeLastGame)
     {
-        loadGameState();
+        if(!loadGameState())
+            return false;
         long long currentTime = getTimeMillis();
         game.lastTimeUpdated = currentTime;
         game.lastTimeEnemyShoot = currentTime;
         game.lastTimeMothershipGenerated = currentTime;
-        return;
+        return true;
     }
 
 	// Initialize the player's position at the bottom center of the screen
@@ -92,6 +93,7 @@ void game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame)
 	game.state = RUNNING;
 
 	game.lastTimeUpdated = getTimeMillis();
+    return true;
 }
 
 void game_create_enemy_map(int enemiesRow, int enemiesColumn)
@@ -544,16 +546,17 @@ static void saveGameState(void)
     fclose(file);
 }
 
-static void loadGameState(void)
+static bool loadGameState(void)
 {
     FILE *file = fopen("data/savegame.dat", "rb");
     if (!file) {
         perror("Failed to open save file");
-        return;
+        return false;
     }
 
     fread(&game, sizeof(game), 1, file);
     fclose(file);
+    return true;
 }
 
 static void mothershipGenerate(void)

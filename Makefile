@@ -14,14 +14,11 @@ ifeq ($(USER)_$(HOST),pi_raspberrypi)
     FRONTEND_INC := -Iinclude/frontend/raspberry
 	SDL2_LIBS   := -lSDL2
 	PTHREAD_LIBS   := -lpthread
-    ALLEGRO_LIBS :=
     CFLAGS += -DRASPBERRY
-	MATH_LIBS    := 
 else
     FRONTEND_DIR := src/frontend/pc
     FRONTEND_INC := -Iinclude/frontend/pc
     ALLEGRO_LIBS := -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives -lallegro_audio -lallegro_acodec
-	SDL2_LIBS   :=
 	MATH_LIBS    := -lm
 endif
 
@@ -46,12 +43,11 @@ endif
 # Default target
 all: space_invaders
 
-# Link final executable
-space_invaders: $(OBJ)
-	$(CC) -o $@ $^ $(ALLEGRO_LIBS) $(SDL2_LIBS) $(PTHREAD_LIBS) $(MATH_LIBS)
-
 # RASPBERRY specific files
 ifeq ($(USER)_$(HOST),pi_raspberrypi)
+space_invaders: $(OBJ)
+	$(CC) -o $@ $^ $(SDL2_LIBS) $(PTHREAD_LIBS)
+
 obj/main.o:src/main.c include/frontend/raspberry/pi_ui.h include/playSound.h
 	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -65,15 +61,16 @@ obj/playSound.o: src/playSound.c include/playSound.h include/frontend/raspberry/
 	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
 else
-
+space_invaders: $(OBJ)
+	$(CC) -o $@ $^ $(ALLEGRO_LIBS) $(MATH_LIBS)
 # PC specific files
 obj/main.o:src/main.c include/frontend/pc/pc_ui.h include/playSound.h 
 	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
-obj/frontend/pc/enemyFont.o: src/frontend/pc/enemyFont.c include/frontend/pc/enemyFont.h include/config.h include/game.h
+obj/frontend/pc/entitiesFont.o: src/frontend/pc/entitiesFont.c include/frontend/pc/entitiesFont.h include/config.h include/game.h
 	@mkdir -p obj/frontend/pc
 	$(CC) $(CFLAGS) -c $< -o $@
-obj/frontend/pc/pc_ui.o: src/frontend/pc/pc_ui.c include/frontend/pc/enemyFont.h include/game.h include/config.h include/entity.h include/playSound.h include/frontend/pc/enemyFont.h
+obj/frontend/pc/pc_ui.o: src/frontend/pc/pc_ui.c include/frontend/pc/entitiesFont.h include/game.h include/config.h include/entity.h include/playSound.h
 	@mkdir -p obj/frontend/pc
 	$(CC) $(CFLAGS) -c $< -o $@
 obj/playSound.o: src/playSound.c include/playSound.h

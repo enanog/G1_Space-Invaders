@@ -15,7 +15,7 @@
  * fecha: 15/07/2025
  * ---------------------------------------------------*/
 
-#include "enemyFont.h"
+#include "entitiesFont.h"
 #include <stdio.h>
 
 const char TIER_1_HANDS_UP[]    = "\x46";
