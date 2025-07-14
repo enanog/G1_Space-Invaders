@@ -28,7 +28,7 @@ const char PLAYER[]             = "\x57";
 const char PLAYER_DIED[]        = "\x58";   
 const char MOTHERSHIP[]         = "\x56";
 const char BULLET[]             = "\x59";
-const char ESPLOSION[]          = "\x5A";
+const char EXPLOSION[]          = "\x5A";
 const char TITLE[]              = "\x2E";
 const char HEART[]              = "\x7C";
 
@@ -182,15 +182,31 @@ void draw_bullet(hitbox_t bullet, ALLEGRO_DISPLAY *display)
 
 void draw_explosion(hitbox_t explosion, ALLEGRO_DISPLAY *display)
 {
-    //al_draw_text(font_enemy, al_map_rgb(255, 0, 0), explosion.start.x, explosion.start.y, 0, ESPLOSION);
+    ALLEGRO_FONT *font_enemy = al_load_ttf_font("assets/fonts/Invaders-From-Space.ttf", 1.2f*ENEMY_HEIGHT*al_get_display_height(display), 0);
+    if (!font_enemy) {
+        fprintf(stderr, "Failed to load font_enemy\n");
+    }
+    al_draw_text(font_enemy, al_map_rgb(255, 0, 0), explosion.start.x, explosion.start.y, 0, EXPLOSION);
+    al_destroy_font(font_enemy);
 }
 
-void draw_player_died(hitbox_t player, ALLEGRO_DISPLAY *display)
+void draw_player_died(hitbox_t player, ALLEGRO_DISPLAY *display, long long time)
 {
     ALLEGRO_FONT *font_player = al_load_ttf_font("assets/fonts/Invaders-From-Space.ttf", PLAYER_HEIGHT*al_get_display_height(display), 0);
     if (!font_player) {
         fprintf(stderr, "Failed to load font_player\n");
     }
+    if(time > 350)
+    {
+        al_destroy_font(font_player);
+        return;
+    }
+
     al_draw_text(font_player, al_map_rgb(255, 0, 0), player.start.x, player.start.y, 0, PLAYER_DIED);
+    if(time % 100 > 50)
+    {
+        al_draw_text(font_player, al_map_rgb(255, 0, 0), player.start.x, player.start.y, 0, EXPLOSION);
+    }
+    
     al_destroy_font(font_player);
 }

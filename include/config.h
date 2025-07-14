@@ -27,29 +27,30 @@
 #define MOTHERSHIP_SCORE                    100
 #define MOTHERSHIP_TRIGGER_SHOTS            5
 #define MAX_PLAYER_LIVES                    5
+#define PLAYER_BULLET_COOLDOWN	            250
 
 #ifndef RASPBERRY
 #define OFFSET 			        50
 #define SCREEN_H                900
 #define ASPECT_RATIO            (16.0f / 9.0f)
 #define SCREEN_W 		        (SCREEN_H*ASPECT_RATIO)
-#define ENEMY_DESCENT_STEP      (1.0f/SCREEN_H)*OFFSET
 
-#define PLAYER_HEIGHT	        0.08f
+#define PLAYER_HEIGHT	        0.1f
 #define PLAYER_WIDTH	        (PLAYER_HEIGHT / ASPECT_RATIO)
-#define PLAYER_SPEED	        0.0002f
+#define PLAYER_SPEED	        0.00035f
 #define PLAYER_BOTTOM_OFFSET    0.9f
 #define PLAYER_BULLET_SPEED	    0.0015f
 
 #define ENEMY_TOP_OFFSET        0.1f
-#define ENEMY_HEIGHT            (0.6f / ENEMIES_ROW_MAX)
+#define ENEMY_HEIGHT            (0.5f / ENEMIES_ROW_MAX)
 #define ENEMY_WIDTH             (0.95f / ENEMIES_COLUMNS_MAX)
-#define ENEMY_H_SPACING         (ENEMY_WIDTH * 1.5f)
-#define ENEMY_V_SPACING         (ENEMY_HEIGHT)
-#define ENEMY_SPEED             0.0001f
-#define ENEMY_SPEED_INCREMENT   0.00005f
-#define ENEMY_MAX_SPEED         0.00035f
+#define ENEMY_H_SPACING         (ENEMY_WIDTH)
+#define ENEMY_V_SPACING         (ENEMY_HEIGHT * 0.5f)
+#define ENEMY_SPEED             0.00015f
+#define ENEMY_SPEED_INCREMENT   0.000005f
+#define ENEMY_MAX_SPEED         0.01f
 #define ENEMY_BULLET_SPEED 	    0.0005f
+#define ENEMY_DESCENT_STEP      (0.5f/SCREEN_H)*OFFSET
 
 #define BULLET_WIDTH 	        0.01f
 #define BULLET_HEIGHT	        0.05f

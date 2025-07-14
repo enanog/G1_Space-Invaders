@@ -21,12 +21,18 @@
 #include "score.h"
 #include "entitiesFont.h"
 
+/* ======================== CONSTANTS ======================== */
+//Defines
+#define ENEMY_ROW 5
+#define ENEMY_COL 6
+
+/* ======================== STATIC VARIABLES ======================== */
 // Global Allegro resources
 static ALLEGRO_DISPLAY *display = NULL;
 static ALLEGRO_FONT *font = NULL;
 static ALLEGRO_BITMAP *background = NULL;
 
-// Forward declarations
+/* ======================== FORWARD DECLARATIONS ======================== */
 static char** readCreditsFile(int* line_count);
 static gameState_t menuShow(ALLEGRO_DISPLAY *display);
 static gameState_t mainMenu(void);
@@ -38,22 +44,15 @@ static bool isHighScore(int score, score_t topScores[], int count);
 static gameState_t showScoreboard(void);
 static gameState_t showCredits(void);
 
-// Helper function declarations
+/* ======================== HELPER FUNCTION DECLARATIONS ======================== */
 static void draw_centered_text(float x, float y, const char *text, ALLEGRO_COLOR color);
 static void draw_menu_options(const char **options, int count, int selected, float start_y, float spacing);
 static void setup_event_queue(ALLEGRO_EVENT_QUEUE *queue, ALLEGRO_DISPLAY *disp);
 static void draw_scaled_background(ALLEGRO_BITMAP *bg);
-static void draw_game_entities(float margin_x, float margin_y, float inner_w, float inner_h, bool show_hitboxes);
+static bool draw_game_entities(float margin_x, float margin_y, float inner_w, float inner_h, bool show_hitboxes);
 static void draw_barriers(int barrier, float margin_x, float margin_y, float inner_w, float inner_h, bool show_hitboxes);
 
-//Defines
-#define ENEMY_ROW 5
-#define ENEMY_COL 6
-
-/* ---------------------------------------------------
- * @brief Initialize Allegro subsystems and resources
- * @return true if initialization succeeded, false otherwise
- * ---------------------------------------------------*/
+/* ======================== PUBLIC FUNCTIONS ======================== */
 bool allegro_init(void) 
 {
     const bool init_success = 
@@ -155,14 +154,12 @@ void gameLoop(void)
     playSound_shutdown();
 }
 
-/* ---------------------------------------------------
- * @brief Cleanup Allegro resources
- * ---------------------------------------------------*/
 void allegro_shutdown(void) 
 {
     if (display) al_destroy_display(display);
 }
 
+/* ======================== PRIVATE FUNCTIONS ======================== */
 /* ---------------------------------------------------
  * @brief Main menu game loop handling state transitions
  * ---------------------------------------------------*/
@@ -448,9 +445,10 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
             al_set_clipping_rectangle(margin_x, margin_y, inner_w, inner_h);
 
             // Draw game entities
-            draw_game_entities(margin_x, margin_y, inner_w, inner_h, show_hitboxes);
+            player.pause = draw_game_entities(margin_x, margin_y, inner_w, inner_h, show_hitboxes);
 
             al_reset_clipping_rectangle();
+
             al_flip_display();
         }
     }
@@ -468,16 +466,73 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
  * @param inner_h Inner height for clipping
  * @param show_hitboxes Whether to render hitboxes
  * ---------------------------------------------------*/
-static void draw_game_entities(float margin_x, float margin_y, float inner_w, float inner_h, bool show_hitboxes)
+static bool draw_game_entities(float margin_x, float margin_y, float inner_w, float inner_h, bool show_hitboxes)
 {
-    // Draw enemies
-    for (int row = 0; row < ENEMIES_ROW_MAX; row++) 
+    static int playerLives = 3;
+    static long long playerDieTime;
+    static bool flag = false;
+    bool gamePaused = false;
+
+    long long currentTime = getTimeMillis();
+    // Draw player
+    hitbox_t player_hb = clipHitbox(getPlayerPosition(), margin_x, margin_y, inner_w, inner_h);
+    
+    if(playerLives > getPlayerLives())
     {
-        for (int col = 0; col < ENEMIES_COLUMNS_MAX; col++) 
+        playerDieTime = getTimeMillis();
+        draw_player_died(player_hb, display, currentTime - playerDieTime);
+        gamePaused = true;
+        flag = true;
+    }
+    else if(currentTime - playerDieTime < 500 && flag)
+    {
+        draw_player_died(player_hb, display, currentTime - playerDieTime);
+        gamePaused = true;
+    }
+    else
+    {
+        draw_player(player_hb, display);
+        playerDieTime = currentTime;
+        gamePaused = false;
+        flag = false;
+    }
+
+    playerLives = getPlayerLives();
+    
+    if (show_hitboxes) 
+        al_draw_rectangle(player_hb.start.x, player_hb.start.y, player_hb.end.x, player_hb.end.y, 
+                          al_map_rgb(0,255,0), 2.0f);
+
+    // Draw enemies
+    static bool enemyAlive[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
+
+    // Aca guardo una matriz de diferenciales de tiempo
+    static long long explosionTime[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX] = {0};
+
+    int row, col;
+    for (row = 0; row < ENEMIES_ROW_MAX; row++) 
+    {
+        for (col = 0; col < ENEMIES_COLUMNS_MAX; col++) 
         {
-            if (!getIsEnemyAlive(row,col)) continue;
-            
             hitbox_t hitbox = clipHitbox(getEnemyPosition(row,col), margin_x, margin_y, inner_w, inner_h);
+            if (!getIsEnemyAlive(row,col))
+            {
+                long long currentTime = getTimeMillis();
+
+                if(enemyAlive[row][col])
+                {
+                    draw_explosion(hitbox, display);
+                    enemyAlive[row][col] = 0;
+                    explosionTime[row][col] = currentTime;
+                }
+                else if(currentTime - explosionTime[row][col] < 150 && explosionTime[row][col] != 0)
+                    draw_explosion(hitbox, display);
+                else
+                    explosionTime[row][col] = 0;
+
+                continue;
+
+            }
             ALLEGRO_COLOR color;
             switch (getEnemyTier(row)) 
             {
@@ -491,18 +546,14 @@ static void draw_game_entities(float margin_x, float margin_y, float inner_w, fl
             {
                 al_draw_rectangle(hitbox.start.x, hitbox.start.y, hitbox.end.x, hitbox.end.y, color, 2.0f);
             }
+            enemyAlive[row][col] = 1;
         }
     }
-
-    // Draw player
-    hitbox_t player_hb = clipHitbox(getPlayerPosition(), margin_x, margin_y, inner_w, inner_h);
-    draw_player(player_hb, display);
-    if (show_hitboxes) 
-        al_draw_rectangle(player_hb.start.x, player_hb.start.y, player_hb.end.x, player_hb.end.y, 
-                          al_map_rgb(0,255,0), 2.0f);
+    
 
     // Draw barriers
-    for (int barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++)
+    int barrier;
+    for (barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++)
         draw_barriers(barrier, margin_x, margin_y, inner_w, inner_h, show_hitboxes);
 
     // Draw player bullet
@@ -519,11 +570,12 @@ static void draw_game_entities(float margin_x, float margin_y, float inner_w, fl
     // Draw enemy bullets
     bullet_t enemy_bullets[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
     getEnemiesBulletsInfo(enemy_bullets);
-    for (int row = 0; row < ENEMIES_ROW_MAX; row++) 
+    for (row = 0; row < ENEMIES_ROW_MAX; row++) 
     {
-        for (int col = 0; col < ENEMIES_COLUMNS_MAX; col++) 
+        for (col = 0; col < ENEMIES_COLUMNS_MAX; col++) 
         {
             if (!enemy_bullets[row][col].active) continue;
+
             hitbox_t bullet_hb = clipHitbox(enemy_bullets[row][col].hitbox, margin_x, margin_y, inner_w, inner_h);
             draw_bullet(bullet_hb, display);
             if (show_hitboxes)
@@ -532,6 +584,7 @@ static void draw_game_entities(float margin_x, float margin_y, float inner_w, fl
         }
     }
 
+    static long long playerDieTime;
     // Draw mothership
     if (getIsMothershipAlive()) 
     {
@@ -542,6 +595,8 @@ static void draw_game_entities(float margin_x, float margin_y, float inner_w, fl
                              mothership_hb.end.x, mothership_hb.end.y, 
                              al_map_rgb(255, 255, 0), 2.0f);
     }
+    
+    return gamePaused;
 }
 
 /* ---------------------------------------------------
