@@ -216,7 +216,6 @@ void playSound_setMusicVolume(float volume)
 #include <pthread.h>
 #include "audio.h"
 
-static Audio * sounds[SOUND_COUNT];
 static char musicPlaying = MUSIC_COUNT;
 static bool isPaussed = 0;
 
