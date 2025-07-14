@@ -306,13 +306,6 @@ static void mothershipUpdate(float dt)
 		return;
 	}
 
-	long long currentTime = getTimeMillis();
-	if(currentTime - game.lastTimeMothershipGenerated > 690)
-	{
-		playSound_play(SOUND_UFO_LOW);
-		game.lastTimeMothershipGenerated = currentTime;
-	}
-
 	game.mothership.hitbox.start.x += game.mothership.speed * dt;
 	game.mothership.hitbox.end.x += game.mothership.speed * dt;
 
@@ -325,7 +318,8 @@ static void mothershipUpdate(float dt)
 	if(HITBOX_COLLISION(game.player.bullet.hitbox, game.mothership.hitbox))
 	{
 		game.score += MOTHERSHIP_SCORE;
-		playSound_play(SOUND_EXPLOSION);
+		playSound_stop(SOUND_UFO_LOW);
+		playSound_play(SOUND_MOTHERSHIPDEATH);
 		game.mothership.alive = false;
 		game.player.bullet.active = false;
 	}
@@ -541,6 +535,7 @@ static void update_enemy_bullet(float dt)
 
 			if(HITBOX_COLLISION(game.enemies[row][col].bullet.hitbox, game.player.hitbox))
 			{
+				playSound_play(SOUND_DEATH);
 				game.player.lives--;
 				game.enemies[row][col].bullet.active = false;
 			}
@@ -711,15 +706,38 @@ int game_update(input_t player)
 		return RUNNING;
 	}
 
+	static int LevelUpState = 0;
+	static long long lastTimeLevelUp = 0;
 	static float enemiesMovement = 0;
-	long long dt = (getTimeMillis() - game.lastTimeUpdated);
-
-	updatePlayerPosition(player, dt);
+	long long currentTime = getTimeMillis();
+	long long dt = (currentTime - game.lastTimeUpdated);
 
 	if(!updateEnemiesPosition(dt)) // Si no quedan enemigos vivos -> level up
 	{
-		game_level_up();
-		game.lastTimeUpdated = getTimeMillis();
+		switch (LevelUpState)
+		{
+		case 0:
+			lastTimeLevelUp = getTimeMillis();
+			LevelUpState = 1;
+			playSound_setMusicVolume(0.2);
+			playSound_play(SOUND_LEVELUP);
+			break;
+
+		case 1:
+			currentTime = getTimeMillis();
+			if(currentTime - lastTimeLevelUp > 1000)
+			{
+				playSound_setMusicVolume(1);
+			}
+			if(currentTime - lastTimeLevelUp > 3000)
+			{
+				game_level_up();
+				lastTimeLevelUp = currentTime;
+				LevelUpState = 0;
+				game.lastTimeUpdated = currentTime;
+			}
+			break;
+		}
 		return RUNNING; // No enemies left, game continues
 	}
 
@@ -732,6 +750,7 @@ int game_update(input_t player)
 		game.enemiesHands = !game.enemiesHands;
 	}
 
+	updatePlayerPosition(player, dt);
 	update_enemy_bullet(dt);
 	update_player_bullet(player, dt);
 	shootRandomEnemyBullet();
