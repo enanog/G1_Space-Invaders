@@ -306,9 +306,10 @@ static void mothershipUpdate(float dt)
 	{
 		return;
 	}
-	if(currentTime - game.lastTimeMothershipGenerated > 163)
+	if(currentTime - game.lastTimeMothershipGenerated >= 164)
 	{
 		playSound_play(SOUND_UFO_HIGH);
+		game.lastTimeMothershipGenerated = currentTime;
 	}
 
 	game.mothership.hitbox.start.x += game.mothership.speed * dt;
