@@ -46,6 +46,10 @@ static void draw_scaled_background(ALLEGRO_BITMAP *bg);
 static void draw_game_entities(float margin_x, float margin_y, float inner_w, float inner_h, bool show_hitboxes);
 static void draw_barriers(int barrier, float margin_x, float margin_y, float inner_w, float inner_h, bool show_hitboxes);
 
+//Defines
+#define ENEMY_ROW 5
+#define ENEMY_COL 6
+
 /* ---------------------------------------------------
  * @brief Initialize Allegro subsystems and resources
  * @return true if initialization succeeded, false otherwise
@@ -99,7 +103,7 @@ void gameLoop(void)
 
             case STATE_NEW_GAME:
                 playSound_playMusic(GAME_MUSIC);
-                state = gameRender(STATE_NEW_GAME, 3, 8);
+                state = gameRender(STATE_NEW_GAME, ENEMY_ROW, ENEMY_COL);
                 break;
 
             case STATE_RESUME_GAME:
@@ -324,7 +328,7 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
 static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 {
     ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
-    ALLEGRO_TIMER *timer = al_create_timer(1.0 / 1000.0);
+    ALLEGRO_TIMER *timer = al_create_timer(1.0 / 1000);//1000 fps 
     setup_event_queue(queue, display);
     al_register_event_source(queue, al_get_timer_event_source(timer));
     al_start_timer(timer);

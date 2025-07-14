@@ -41,7 +41,7 @@
 #define PLAYER_BOTTOM_OFFSET    0.9f
 #define PLAYER_BULLET_SPEED	    0.0015f
 
-#define ENEMY_TOP_OFFSET        0.2f
+#define ENEMY_TOP_OFFSET        0.1f
 #define ENEMY_HEIGHT            (0.6f / ENEMIES_ROW_MAX)
 #define ENEMY_WIDTH             (0.95f / ENEMIES_COLUMNS_MAX)
 #define ENEMY_H_SPACING         (ENEMY_WIDTH * 1.5f)
@@ -54,9 +54,9 @@
 #define BULLET_WIDTH 	        0.01f
 #define BULLET_HEIGHT	        0.05f
 
-#define MOTHERSHIP_HEIGHT       0.18f
-#define MOTHERSHIP_WIDTH        0.17f
-#define MOTHERSHIP_TOP_OFFSET   0.05f
+#define MOTHERSHIP_HEIGHT       0.08f
+#define MOTHERSHIP_WIDTH        0.08f
+#define MOTHERSHIP_TOP_OFFSET   0.02f
 #define MOTHERSHIP_SPEED        0.00015f
 
 #define BARRIER_QUANTITY_MAX    4
