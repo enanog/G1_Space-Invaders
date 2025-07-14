@@ -18,6 +18,8 @@
 #include "entitiesFont.h"
 #include <stdio.h>
 
+#define MOTHERSHIP_EXPLOSION    1 
+
 const char TIER_1_HANDS_UP[]    = "\x46";
 const char TIER_1_HANDS_DOWN[]  = "\x47"; 
 const char TIER_2_HANDS_DOWN[]  = "\x42"; 
@@ -180,14 +182,18 @@ void draw_bullet(hitbox_t bullet, ALLEGRO_DISPLAY *display)
     al_destroy_font(font_bullet);
 }
 
-void draw_explosion(hitbox_t explosion, ALLEGRO_DISPLAY *display)
+void draw_explosion(hitbox_t explosion, ALLEGRO_DISPLAY *display, bool enemy)
 {
-    ALLEGRO_FONT *font_enemy = al_load_ttf_font("assets/fonts/Invaders-From-Space.ttf", 1.2f*ENEMY_HEIGHT*al_get_display_height(display), 0);
-    if (!font_enemy) {
+    ALLEGRO_FONT *font_explosion = NULL;
+    if(enemy != MOTHERSHIP_EXPLOSION)
+        font_explosion = al_load_ttf_font("assets/fonts/Invaders-From-Space.ttf", 1.2f*ENEMY_HEIGHT*al_get_display_height(display), 0);
+    else
+        font_explosion = al_load_ttf_font("assets/fonts/Invaders-From-Space.ttf", 1.2f*MOTHERSHIP_HEIGHT*al_get_display_height(display), 0);
+    if (!font_explosion) {
         fprintf(stderr, "Failed to load font_enemy\n");
-    }
-    al_draw_text(font_enemy, al_map_rgb(255, 0, 0), explosion.start.x, explosion.start.y, 0, EXPLOSION);
-    al_destroy_font(font_enemy);
+    }  
+    al_draw_text(font_explosion, al_map_rgb(255, 0, 0), explosion.start.x, explosion.start.y, 0, EXPLOSION);
+    al_destroy_font(font_explosion);
 }
 
 void draw_player_died(hitbox_t player, ALLEGRO_DISPLAY *display, long long time)

@@ -745,17 +745,6 @@ bool getIsEnemyAlive(int row, int column)
 	return game.enemies[row][column].alive;
 }
 
-/**
- * @brief Returns the position of the projectile.
- *
- * @return coord_t Struct with projectile's position
- */
-// hitbox_t getProjectilePosition(void)
-// {
-// 	hitbox_t hitbox = game.|;
-// 	return hitbox;
-// }
-
 bool getBarrierIsAlive(int barrier, int row, int column)
 {
     return game.barriers[barrier].mat[row][column].lives > 0;

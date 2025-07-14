@@ -35,14 +35,14 @@ static ALLEGRO_BITMAP *background = NULL;
 /* ======================== FORWARD DECLARATIONS ======================== */
 static char** readCreditsFile(int* line_count);
 static gameState_t menuShow(ALLEGRO_DISPLAY *display);
-static gameState_t mainMenu(void);
+static gameState_t mainMenu(ALLEGRO_DISPLAY *display);
 static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol);
 static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *background);
 static hitbox_t clipHitbox(hitbox_t hb, float margin_x, float margin_y, float inner_w, float inner_h);
-static gameState_t showGameOver(void);
+static gameState_t showGameOver(ALLEGRO_DISPLAY *display);
 static bool isHighScore(int score, score_t topScores[], int count);
-static gameState_t showScoreboard(void);
-static gameState_t showCredits(void);
+static gameState_t showScoreboard(ALLEGRO_DISPLAY *display);
+static gameState_t showCredits(ALLEGRO_DISPLAY *display);
 
 /* ======================== HELPER FUNCTION DECLARATIONS ======================== */
 static void draw_centered_text(float x, float y, const char *text, ALLEGRO_COLOR color);
@@ -92,7 +92,7 @@ void gameLoop(void)
         {
             case STATE_SPLASH: 
                 playSound_playMusic(INTRO_MUSIC);
-                state = mainMenu();
+                state = mainMenu(display);
                 break;
 
             case STATE_MENU:
@@ -113,11 +113,11 @@ void gameLoop(void)
             case STATE_GAME_OVER:
                 playSound_pauseMusic();
                 playSound_play(SOUND_GAMEOVER);
-                state = showGameOver();
+                state = showGameOver(display);
                 break;
             
             case STATE_SCOREBOARD:
-                state = showScoreboard();
+                state = showScoreboard(display);
                 break;
 
             case STATE_EXIT:
@@ -125,7 +125,7 @@ void gameLoop(void)
                 break;
 
             case STATE_CREDITS:
-                state = showCredits();
+                state = showCredits(display);
                 break;  
             
             case STATE_PAUSE:
@@ -160,10 +160,11 @@ void allegro_shutdown(void)
 }
 
 /* ======================== PRIVATE FUNCTIONS ======================== */
+
 /* ---------------------------------------------------
  * @brief Main menu game loop handling state transitions
  * ---------------------------------------------------*/
-static gameState_t mainMenu(void) 
+static gameState_t mainMenu(ALLEGRO_DISPLAY *display) 
 {
     ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
     setup_event_queue(queue, display);
@@ -236,7 +237,7 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
     const int topCount = getTopScore(topScores, 5);
 
     ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
-    al_register_event_source(queue, al_get_keyboard_event_source());
+    setup_event_queue(queue, display);
 
     const float title_y = 0.07f;
     const float menu_start_y = 0.55f;
@@ -507,7 +508,7 @@ static bool draw_game_entities(float margin_x, float margin_y, float inner_w, fl
     static bool enemyAlive[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
 
     // Aca guardo una matriz de diferenciales de tiempo
-    static long long explosionTime[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX] = {0};
+    static long long explosionEnemyTime[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX] = {0};
 
     int row, col;
     for (row = 0; row < ENEMIES_ROW_MAX; row++) 
@@ -521,14 +522,14 @@ static bool draw_game_entities(float margin_x, float margin_y, float inner_w, fl
 
                 if(enemyAlive[row][col])
                 {
-                    draw_explosion(hitbox, display);
+                    draw_explosion(hitbox, display, 0);
                     enemyAlive[row][col] = 0;
-                    explosionTime[row][col] = currentTime;
+                    explosionEnemyTime[row][col] = currentTime;
                 }
-                else if(currentTime - explosionTime[row][col] < 150 && explosionTime[row][col] != 0)
-                    draw_explosion(hitbox, display);
+                else if(currentTime - explosionEnemyTime[row][col] < 150 && explosionEnemyTime[row][col] != 0)
+                    draw_explosion(hitbox, display, 0);
                 else
-                    explosionTime[row][col] = 0;
+                    explosionEnemyTime[row][col] = 0;
 
                 continue;
 
@@ -584,16 +585,33 @@ static bool draw_game_entities(float margin_x, float margin_y, float inner_w, fl
         }
     }
 
-    static long long playerDieTime;
+    static long long explosionMothershipTime;
+    static bool mothershipAlive;
     // Draw mothership
+    hitbox_t mothership_hb = clipHitbox(getMothershipPosition(), margin_x, margin_y, inner_w, inner_h);
     if (getIsMothershipAlive()) 
     {
-        hitbox_t mothership_hb = clipHitbox(getMothershipPosition(), margin_x, margin_y, inner_w, inner_h);
         draw_mothership(mothership_hb, display);
         if (show_hitboxes) 
             al_draw_rectangle(mothership_hb.start.x, mothership_hb.start.y, 
                              mothership_hb.end.x, mothership_hb.end.y, 
                              al_map_rgb(255, 255, 0), 2.0f);
+        mothershipAlive = true;
+    }
+    else
+    {
+        long long currentTime = getTimeMillis();
+
+            if(mothershipAlive)
+            {
+                draw_explosion(mothership_hb, display, 1);
+                mothershipAlive = false;
+                explosionMothershipTime = currentTime;
+            }
+            else if(currentTime - explosionMothershipTime < 150 && explosionMothershipTime != 0)
+                draw_explosion(mothership_hb, display, 1);
+            else
+                explosionMothershipTime = 0;
     }
     
     return gamePaused;
@@ -764,7 +782,7 @@ static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *backgroun
  * @brief Display scoreboard with pagination
  * @return Next game state (always returns to menu)
  * ---------------------------------------------------*/
-static gameState_t showScoreboard(void) 
+static gameState_t showScoreboard(ALLEGRO_DISPLAY *display) 
 {
     const int SCORES_PER_PAGE = 10;
     const int MAX_SCORES = 100;
@@ -1033,7 +1051,7 @@ static char** readCreditsFile(int* line_count)
  * @brief Display scrolling credits screen
  * @return Next game state (always returns to menu)
  * ---------------------------------------------------*/
-static gameState_t showCredits(void)
+static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 {
     ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
     setup_event_queue(queue, display);
@@ -1172,7 +1190,7 @@ static gameState_t showCredits(void)
  * @brief Display game over screen and handle high scores
  * @return Next game state (always returns to menu)
  * ---------------------------------------------------*/
-static gameState_t showGameOver(void)
+static gameState_t showGameOver(ALLEGRO_DISPLAY *display)
 {
     score_t * topScores=(score_t *)calloc(100,sizeof(score_t));
     int count = getTopScore(topScores, 100); // cargar top 10

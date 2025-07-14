@@ -92,20 +92,11 @@ void get_name(char *name_out);
 
 /* ==================== PUBLIC FUNCTIONS ==================== */
 
-/**
- * @brief Initialize the PI UI system
- */
 void pi_ui_init(void) {
     disp_init();
     joy_init();
 }
 
-/**
- * @brief Main menu loop
- */
-/**
- * @brief Main menu loop
- */
 void pi_ui_menu(void) {
     int state = MENU;
     int selectedOption = START;  // Start with "STA" selected
