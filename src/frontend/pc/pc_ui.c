@@ -1104,7 +1104,8 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 	// -------- Initialize scrolling state and timer --------
 	float scroll_pos = al_get_display_height(display);
 	bool credits_done = false;
-	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 1000.0);
+    bool redraw = true;
+	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 144.0);
 	al_register_event_source(queue, al_get_timer_event_source(timer));
 	al_start_timer(timer);
 
@@ -1124,67 +1125,72 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 				event.keyboard.keycode != ALLEGRO_KEY_F11 )
 			{
 				credits_done = true;
+                next_state = STATE_MENU;
+                break;
 			}
 		}
 		
 		// Timer event: update scroll position
 		else if (event.type == ALLEGRO_EVENT_TIMER) 
 		{
+            printf("redraw");
 			// Scroll speed
 			scroll_pos -= 0.7f;
-
+            redraw = true;
 			if (scroll_pos < -1300.0f)
 			{
 				credits_done = true;
 				break;
 			}
 		}
+        // -------- Draw background --------
+        if (credits_bg) 
+            al_draw_scaled_bitmap(credits_bg, 0, 0, al_get_bitmap_width(credits_bg),
+                                al_get_bitmap_height(credits_bg), 0, 0, 
+                                al_get_display_width(display), al_get_display_height(display), 0);
+        else 
+            al_clear_to_color(al_map_rgb(0, 0, 0));
 
-		// -------- Draw background --------
-		if (credits_bg) 
-			al_draw_scaled_bitmap(credits_bg, 0, 0, al_get_bitmap_width(credits_bg),
-								al_get_bitmap_height(credits_bg), 0, 0, 
-								al_get_display_width(display), al_get_display_height(display), 0);
-		else 
-			al_clear_to_color(al_map_rgb(0, 0, 0));
-
-		// Add semi-transparent black overlay for better contrast (like scoreboard)
-		al_draw_filled_rectangle(0, 0, 
-						 al_get_display_width(display), 
-						 al_get_display_height(display), 
-						 al_map_rgba(0, 0, 0, 200));
+        // Add semi-transparent black overlay for better contrast (like scoreboard)
+        al_draw_filled_rectangle(0, 0, 
+                        al_get_display_width(display), 
+                        al_get_display_height(display), 
+                        al_map_rgba(0, 0, 0, 200));
 
 		// -------- Render each line of credits --------
-		float y = scroll_pos;
-		for (int i = 0; i < credit_count; i++) 
-		{
-			ALLEGRO_COLOR color = al_map_rgb(255, 255, 255);
-			int font_size = al_get_font_line_height(font);
-			float x = al_get_display_width(display) / 2;
+		if(redraw && al_is_event_queue_empty(queue))
+        {
+            float y = scroll_pos;
+            for (int i = 0; i < credit_count; i++) 
+            {
+                ALLEGRO_COLOR color = al_map_rgb(255, 255, 255);
+                int font_size = al_get_font_line_height(font);
+                float x = al_get_display_width(display) / 2;
 
-			// Apply custom styles based on keywords
-			if (strstr(credits[i], "SPACE INVADERS")) 
-			{
-				color = al_map_rgb(0, 255, 255);
-				font_size *= 1.5;
-			}
-			else if (strstr(credits[i], "THE MOST AWESOME") ||
-					strstr(credits[i], "FEARLESS LEADERS") ||
-					strstr(credits[i], "SPECIAL THANKS") ||
-					strstr(credits[i], "FUN FACT") ||
-					strstr(credits[i], "DISCLAIMER") ||
-					strstr(credits[i], "MEMORY LEAK") ||
-					strstr(credits[i], "SEGMENTATION")) 
-				color = al_map_rgb(255, 255, 0);
+                // Apply custom styles based on keywords
+                if (strcmp(credits[i], "SPACE INVADERS")) 
+                {
+                    color = al_map_rgb(0, 255, 255);
+                    font_size *= 1.5;
+                }
+                else if (strstr(credits[i], "THE MOST AWESOME") ||
+                        strstr(credits[i], "FEARLESS LEADERS") ||
+                        strstr(credits[i], "SPECIAL THANKS") ||
+                        strstr(credits[i], "FUN FACT") ||
+                        strstr(credits[i], "DISCLAIMER") ||
+                        strstr(credits[i], "MEMORY LEAK") ||
+                        strstr(credits[i], "SEGMENTATION")) 
+                    color = al_map_rgb(255, 255, 0);
 
-			else if (strstr(credits[i], "PRESS ANY KEY") ||
-					 strstr(credits[i], "segmentation fault"))
-				color = al_map_rgb(255, 0, 0);
+                else if (strstr(credits[i], "PRESS ANY KEY") ||
+                        strstr(credits[i], "segmentation fault"))
+                    color = al_map_rgb(255, 0, 0);
 
-			al_draw_text(font, color, x, y, ALLEGRO_ALIGN_CENTER, credits[i]);
-			y += font_size * 1.2;
-		}
-
+                al_draw_text(font, color, x, y, ALLEGRO_ALIGN_CENTER, credits[i]);
+                y += font_size * 1.2;
+            }
+            redraw = false;
+        }
 		al_flip_display();
 	}
 
@@ -1197,6 +1203,7 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 	for (int i = 0; i < credit_count; i++)
 		free(credits[i]);
 
+    printf("\nfree credits");
 	free(credits);
 
 	return next_state;
