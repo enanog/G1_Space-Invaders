@@ -1,5 +1,5 @@
-/data/savegame.dat
-/data/topScore.txt
+data/savegame.dat
+data/topScore.txt
 *.o
 *.out
 *.exe
