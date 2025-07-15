@@ -743,9 +743,6 @@ int game_update(input_t player)
 			if(currentTime - lastTimeLevelUp > 1000)
 			{
 				playSound_setMusicVolume(1);
-			}
-			if(currentTime - lastTimeLevelUp > 3000)
-			{
 				game_level_up();
 				lastTimeLevelUp = currentTime;
 				LevelUpState = 0;
