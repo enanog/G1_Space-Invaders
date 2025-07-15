@@ -59,8 +59,6 @@ typedef struct
 	float enemiesSpeed;                              ///< Current enemy movement speed
 	int enemiesDirection;                            ///< Current enemy movement direction (1=right, -1=left)
 	int barrirersQuantity;                           ///< Number of active barriers
-	int barriersRow;                                 ///< Barrier row count (unused?)
-	int barriersColumn;                              ///< Barrier column count (unused?)
 	int enemyShotInterval;                           ///< Time between enemy shots
 	int cantPlayerShots;                             ///< Player shot counter (for mothership trigger)
 	bool enemiesHands;                               ///< Animation state for enemies
