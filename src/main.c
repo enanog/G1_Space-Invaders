@@ -8,7 +8,7 @@
  * 	YAGGI, Lucca
  *
  * Profesores:
- * 	MAGLIIOLA, Nicolas
+ * 	MAGLIOLA, Nicolas
  * 	JACOBY, Daniel
  * 	VACATELLO, Pablo
  *

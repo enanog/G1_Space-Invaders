@@ -11,19 +11,21 @@ CFLAGS = -Wall -Iinclude -Iinclude/frontend
 # Platform-specific config
 ifeq ($(USER)_$(HOST),pi_raspberrypi)
 	FRONTEND_DIR := src/frontend/raspberry
-	FRONTEND_INC := -Iinclude/frontend/raspberry
+	FRONTEND_INC := include/frontend/raspberry
+	FRONTEND_OBJ := obj/frontend/raspberry
 	SDL2_LIBS   := -lSDL2
 	PTHREAD_LIBS   := -lpthread
 	CFLAGS += -DRASPBERRY
 else
 	FRONTEND_DIR := src/frontend/pc
-	FRONTEND_INC := -Iinclude/frontend/pc
+	FRONTEND_INC := include/frontend/pc
+	FRONTEND_OBJ := obj/frontend/pc
 	ALLEGRO_LIBS := -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives -lallegro_audio -lallegro_acodec
 	MATH_LIBS := -lm
 endif
 
 # Add frontend includes to flags
-CFLAGS += $(FRONTEND_INC)
+CFLAGS += -I$(FRONTEND_INC)
 
 # Source files (exclude libAudioSDL2.c if exists in raspberry)
 COMMON_SRC := $(wildcard src/*.c)
@@ -35,9 +37,9 @@ OBJ := $(patsubst src/%, obj/%, $(SRC:.c=.o))
 
 # Manually add precompiled .o if on Raspberry
 ifeq ($(USER)_$(HOST),pi_raspberrypi)
-   OBJ += obj/frontend/raspberry/libAudioSDL2.o
-   OBJ += obj/frontend/raspberry/joydrv.o 
-   OBJ += obj/frontend/raspberry/disdrv.o
+   OBJ += $(FRONTEND_OBJ)/libAudioSDL2.o
+   OBJ += $(FRONTEND_OBJ)/joydrv.o 
+   OBJ += $(FRONTEND_OBJ)/disdrv.o
 endif
 
 # Default target
@@ -48,30 +50,30 @@ ifeq ($(USER)_$(HOST),pi_raspberrypi)
 space_invaders: $(OBJ)
 	$(CC) -o $@ $^ $(SDL2_LIBS) $(PTHREAD_LIBS)
 
-obj/main.o:src/main.c include/frontend/raspberry/pi_ui.h include/playSound.h
+obj/main.o:src/main.c $(FRONTEND_INC)/pi_ui.h include/playSound.h
 	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
-obj/frontend/raspberry/font.o: src/frontend/raspberry/font.c include/frontend/raspberry/font.h
-	@mkdir -p obj/frontend/raspberry
+$(FRONTEND_OBJ)/font.o: $(FRONTEND_DIR)/font.c $(FRONTEND_INC)/font.h
+	@mkdir -p $(FRONTEND_OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
-obj/frontend/raspberry/pi_ui.o: src/frontend/raspberry/pi_ui.c include/frontend/raspberry/pi_ui.h include/frontend/raspberry/disdrv.h include/frontend/raspberry/joydrv.h include/game.h include/entity.h include/playSound.h
-	@mkdir -p obj/frontend/raspberry
+$(FRONTEND_OBJ)/pi_ui.o: s$(FRONTEND_DIR)/pi_ui.c $(FRONTEND_INC)/pi_ui.h $(FRONTEND_INC)/disdrv.h $(FRONTEND_INC)/joydrv.h include/game.h include/entity.h include/playSound.h
+	@mkdir -p $(FRONTEND_OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
-obj/playSound.o: src/playSound.c include/playSound.h include/frontend/raspberry/audio.h
+obj/playSound.o: src/playSound.c include/playSound.h $(FRONTEND_INC)/audio.h
 	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
 else
 space_invaders: $(OBJ)
 	$(CC) -o $@ $^ $(ALLEGRO_LIBS) $(MATH_LIBS)
 # PC specific files
-obj/main.o:src/main.c include/frontend/pc/pc_ui.h include/playSound.h 
+obj/main.o: src/main.c $(FRONTEND_INC)/pc_ui.h include/playSound.h 
 	@mkdir -p obj
 	$(CC) $(CFLAGS) -c $< -o $@
-obj/frontend/pc/entitiesFont.o: src/frontend/pc/entitiesFont.c include/frontend/pc/entitiesFont.h include/config.h include/game.h
-	@mkdir -p obj/frontend/pc
+$(FRONTEND_OBJ)/entitiesFont.o: $(FRONTEND_DIR)/entitiesFont.c $(FRONTEND_INC)/entitiesFont.h include/config.h include/game.h
+	@mkdir -p $(FRONTEND_OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
-obj/frontend/pc/pc_ui.o: src/frontend/pc/pc_ui.c include/frontend/pc/entitiesFont.h include/game.h include/config.h include/entity.h include/playSound.h
-	@mkdir -p obj/frontend/pc
+$(FRONTEND_OBJ)/pc_ui.o: $(FRONTEND_DIR)/pc_ui.c $(FRONTEND_INC)/entitiesFont.h include/game.h include/config.h include/entity.h include/playSound.h
+	@mkdir -p $(FRONTEND_OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
 obj/playSound.o: src/playSound.c include/playSound.h
 	@mkdir -p obj

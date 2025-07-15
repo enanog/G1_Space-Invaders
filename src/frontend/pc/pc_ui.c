@@ -8,7 +8,7 @@
  * 	YAGGI, Lucca
  *
  * Profesores:
- * 	MAGLIIOLA, Nicolas
+ * 	MAGLIOLA, Nicolas
  * 	JACOBY, Daniel
  * 	VACATELLO, Pablo
  *
@@ -143,6 +143,7 @@ void gameLoop(void)
 			
 			case STATE_PAUSE:
 				playSound_pauseMusic();
+                 // Create snapshot of current game state for pause menu
 				ALLEGRO_BITMAP *snapshot = al_create_bitmap(
 					al_get_display_width(display), 
 					al_get_display_height(display)
@@ -1350,7 +1351,7 @@ static gameState_t showGameOver(ALLEGRO_DISPLAY *display)
 			}
 		}
 	}
-
+    free(topScores);
 	al_destroy_event_queue(queue);
 	return next_state;
 }

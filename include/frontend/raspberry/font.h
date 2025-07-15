@@ -1,3 +1,20 @@
+/* ---------------------------------------------------
+ * font.h
+ * ---------------------------------------------------
+ * GRUPO 1:
+ * 	CASTRO, Tomás
+ *	FRIGERIO, Dylan
+ * 	VALENZUELA, Agustín
+ * 	YAGGI, Lucca
+ *
+ * Profesores:
+ * 	MAGLIOLA, Nicolas
+ * 	JACOBY, Daniel
+ * 	VACATELLO, Pablo
+ *
+ * fecha: 15/07/2025
+ * ---------------------------------------------------*/
+
 #ifndef FONT_H
 #define FONT_H
 

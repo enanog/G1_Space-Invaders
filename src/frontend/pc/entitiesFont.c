@@ -1,5 +1,5 @@
 /* ---------------------------------------------------
- * font.c
+ * entitiesFont.c
  * ---------------------------------------------------
  * GRUPO 1:
  * 	CASTRO, Tomás
@@ -8,7 +8,7 @@
  * 	YAGGI, Lucca
  *
  * Profesores:
- * 	MAGLIIOLA, Nicolas
+ * 	MAGLIOLA, Nicolas
  * 	JACOBY, Daniel
  * 	VACATELLO, Pablo
  *

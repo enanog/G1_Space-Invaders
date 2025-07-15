@@ -1,3 +1,20 @@
+/* ---------------------------------------------------
+ * pi_ui.h
+ * ---------------------------------------------------
+ * GRUPO 1:
+ * 	CASTRO, Tomás
+ *	FRIGERIO, Dylan
+ * 	VALENZUELA, Agustín
+ * 	YAGGI, Lucca
+ *
+ * Profesores:
+ * 	MAGLIOLA, Nicolas
+ * 	JACOBY, Daniel
+ * 	VACATELLO, Pablo
+ *
+ * fecha: 15/07/2025
+ * ---------------------------------------------------*/
+
 #ifndef PI_UI_H
 #define PI_UI_H
 
