@@ -56,7 +56,7 @@ obj/main.o:src/main.c $(FRONTEND_INC)/pi_ui.h include/playSound.h
 $(FRONTEND_OBJ)/font.o: $(FRONTEND_DIR)/font.c $(FRONTEND_INC)/font.h
 	@mkdir -p $(FRONTEND_OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
-$(FRONTEND_OBJ)/pi_ui.o: s$(FRONTEND_DIR)/pi_ui.c $(FRONTEND_INC)/pi_ui.h $(FRONTEND_INC)/disdrv.h $(FRONTEND_INC)/joydrv.h include/game.h include/entity.h include/playSound.h
+$(FRONTEND_OBJ)/pi_ui.o: $(FRONTEND_DIR)/pi_ui.c $(FRONTEND_INC)/pi_ui.h $(FRONTEND_INC)/disdrv.h $(FRONTEND_INC)/joydrv.h include/game.h include/entity.h include/playSound.h
 	@mkdir -p $(FRONTEND_OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
 obj/playSound.o: src/playSound.c include/playSound.h $(FRONTEND_INC)/audio.h
