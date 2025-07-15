@@ -806,10 +806,12 @@ static void shootRandomEnemyBullet(void)
 		return;
 
 	// Select random column with shootable enemies
-	do
+	col = rand() % game.enemiesColumn;
+	while(!columnHasEnemiesThatCanShoot[col])
 	{
-		col = rand() % game.enemiesColumn;
-	} while(!columnHasEnemiesThatCanShoot[col]);
+		col++;
+		col = (col == game.enemiesColumn) ? 0 : col;
+	}
 
 	// Find bottom-most enemy in column
 	for(row = game.enemiesRow - 1; row >= 0 && !game.enemies[row][col].alive; row--);
