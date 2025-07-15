@@ -138,6 +138,7 @@ static void playerInit(void)
 	game.player.lives = INITIAL_PLAYER_LIVES;
 	game.player.bullet.active = false;
 	game.player.bullet.speed = PLAYER_BULLET_SPEED;
+	game.player.cooldown = 0;
 }
 
 static void enemiesInit(int enemiesRow, int enemiesColumn)
@@ -551,8 +552,9 @@ static void update_enemy_bullet(float dt)
 
 static void update_player_bullet(input_t input, float dt)
 {
+	long long currentTime = getTimeMillis();
 	// Si se presionó disparo y no hay bala activa
-	if(input.shot && !game.player.bullet.active)
+	if(input.shot && !game.player.bullet.active && currentTime - game.player.cooldown > PLAYER_BULLET_COOLDOWN)
 	{
 		game.player.bullet.active = true;
 		game.player.bullet.hitbox.start.x = game.player.hitbox.start.x + PLAYER_WIDTH / 2.0f - BULLET_WIDTH / 2.0f;
@@ -561,6 +563,7 @@ static void update_player_bullet(input_t input, float dt)
 		game.player.bullet.hitbox.end.y = game.player.hitbox.start.y;
 		playSound_play(SOUND_SHOOT);
 		game.cantPlayerShots++;
+		game.player.cooldown = currentTime;
 	}
 
 	if(!game.player.bullet.active)
@@ -580,9 +583,9 @@ static void update_player_bullet(input_t input, float dt)
 
 	int row, col;
 	// Colisión con aliens
-	for(row = 0; row < game.enemiesRow; row++)
+	for(row = 0; row < game.enemiesRow && game.player.bullet.active; row++)
 	{
-		for(col = 0; col < game.enemiesColumn; col++)
+		for(col = 0; col < game.enemiesColumn && game.player.bullet.active; col++)
 		{
 			if(!game.enemies[row][col].alive)
 			{
@@ -597,6 +600,7 @@ static void update_player_bullet(input_t input, float dt)
 				playSound_play(SOUND_INVADER_KILLED);
 
 				game.enemyShotInterval -= ENEMY_SHOOTING_INTERVAL_DECREMENT;
+				game.enemiesSpeed += ENEMY_SPEED_INCREMENT_PER_ENEMY_KILLED;
 				if(game.enemyShotInterval < MIN_ENEMY_SHOOTING_INTERVAL)
 				{
 					game.enemyShotInterval = MIN_ENEMY_SHOOTING_INTERVAL;
@@ -621,7 +625,7 @@ static void update_player_bullet(input_t input, float dt)
 	}
 
 	// Colisión con balas enemigas
-	if(collisionEnemyBullet(&game.player.bullet.hitbox))
+	if(game.player.bullet.active && collisionEnemyBullet(&game.player.bullet.hitbox))
 	{
 		game.player.bullet.active = false;
 	}
@@ -705,7 +709,6 @@ int game_update(input_t player)
 		game.prevState = PAUSED;
 		game.lastTimeUpdated = getTimeMillis();
 		playSound_stop(SOUND_UFO_LOW);
-		printf("pausado");
 		saveGameState();
 		if(player.exit)
 		{
@@ -758,7 +761,6 @@ int game_update(input_t player)
 	if(enemiesMovement > 0.1f)
 	{
 		playSound_play((game.enemiesHands) ? SOUND_FAST1 : SOUND_FAST2);
-		//printf("Enemies hands: %d\n", game.enemiesHands);
 		enemiesMovement = 0;
 		game.enemiesHands = !game.enemiesHands;
 	}
