@@ -68,11 +68,10 @@ make
 ## 📦 Autoría
 
 Grupo 1  
-Proyecto de programación en C — 2025  
-Universidad o institución correspondiente.
-
+Programación I — 2025  
+ITBA
 ---
 
 ## 🕹️ Licencia
 
-Uso académico y recreativo. Si vas a reutilizar recursos gráficos o sonidos, respetá sus licencias originales.
+Uso académico y recreativo.
