@@ -1105,7 +1105,7 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 	float scroll_pos = al_get_display_height(display);
 	bool credits_done = false;
     bool redraw = true;
-	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 144.0);
+	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 60.0);
 	al_register_event_source(queue, al_get_timer_event_source(timer));
 	al_start_timer(timer);
 
@@ -1121,7 +1121,7 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 		// Any non-ALT/F4/F11 key will also end credits early
 		else if (event.type == ALLEGRO_EVENT_KEY_DOWN)
 		{
-			if (event.keyboard.keycode != ALLEGRO_KEYMOD_ALT  && event.keyboard.keycode != ALLEGRO_KEY_F4 &&
+			if (event.keyboard.keycode != ALLEGRO_KEY_ALT  && event.keyboard.keycode != ALLEGRO_KEY_F4 &&
 				event.keyboard.keycode != ALLEGRO_KEY_F11 )
 			{
 				credits_done = true;
@@ -1133,12 +1133,12 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 		// Timer event: update scroll position
 		else if (event.type == ALLEGRO_EVENT_TIMER) 
 		{
-            printf("redraw");
 			// Scroll speed
 			scroll_pos -= 0.7f;
             redraw = true;
 			if (scroll_pos < -1300.0f)
 			{
+                redraw = false;
 				credits_done = true;
 				break;
 			}
@@ -1168,7 +1168,7 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
                 float x = al_get_display_width(display) / 2;
 
                 // Apply custom styles based on keywords
-                if (strcmp(credits[i], "SPACE INVADERS")) 
+                if (strstr(credits[i], "SPACE INVADERS")) 
                 {
                     color = al_map_rgb(0, 255, 255);
                     font_size *= 1.5;
@@ -1189,7 +1189,6 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
                 al_draw_text(font, color, x, y, ALLEGRO_ALIGN_CENTER, credits[i]);
                 y += font_size * 1.2;
             }
-            redraw = false;
         }
 		al_flip_display();
 	}
@@ -1203,7 +1202,6 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 	for (int i = 0; i < credit_count; i++)
 		free(credits[i]);
 
-    printf("\nfree credits");
 	free(credits);
 
 	return next_state;
