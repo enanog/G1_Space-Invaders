@@ -508,12 +508,12 @@ static bool updateEnemiesPosition(long long dt)
 	int row, col;
 	int rightLimit;
 	int leftLimit;
-	bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];  // Enemy alive state matrix
+	bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];	// Enemy alive state matrix
 
 	// Get enemy state matrix and check if any remain
 	if(!getEnemyBitMap(matEnemy))
 	{
-		return 0;  // No enemies left
+		return 0;	// No enemies left
 	}
 
 	// Find leftmost and rightmost living enemies
@@ -536,19 +536,18 @@ static bool updateEnemiesPosition(long long dt)
 	}
 
 	// Handle screen edge collision
-	if((game.enemies[0][rightLimit].hitbox.end.x + dx) > 1.0f || 
-	   (game.enemies[0][leftLimit].hitbox.start.x + dx) < 0.0f)
+	if((game.enemies[0][rightLimit].hitbox.end.x + dx) > 1.0f || (game.enemies[0][leftLimit].hitbox.start.x + dx) < 0.0f)
 	{
 		// Reverse direction and increase speed
 		game.enemiesDirection *= -1;
 		game.enemiesSpeed += ENEMY_SPEED_INCREMENT_PER_ROW;
-		
+
 		// Cap maximum enemy speed
 		if(game.enemiesSpeed > ENEMY_MAX_SPEED)
 		{
 			game.enemiesSpeed = ENEMY_MAX_SPEED;
 		}
-		
+
 		// Move enemies down one step
 		for(row = 0; row < game.enemiesRow; row++)
 		{
@@ -558,9 +557,9 @@ static bool updateEnemiesPosition(long long dt)
 				game.enemies[row][col].hitbox.end.y += ENEMY_DESCENT_STEP;
 			}
 		}
-		
+
 		// Recalculate movement for new direction
-		dx = game.enemiesDirection * game.enemiesSpeed * dt;
+		dx = (dx > 0) ? (1.0f - game.enemies[0][rightLimit].hitbox.end.x) : (0.0f - game.enemies[0][leftLimit].hitbox.start.x);
 	}
 
 	// Apply movement to all enemies
@@ -573,7 +572,7 @@ static bool updateEnemiesPosition(long long dt)
 		}
 	}
 
-	return 1;  // Enemies remain
+	return 1;	// Enemies remain
 }
 
 /* ---------------------------------------------------
