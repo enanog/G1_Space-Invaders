@@ -31,7 +31,7 @@
 /* ======================== CONSTANTS ======================== */
 //Defines
 #define ENEMY_ROW 5
-#define ENEMY_COL 6
+#define ENEMY_COL 8
 
 /* ======================== STATIC VARIABLES ======================== */
 // Global Allegro resources
@@ -177,7 +177,7 @@ static gameState_t event_handle(ALLEGRO_EVENT_QUEUE *queque, ALLEGRO_EVENT *even
 	switch (event->type)
 	{
 		case ALLEGRO_EVENT_DISPLAY_CLOSE:
-			*running = false;
+			*running = !*running;
 			return STATE_EXIT;
 			break;
 		case ALLEGRO_EVENT_KEY_DOWN:
@@ -1104,8 +1104,7 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 	// -------- Initialize scrolling state and timer --------
 	float scroll_pos = al_get_display_height(display);
 	bool credits_done = false;
-    bool redraw = true;
-	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 60.0);
+	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 1000.0);
 	al_register_event_source(queue, al_get_timer_event_source(timer));
 	al_start_timer(timer);
 
@@ -1121,12 +1120,10 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 		// Any non-ALT/F4/F11 key will also end credits early
 		else if (event.type == ALLEGRO_EVENT_KEY_DOWN)
 		{
-			if (event.keyboard.keycode != ALLEGRO_KEY_ALT  && event.keyboard.keycode != ALLEGRO_KEY_F4 &&
+			if (event.keyboard.keycode != ALLEGRO_KEYMOD_ALT  && event.keyboard.keycode != ALLEGRO_KEY_F4 &&
 				event.keyboard.keycode != ALLEGRO_KEY_F11 )
 			{
 				credits_done = true;
-                next_state = STATE_MENU;
-                break;
 			}
 		}
 		
@@ -1135,61 +1132,59 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 		{
 			// Scroll speed
 			scroll_pos -= 0.7f;
-            redraw = true;
+
 			if (scroll_pos < -1300.0f)
 			{
-                redraw = false;
 				credits_done = true;
 				break;
 			}
 		}
-        // -------- Draw background --------
-        if (credits_bg) 
-            al_draw_scaled_bitmap(credits_bg, 0, 0, al_get_bitmap_width(credits_bg),
-                                al_get_bitmap_height(credits_bg), 0, 0, 
-                                al_get_display_width(display), al_get_display_height(display), 0);
-        else 
-            al_clear_to_color(al_map_rgb(0, 0, 0));
 
-        // Add semi-transparent black overlay for better contrast (like scoreboard)
-        al_draw_filled_rectangle(0, 0, 
-                        al_get_display_width(display), 
-                        al_get_display_height(display), 
-                        al_map_rgba(0, 0, 0, 200));
+		// -------- Draw background --------
+		if (credits_bg) 
+			al_draw_scaled_bitmap(credits_bg, 0, 0, al_get_bitmap_width(credits_bg),
+								al_get_bitmap_height(credits_bg), 0, 0, 
+								al_get_display_width(display), al_get_display_height(display), 0);
+		else 
+			al_clear_to_color(al_map_rgb(0, 0, 0));
+
+		// Add semi-transparent black overlay for better contrast (like scoreboard)
+		al_draw_filled_rectangle(0, 0, 
+						 al_get_display_width(display), 
+						 al_get_display_height(display), 
+						 al_map_rgba(0, 0, 0, 200));
 
 		// -------- Render each line of credits --------
-		if(redraw && al_is_event_queue_empty(queue))
-        {
-            float y = scroll_pos;
-            for (int i = 0; i < credit_count; i++) 
-            {
-                ALLEGRO_COLOR color = al_map_rgb(255, 255, 255);
-                int font_size = al_get_font_line_height(font);
-                float x = al_get_display_width(display) / 2;
+		float y = scroll_pos;
+		for (int i = 0; i < credit_count; i++) 
+		{
+			ALLEGRO_COLOR color = al_map_rgb(255, 255, 255);
+			int font_size = al_get_font_line_height(font);
+			float x = al_get_display_width(display) / 2;
 
-                // Apply custom styles based on keywords
-                if (strstr(credits[i], "SPACE INVADERS")) 
-                {
-                    color = al_map_rgb(0, 255, 255);
-                    font_size *= 1.5;
-                }
-                else if (strstr(credits[i], "THE MOST AWESOME") ||
-                        strstr(credits[i], "FEARLESS LEADERS") ||
-                        strstr(credits[i], "SPECIAL THANKS") ||
-                        strstr(credits[i], "FUN FACT") ||
-                        strstr(credits[i], "DISCLAIMER") ||
-                        strstr(credits[i], "MEMORY LEAK") ||
-                        strstr(credits[i], "SEGMENTATION")) 
-                    color = al_map_rgb(255, 255, 0);
+			// Apply custom styles based on keywords
+			if (strstr(credits[i], "SPACE INVADERS")) 
+			{
+				color = al_map_rgb(0, 255, 255);
+				font_size *= 1.5;
+			}
+			else if (strstr(credits[i], "THE MOST AWESOME") ||
+					strstr(credits[i], "FEARLESS LEADERS") ||
+					strstr(credits[i], "SPECIAL THANKS") ||
+					strstr(credits[i], "FUN FACT") ||
+					strstr(credits[i], "DISCLAIMER") ||
+					strstr(credits[i], "MEMORY LEAK") ||
+					strstr(credits[i], "SEGMENTATION")) 
+				color = al_map_rgb(255, 255, 0);
 
-                else if (strstr(credits[i], "PRESS ANY KEY") ||
-                        strstr(credits[i], "segmentation fault"))
-                    color = al_map_rgb(255, 0, 0);
+			else if (strstr(credits[i], "PRESS ANY KEY") ||
+					 strstr(credits[i], "segmentation fault"))
+				color = al_map_rgb(255, 0, 0);
 
-                al_draw_text(font, color, x, y, ALLEGRO_ALIGN_CENTER, credits[i]);
-                y += font_size * 1.2;
-            }
-        }
+			al_draw_text(font, color, x, y, ALLEGRO_ALIGN_CENTER, credits[i]);
+			y += font_size * 1.2;
+		}
+
 		al_flip_display();
 	}
 
@@ -1296,8 +1291,10 @@ static gameState_t showGameOver(ALLEGRO_DISPLAY *display)
 		al_wait_for_event(queue, &event);
 		
 		if(event_handle(queue, &event, &done, display) == STATE_EXIT)
-				next_state = STATE_EXIT;
-
+		{
+			next_state = STATE_EXIT;
+			printf("%d,%d\n",done,next_state);
+		}
 		// Handle character input for name entry
 		if (event.type == ALLEGRO_EVENT_KEY_CHAR && name_pos < 14) 
 		{
@@ -1321,6 +1318,13 @@ static gameState_t showGameOver(ALLEGRO_DISPLAY *display)
 				done = true;
 			}
 		}
+
+		if (event.type == ALLEGRO_EVENT_KEY_DOWN && event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
+		{
+			done = true;
+			next_state = STATE_MENU;
+		}
+		printf("%d,%d\n",done,next_state);
 	}
 
 	free(topScores);
