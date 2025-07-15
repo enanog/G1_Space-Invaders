@@ -21,39 +21,20 @@
 #include "entity.h"
 #include "config.h"
 
-enum{RUNNING, GAME_OVER, QUIT, PAUSED};
-
-typedef struct 
+enum
 {
-    player_t player;
-    enemy_t enemies[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
-    barrier_t barriers[BARRIER_QUANTITY_MAX];
-    mothership_t mothership;
-    int score;
-    int level;
-    int state;
-    int prevState;
-    int enemiesRow;
-    int enemiesColumn;
-    float enemiesSpeed;
-    int enemiesDirection;
-    int barrirersQuantity;
-    int barriersRow;
-    int barriersColumn;
-    int enemyShotInterval;
-    int cantPlayerShots;
-    bool enemiesHands;
-    long long lastTimeEnemyShoot;
-    long long lastTimeUpdated;
-    long long lastTimeMothershipGenerated;
-} game_t;
+	RUNNING,
+	GAME_OVER,
+	QUIT,
+	PAUSED
+};
 
-typedef struct 
+typedef struct
 {
-    int direction;
-    bool shot;
-    bool pause;
-    bool exit;
+	int direction;
+	bool shot;
+	bool pause;
+	bool exit;
 } input_t;
 
 /**
@@ -66,19 +47,12 @@ typedef struct
  * @param barrierColumns Number of columns per barrier
  */
 bool game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame);
-void game_create_enemy_map(int enemiesRow, int enemiesColumn);
-void game_create_barriers();
-void update_player_bullet(input_t input, float dt);
-void update_enemy_bullet(float dt);
 long long getTimeMillis(void);
 
 int game_update(input_t player);
-int game_over(void);
 void game_resume(void);
 void game_pause(void);
 void game_reset(void);
-void game_level_up(void);
-
 
 int getScore(void);
 int getLevel(void);
@@ -96,7 +70,6 @@ bool getBarrierIsAlive(int barrier, int row, int column);
 bullet_t getPlayerBulletinfo(void);
 
 bool getIsEnemyAlive(int row, int column);
-void getEnemyBitMap(bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
 void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
 
 
