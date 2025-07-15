@@ -412,6 +412,7 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 	bool running = true;
 	bool redraw = true;
 	gameState_t next_state = state;
+    bool firstUpdate = false;
 
 	while (running)
 	{   
@@ -483,10 +484,15 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 			if (game_status == GAME_OVER) 
 			{
 				running = false;
-				next_state = (state == STATE_RESUME_GAME) ? STATE_MENU : STATE_GAME_OVER;
+                if(!firstUpdate)
+                {
+				    next_state = (state == STATE_RESUME_GAME) ? STATE_MENU : STATE_GAME_OVER;
+                }
+                else
+                    next_state = STATE_GAME_OVER;
 				break;
 			}
-
+            firstUpdate = true;
 			// Draw UI elements
 			draw_hearts(getPlayerLives(), display);
 			draw_player_score(display, getScore());
