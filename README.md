@@ -70,6 +70,7 @@ make
 Grupo 1  
 Programación I — 2025  
 ITBA
+
 ---
 
 ## 🕹️ Licencia
