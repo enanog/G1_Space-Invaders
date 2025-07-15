@@ -734,7 +734,6 @@ int game_update(input_t player)
 			lastTimeLevelUp = getTimeMillis();
 			LevelUpState = 1;
 			game.level++;
-			playSound_play(SOUND_UFO_LOW);
 			playSound_setMusicVolume(0.2);
 			playSound_play(SOUND_LEVELUP);
 			break;
