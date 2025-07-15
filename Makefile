@@ -10,16 +10,16 @@ CFLAGS = -Wall -Iinclude -Iinclude/frontend
 
 # Platform-specific config
 ifeq ($(USER)_$(HOST),pi_raspberrypi)
-    FRONTEND_DIR := src/frontend/raspberry
-    FRONTEND_INC := -Iinclude/frontend/raspberry
+	FRONTEND_DIR := src/frontend/raspberry
+	FRONTEND_INC := -Iinclude/frontend/raspberry
 	SDL2_LIBS   := -lSDL2
 	PTHREAD_LIBS   := -lpthread
-    CFLAGS += -DRASPBERRY
+	CFLAGS += -DRASPBERRY
 else
-    FRONTEND_DIR := src/frontend/pc
-    FRONTEND_INC := -Iinclude/frontend/pc
-    ALLEGRO_LIBS := -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives -lallegro_audio -lallegro_acodec
-	MATH_LIBS    := -lm
+	FRONTEND_DIR := src/frontend/pc
+	FRONTEND_INC := -Iinclude/frontend/pc
+	ALLEGRO_LIBS := -lallegro -lallegro_font -lallegro_ttf -lallegro_image -lallegro_primitives -lallegro_audio -lallegro_acodec
+	MATH_LIBS := -lm
 endif
 
 # Add frontend includes to flags
