@@ -396,7 +396,7 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
 static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 {
 	ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
-	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 1000);//1000 fps 
+	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 240);//1000 fps 
 	setup_event_queue(queue, display);
 	al_register_event_source(queue, al_get_timer_event_source(timer));
 	al_register_event_source(queue, al_get_mouse_event_source());
@@ -1293,7 +1293,6 @@ static gameState_t showGameOver(ALLEGRO_DISPLAY *display)
 		if(event_handle(queue, &event, &done, display) == STATE_EXIT)
 		{
 			next_state = STATE_EXIT;
-			printf("%d,%d\n",done,next_state);
 		}
 		// Handle character input for name entry
 		if (event.type == ALLEGRO_EVENT_KEY_CHAR && name_pos < 14) 
@@ -1324,7 +1323,6 @@ static gameState_t showGameOver(ALLEGRO_DISPLAY *display)
 			done = true;
 			next_state = STATE_MENU;
 		}
-		printf("%d,%d\n",done,next_state);
 	}
 
 	free(topScores);

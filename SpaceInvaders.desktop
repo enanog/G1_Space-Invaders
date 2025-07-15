@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Space Invaders
+Exec=/home/agustin/Documents/GitHub/G1_Space-Invaders/space_invaders
+Icon=/home/agustin/Documents/GitHub/G1_Space-Invaders/assets/images/logo.png
+Type=Application
+Categories=Game;
+Terminal=false
