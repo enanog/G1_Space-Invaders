@@ -508,12 +508,12 @@ static bool updateEnemiesPosition(long long dt)
 	int row, col;
 	int rightLimit;
 	int leftLimit;
-	bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];  // Enemy alive state matrix
+	bool matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];	// Enemy alive state matrix
 
 	// Get enemy state matrix and check if any remain
 	if(!getEnemyBitMap(matEnemy))
 	{
-		return 0;  // No enemies left
+		return 0;	// No enemies left
 	}
 
 	// Find leftmost and rightmost living enemies
@@ -536,19 +536,18 @@ static bool updateEnemiesPosition(long long dt)
 	}
 
 	// Handle screen edge collision
-	if((game.enemies[0][rightLimit].hitbox.end.x + dx) > 1.0f || 
-	   (game.enemies[0][leftLimit].hitbox.start.x + dx) < 0.0f)
+	if((game.enemies[0][rightLimit].hitbox.end.x + dx) > 1.0f || (game.enemies[0][leftLimit].hitbox.start.x + dx) < 0.0f)
 	{
 		// Reverse direction and increase speed
 		game.enemiesDirection *= -1;
 		game.enemiesSpeed += ENEMY_SPEED_INCREMENT_PER_ROW;
-		
+
 		// Cap maximum enemy speed
 		if(game.enemiesSpeed > ENEMY_MAX_SPEED)
 		{
 			game.enemiesSpeed = ENEMY_MAX_SPEED;
 		}
-		
+
 		// Move enemies down one step
 		for(row = 0; row < game.enemiesRow; row++)
 		{
@@ -558,9 +557,9 @@ static bool updateEnemiesPosition(long long dt)
 				game.enemies[row][col].hitbox.end.y += ENEMY_DESCENT_STEP;
 			}
 		}
-		
+
 		// Recalculate movement for new direction
-		dx = game.enemiesDirection * game.enemiesSpeed * dt;
+		dx = (dx > 0) ? (1.0f - game.enemies[0][rightLimit].hitbox.end.x) : (0.0f - game.enemies[0][leftLimit].hitbox.start.x);
 	}
 
 	// Apply movement to all enemies
@@ -573,7 +572,7 @@ static bool updateEnemiesPosition(long long dt)
 		}
 	}
 
-	return 1;  // Enemies remain
+	return 1;	// Enemies remain
 }
 
 /* ---------------------------------------------------
@@ -807,10 +806,12 @@ static void shootRandomEnemyBullet(void)
 		return;
 
 	// Select random column with shootable enemies
-	do
+	col = rand() % game.enemiesColumn;
+	while(!columnHasEnemiesThatCanShoot[col])
 	{
-		col = rand() % game.enemiesColumn;
-	} while(!columnHasEnemiesThatCanShoot[col]);
+		col++;
+		col = (col == game.enemiesColumn) ? 0 : col;
+	}
 
 	// Find bottom-most enemy in column
 	for(row = game.enemiesRow - 1; row >= 0 && !game.enemies[row][col].alive; row--);
@@ -1013,7 +1014,9 @@ static void update_enemy_bullet(float dt)
 static void update_player_bullet(input_t input, float dt)
 {
 	long long currentTime = getTimeMillis();
-	
+	int bulletHit = 0;
+	int row, col;
+
 	// Fire new bullet if conditions met
 	if(input.shot && !game.player.bullet.active && currentTime - game.player.cooldown > PLAYER_BULLET_COOLDOWN)
 	{
@@ -1023,7 +1026,7 @@ static void update_player_bullet(input_t input, float dt)
 		game.player.bullet.hitbox.start.y = game.player.hitbox.start.y - BULLET_HEIGHT;
 		game.player.bullet.hitbox.end.x = game.player.hitbox.start.x + PLAYER_WIDTH / 2.0f + BULLET_WIDTH / 2.0f;
 		game.player.bullet.hitbox.end.y = game.player.hitbox.start.y;
-		
+
 		// Play sound and update counters
 		playSound_play(SOUND_SHOOT);
 		game.cantPlayerShots++;
@@ -1047,11 +1050,10 @@ static void update_player_bullet(input_t input, float dt)
 		return;
 	}
 
-	int row, col;
 	// Check collision with enemies
-	for(row = 0; row < game.enemiesRow && game.player.bullet.active; row++)
+	for(row = 0; row < game.enemiesRow; row++)
 	{
-		for(col = 0; col < game.enemiesColumn && game.player.bullet.active; col++)
+		for(col = 0; col < game.enemiesColumn; col++)
 		{
 			// Skip dead enemies
 			if(!game.enemies[row][col].alive)
@@ -1062,9 +1064,10 @@ static void update_player_bullet(input_t input, float dt)
 			// Handle enemy hit
 			if(HITBOX_COLLISION(game.enemies[row][col].hitbox, game.player.bullet.hitbox))
 			{
-				game.enemies[row][col].alive = false;  // Kill enemy
-				game.player.bullet.active = false;     // Deactivate bullet
-				
+				game.enemies[row][col].alive = false;	// Kill enemy
+				//game.player.bullet.active = false;	// Deactivate bullet
+				bulletHit = 1;	// The bullect can collide with multiple enemies at once
+
 				// Play explosion sounds
 				playSound_play(SOUND_EXPLOSION);
 				playSound_play(SOUND_INVADER_KILLED);
@@ -1072,7 +1075,7 @@ static void update_player_bullet(input_t input, float dt)
 				// Increase game difficulty
 				game.enemyShotInterval -= ENEMY_SHOOTING_INTERVAL_DECREMENT;
 				game.enemiesSpeed += ENEMY_SPEED_INCREMENT_PER_ENEMY_KILLED;
-				
+
 				// Cap minimum shot interval
 				if(game.enemyShotInterval < MIN_ENEMY_SHOOTING_INTERVAL)
 				{
@@ -1097,6 +1100,8 @@ static void update_player_bullet(input_t input, float dt)
 			}
 		}
 	}
+
+	game.player.bullet.active &= !bulletHit;
 
 	// Check collision with enemy bullets
 	if(game.player.bullet.active && collisionEnemyBullet(&game.player.bullet.hitbox))
