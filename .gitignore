@@ -1,1 +1,6 @@
-deepseek_c_20250713_c204e1.c
+/data/savegame.dat
+/data/topScore.txt
+*.o
+*.out
+*.exe
+space_invaders
