@@ -90,7 +90,7 @@ endif
 # ---------------------------------------------------
 # Default target to build the game executable
 # ---------------------------------------------------
-all: space_invaders
+all: space_invaders desktop
 
 # ---------------------------------------------------
 # Raspberry Pi build rules
@@ -181,3 +181,16 @@ clean:
 		fi; \
 	done
 	rm -f space_invaders
+
+# ---------------------------------------------------
+# Create .desktop launcher with icon
+# ---------------------------------------------------
+desktop:
+	echo "[Desktop Entry]" > SpaceInvaders.desktop
+	echo "Name=Space Invaders" >> SpaceInvaders.desktop
+	echo "Exec=$(PWD)/space_invaders" >> SpaceInvaders.desktop
+	echo "Icon=$(PWD)/assets/images/logo.png" >> SpaceInvaders.desktop
+	echo "Type=Application" >> SpaceInvaders.desktop
+	echo "Categories=Game;" >> SpaceInvaders.desktop
+	echo "Terminal=false" >> SpaceInvaders.desktop
+	chmod +x SpaceInvaders.desktop
