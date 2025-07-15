@@ -23,9 +23,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "game.h"
-#include "config.h"
 #include "playSound.h"
-#include "entity.h"
 #include "pc_ui.h"
 #include "score.h"
 #include "entitiesFont.h"

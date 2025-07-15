@@ -141,7 +141,7 @@ $(FRONTEND_OBJ)/entitiesFont.o: $(FRONTEND_DIR)/entitiesFont.c $(FRONTEND_INC)/e
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Compile pc_ui.c with dependencies
-$(FRONTEND_OBJ)/pc_ui.o: $(FRONTEND_DIR)/pc_ui.c $(FRONTEND_INC)/entitiesFont.h include/game.h include/config.h include/entity.h include/playSound.h
+$(FRONTEND_OBJ)/pc_ui.o: $(FRONTEND_DIR)/pc_ui.c $(FRONTEND_INC)/entitiesFont.h include/score.h include/game.h include/playSound.h
 	@mkdir -p $(FRONTEND_OBJ)
 	$(CC) $(CFLAGS) -c $< -o $@
 
