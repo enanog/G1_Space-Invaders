@@ -37,43 +37,40 @@ typedef struct
 	bool exit;
 } input_t;
 
-/**
- * @brief Initializes the game state including enemies, player, barriers, and projectile.
- *
+/* ======================== PUBLIC FUNCTION DECLARATIONS ======================== */
+
+/* ---------------------------------------------------
+ * @brief Initialize game state
  * @param enemiesRow Number of enemy rows
  * @param enemiesColumn Number of enemy columns
- * @param barrierQuantity Number of barriers
- * @param barrierRows Number of rows per barrier
- * @param barrierColumns Number of columns per barrier
- */
+ * @param resumeLastGame Whether to load saved game
+ * @return true if initialization succeeded, false otherwise
+ * ---------------------------------------------------*/
 bool game_init(int enemiesRow, int enemiesColumn, bool resumeLastGame);
-long long getTimeMillis(void);
 
+/* ---------------------------------------------------
+ * @brief Update game state based on input and time
+ * @param player Player input state
+ * @return Current game state
+ * ---------------------------------------------------*/
 int game_update(input_t player);
-void game_resume(void);
-void game_pause(void);
-void game_reset(void);
 
-int getScore(void);
-int getLevel(void);
-int getEnemyTier(int row);
+/* ======================== PUBLIC GETTER DECLARATIONS ======================== */
 
-bool getEnemiesHands(void);
-int getPlayerLives(void);
-
-hitbox_t getPlayerPosition(void);
-hitbox_t getEnemyPosition(int row, int column);
-
-hitbox_t getBarrierPosition(int barrier, int row, int column);
-bool getBarrierIsAlive(int barrier, int row, int column);
-
-bullet_t getPlayerBulletinfo(void);
-
-bool getIsEnemyAlive(int row, int column);
 void getEnemiesBulletsInfo(bullet_t matEnemy[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX]);
-
-
+int getPlayerLives(void);
 hitbox_t getMothershipPosition(void);
 bool getIsMothershipAlive(void);
+hitbox_t getPlayerPosition(void);
+hitbox_t getEnemyPosition(int row, int column);
+bool getIsEnemyAlive(int row, int column);
+bool getBarrierIsAlive(int barrier, int row, int column);
+hitbox_t getBarrierPosition(int barrier, int row, int column);
+int getEnemyTier(int row);
+long long getTimeMillis(void);
+bullet_t getPlayerBulletinfo(void);
+bool getEnemiesHands(void);
+int getLevel(void);
+int getScore(void);
 
 #endif // GAME_H
