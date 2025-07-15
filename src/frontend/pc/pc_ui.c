@@ -22,7 +22,6 @@
 #include <allegro5/allegro_image.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <math.h>
 #include "game.h"
 #include "config.h"
 #include "playSound.h"
@@ -47,7 +46,6 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display);
 static gameState_t mainMenu(ALLEGRO_DISPLAY *display);
 static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol);
 static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *background);
-static hitbox_t clipHitbox(hitbox_t hb, float margin_x, float margin_y, float inner_w, float inner_h);
 static gameState_t showGameOver(ALLEGRO_DISPLAY *display);
 static bool isHighScore(int score, score_t topScores[], int count);
 static gameState_t showScoreboard(ALLEGRO_DISPLAY *display);
@@ -60,7 +58,6 @@ static void draw_menu_options(const char **options, int count, int selected, flo
 static void setup_event_queue(ALLEGRO_EVENT_QUEUE *queue, ALLEGRO_DISPLAY *disp);
 static void draw_scaled_background(ALLEGRO_BITMAP *bg);
 static bool draw_game_entities(float margin_x, float margin_y, float inner_w, float inner_h, bool show_hitboxes);
-static void draw_barriers(int barrier, float margin_x, float margin_y, float inner_w, float inner_h, bool show_hitboxes);
 static char** readCreditsFile(int* line_count);
 
 
@@ -143,7 +140,7 @@ void gameLoop(void)
 			
 			case STATE_PAUSE:
 				playSound_pauseMusic();
-                 // Create snapshot of current game state for pause menu
+				 // Create snapshot of current game state for pause menu
 				ALLEGRO_BITMAP *snapshot = al_create_bitmap(
 					al_get_display_width(display), 
 					al_get_display_height(display)
@@ -178,7 +175,7 @@ void allegro_shutdown(void)
 
 static gameState_t event_handle(ALLEGRO_EVENT_QUEUE *queque, ALLEGRO_EVENT *event, bool *running, ALLEGRO_DISPLAY *display)
 {
-	static bool fullscreen = false;
+	static bool fullscreen = false;	 // Track fullscreen state
 	switch (event->type)
 	{
 		case ALLEGRO_EVENT_DISPLAY_CLOSE:
@@ -189,8 +186,10 @@ static gameState_t event_handle(ALLEGRO_EVENT_QUEUE *queque, ALLEGRO_EVENT *even
 			switch (event->keyboard.keycode) 
 			{
 				case ALLEGRO_KEY_F11:
+					// Toggle fullscreen mode
 					fullscreen = !fullscreen;
 					al_set_display_flag(display, ALLEGRO_FULLSCREEN_WINDOW, fullscreen);
+					// Reset display size and reload font at proper scale
 					al_resize_display(display, SCREEN_W, SCREEN_H);
 					const int font_size = 0.02f * al_get_display_height(display);
 					al_destroy_font(font);
@@ -219,6 +218,7 @@ static gameState_t mainMenu(ALLEGRO_DISPLAY *display)
 	ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
 	setup_event_queue(queue, display);
 
+	// Load splash screen background
 	ALLEGRO_BITMAP *bg = al_load_bitmap("assets/images/backgroundMenu.png");
 	if (!bg) {
 		al_destroy_event_queue(queue);
@@ -226,15 +226,15 @@ static gameState_t mainMenu(ALLEGRO_DISPLAY *display)
 	}
 
 	bool running = true;
-	bool show_prompt = false;
-	const double start_time = al_get_time();
-	gameState_t next_state = STATE_EXIT;
+	bool show_prompt = false;  // Controls "press enter" visibility
+	const double start_time = al_get_time();  // For delayed prompt
+	gameState_t next_state = STATE_EXIT;  // Default exit if error
 
 	while (running) 
 	{
-		draw_scaled_background(bg);
+		draw_scaled_background(bg); // Show prompt after 2 second delay
 
-		// Show "Press ENTER" after 2 seconds
+		// Show prompt after 2 second delay
 		if (al_get_time() - start_time > 2.0) show_prompt = true;
 		if (show_prompt) {
 			draw_centered_text(0.45f, 0.8f, "Press ENTER to start", al_map_rgb(255, 255, 255));
@@ -283,9 +283,11 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
 	const int option_count = sizeof(options)/sizeof(options[0]);
 	int selected = 0;
 
+	// Load top scores for display
 	score_t topScores[5];
 	const int topCount = getTopScore(topScores, 5);
 
+	// Set up input handling
 	ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
 	setup_event_queue(queue, display);
 
@@ -293,45 +295,50 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
 
 	while (choosing) 
 	{
+		// Calculate dynamic layout based on current display size
 		float screen_w = al_get_display_width(display);
 		float screen_h = al_get_display_height(display);
 
+		draw_scaled_background(background);
+
+		// Vertical positioning parameters
 		float title_y = 0.07f;
 		float menu_start_y = 0.55f;
 		float option_spacing = 0.08f;
 
+		// Score box dimensions
 		float rect_width = 0.3f;
 		float font_size = al_get_font_line_height(font);
 		float rect_width_px = 0.3f * screen_w;
 		float rect_height = font_size * 1.2f + 5 * (font_size * 1.1f) + font_size * 0.8f;
 		float rect_x = (screen_w - rect_width_px) / 2.0f;
 		float rect_y = 0.55f * screen_h - rect_height - 0.05f * screen_h;
-		draw_scaled_background(background);
 
-		// Draw title
+		// 1. Draw game title graphic
 		draw_title(screen_w / 2, title_y * screen_h, display);
 
-		// Draw score box
+		// 2. Draw score display box
 		al_draw_filled_rectangle(rect_x, rect_y, rect_x + rect_width * screen_w, 
 								rect_y + rect_height, al_map_rgb(100, 100, 100));
 		al_draw_rectangle(rect_x, rect_y, rect_x + rect_width * screen_w, 
 						  rect_y + rect_height, al_map_rgb(255, 255, 255), 2);
 
-		// Draw scores title
+		// 3. Draw scores title
 		draw_centered_text((rect_x + rect_width_px / 2.0f) / screen_w, 
 						   (rect_y + font_size * 0.2f) / screen_h,
 						   "TOP SCORES", al_map_rgb(255, 255, 255));
 
-		// Draw scores 
+		// 4. Render each high score entry 
 		for (int i = 0; i < 5 && i < topCount; ++i) 
 		{
 			char buffer[64];
+			// Format: "1. PlayerName    12345"
 			snprintf(buffer, sizeof(buffer), "%d. %-15s\t%d", i + 1, topScores[i].name, topScores[i].score);
 			al_draw_text(font, al_map_rgb(255, 255, 255), rect_x + 0.01f * screen_w,
 						 rect_y + font_size * 1.2f + i * (font_size * 1.1f), 0, buffer);
 		}
 
-		// Draw menu options
+		// 5. Draw menu options with selection highlight
 		draw_menu_options(options, option_count, selected, 
 						 menu_start_y * screen_h, 
 						 option_spacing * screen_h);
@@ -340,6 +347,7 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
 
 		ALLEGRO_EVENT event;
 		al_wait_for_event(queue, &event);
+
 		if(event_handle(queue, &event, &choosing, display) == STATE_EXIT)
 				next_state = STATE_EXIT;
 
@@ -348,10 +356,12 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
 			switch (event.keyboard.keycode) 
 			{
 				case ALLEGRO_KEY_UP:
+					// Navigation sound
 					playSound_play(SOUND_MENU);
 					selected = (selected - 1 + option_count) % option_count;
 					break;
 				case ALLEGRO_KEY_DOWN:
+					// Navigation sound
 					playSound_play(SOUND_MENU);
 					selected = (selected + 1) % option_count;
 					break;
@@ -365,9 +375,10 @@ static gameState_t menuShow(ALLEGRO_DISPLAY *display)
 
 	al_destroy_event_queue(queue);
 
+	// Map selection to game state
 	if(next_state == STATE_EXIT)
 		return STATE_EXIT;
-	// Map selection to game state
+
 	switch (selected) 
 	{
 		case 0: next_state = STATE_NEW_GAME; break;
@@ -400,20 +411,24 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 	} 
 	else if (state == STATE_RESUME_GAME) 
 	{
+		// Try to load saved game, return to menu if failed
 		if(!game_init(enemyRow, enemyCol, true))
 		{
 			return STATE_MENU;
 		}
 	}
-
+	// Player input tracking
 	input_t player = {0};
+	// Debug mode flag
 	bool show_hitboxes = false;
 	bool f3_pressed = false, b_pressed = false, flag_hitboxes = true;
 
 	bool running = true;
+	// Controls frame updates
 	bool redraw = true;
 	gameState_t next_state = state;
-    bool firstUpdate = false;
+	// Tracks if game has started
+	bool firstUpdate = false;
 
 	while (running)
 	{   
@@ -426,28 +441,29 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 		switch (event.type)
 		{
 			case ALLEGRO_EVENT_TIMER:
-				redraw = true;
+				redraw = true;	// Trigger frame update
 				break;
 
 			case ALLEGRO_EVENT_KEY_DOWN:
+				// Player movement and actions
 				switch (event.keyboard.keycode) 
 				{
 					case ALLEGRO_KEY_A:
-					case ALLEGRO_KEY_LEFT:  player.direction = -1; break;
+					case ALLEGRO_KEY_LEFT:  player.direction = -1; break;	// Move left
 					case ALLEGRO_KEY_D:
-					case ALLEGRO_KEY_RIGHT: player.direction = 1; break;
-					case ALLEGRO_KEY_SPACE: player.shot = true; break;
+					case ALLEGRO_KEY_RIGHT: player.direction = 1; break;	// Move right
+					case ALLEGRO_KEY_SPACE: player.shot = true; break;		// Fire weapon
 					case ALLEGRO_KEY_ESCAPE: 
-						player.pause = !player.pause;
+						player.pause = !player.pause;	// Toggle pause
 						if (player.pause) 
 						{
-							game_update(player);
+							game_update(player);		// Final update before pause
 							next_state = STATE_PAUSE;
 							running = false;
 						}
 						break;
-					case ALLEGRO_KEY_F3: f3_pressed = true; break;
-					case ALLEGRO_KEY_B: b_pressed = true; break;
+					case ALLEGRO_KEY_F3: f3_pressed = true; break;	// Debug combo
+					case ALLEGRO_KEY_B: b_pressed = true; break;	// Debug combo
 				}
 				break;
 
@@ -468,46 +484,51 @@ static gameState_t gameRender(gameState_t state, int enemyRow, int enemyCol)
 				break;
 		}
 
-		// Toggle hitboxes if F3+B pressed
+		// Debug mode toggle (F3+B)
 		if (f3_pressed && b_pressed && flag_hitboxes) 
 		{
-			show_hitboxes = !show_hitboxes;
-			flag_hitboxes = false;
+			show_hitboxes = !show_hitboxes;	// Toggle hitbox visibility
+			flag_hitboxes = false;			// Toggle hitbox visibility
 		}
 
+		// Only redraw when necessary and no pending events
 		if (redraw && al_is_event_queue_empty(queue))
 		{
 			redraw = false;
 			draw_scaled_background(background);
 
-			// Game update and state check
+			// Update game state and check for game over
 			int game_status = game_update(player);
 			if (game_status == GAME_OVER) 
 			{
 				running = false;
-                if(!firstUpdate)
-                {
-				    next_state = (state == STATE_RESUME_GAME) ? STATE_MENU : STATE_GAME_OVER;
-                }
-                else
-                    next_state = STATE_GAME_OVER;
+				if(!firstUpdate)
+				{
+					// Handle special case for failed resume
+					next_state = (state == STATE_RESUME_GAME) ? STATE_MENU : STATE_GAME_OVER;
+				}
+				else
+					next_state = STATE_GAME_OVER;
 				break;
 			}
-            firstUpdate = true;
-			// Draw UI elements
-			draw_hearts(getPlayerLives(), display);
-			draw_player_score(display, getScore());
+			// Mark game as started
+			firstUpdate = true;
 
-			// Set up clipping area
+			// Draw UI elements
+			draw_hearts(getPlayerLives(), display);	// Life counter
+			draw_player_score(display, getScore());	// Score display
+
+			// Set up gameplay area clipping
 			float margin_x = al_get_display_width(display) * 0.08f;
 			float margin_y = al_get_display_height(display) * 0.10f;
 			float inner_w = al_get_display_width(display) - 3 * margin_x;
 			float inner_h = al_get_display_height(display) - 2 * margin_y;
 			al_set_clipping_rectangle(margin_x, margin_y, inner_w, inner_h);
 
-			// Draw game entities
+			// Draw all game objects
 			player.pause = draw_game_entities(margin_x, margin_y, inner_w, inner_h, show_hitboxes);
 
+			// Restore full-screen drawing
 			al_reset_clipping_rectangle();
 
 			al_flip_display();
@@ -535,41 +556,47 @@ static bool draw_game_entities(float margin_x, float margin_y, float inner_w, fl
 	bool gamePaused = false;
 
 	long long currentTime = getTimeMillis();
-	// Draw player
+
 	hitbox_t player_hb = clipHitbox(getPlayerPosition(), margin_x, margin_y, inner_w, inner_h);
 	
+	// Check if the player has lost a life since the last frame
 	if(playerLives > getPlayerLives())
 	{
-		playerDieTime = getTimeMillis();
+		playerDieTime = getTimeMillis();	// Register time of death
 		draw_player_died(player_hb, display, currentTime - playerDieTime);
 		gamePaused = true;
-		flag = true;
+		flag = true;	// Mark animation should play
 	}
 	else if(currentTime - playerDieTime < 500 && flag)
 	{
+		// Continue drawing death animation if within 500ms window
 		draw_player_died(player_hb, display, currentTime - playerDieTime);
 		gamePaused = true;
 	}
 	else
 	{
+		// Otherwise, draw normal player sprite
 		draw_player(player_hb, display);
 		playerDieTime = currentTime;
 		gamePaused = false;
 		flag = false;
 	}
 
+	// Update persistent life tracker
 	playerLives = getPlayerLives();
 	
+	// Optionally draw player's hitbox
 	if (show_hitboxes) 
 		al_draw_rectangle(player_hb.start.x, player_hb.start.y, player_hb.end.x, player_hb.end.y, 
 						  al_map_rgb(0,255,0), 2.0f);
 
-	// Draw enemies
+	// Static matrix storing enemy alive state from previous frame
 	static bool enemyAlive[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
 
-	// Aca guardo una matriz de diferenciales de tiempo
+	// Stores timestamp of last enemy explosion per grid cell
 	static long long explosionEnemyTime[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX] = {0};
 
+	// Loop over all enemies
 	int row, col;
 	for (row = 0; row < ENEMIES_ROW_MAX; row++) 
 	{
@@ -578,14 +605,14 @@ static bool draw_game_entities(float margin_x, float margin_y, float inner_w, fl
 			hitbox_t hitbox = clipHitbox(getEnemyPosition(row,col), margin_x, margin_y, inner_w, inner_h);
 			if (!getIsEnemyAlive(row,col))
 			{
-				long long currentTime = getTimeMillis();
-
+				// If enemy was just destroyed
 				if(enemyAlive[row][col])
 				{
 					draw_explosion(hitbox, display, 0);
 					enemyAlive[row][col] = 0;
 					explosionEnemyTime[row][col] = currentTime;
 				}
+				// Show lingering explosion for a short duration
 				else if(currentTime - explosionEnemyTime[row][col] < 150 && explosionEnemyTime[row][col] != 0)
 					draw_explosion(hitbox, display, 0);
 				else
@@ -594,6 +621,7 @@ static bool draw_game_entities(float margin_x, float margin_y, float inner_w, fl
 				continue;
 
 			}
+			// Assign enemy color by tier (used for hitbox rendering)
 			ALLEGRO_COLOR color;
 			switch (getEnemyTier(row)) 
 			{
@@ -602,6 +630,7 @@ static bool draw_game_entities(float margin_x, float margin_y, float inner_w, fl
 				case ALIEN_TIER3: color = al_map_rgb(0, 0, 255); break;
 				default: break;
 			}
+			// Draw enemy sprite
 			draw_invaders(hitbox, row, display);
 			if (show_hitboxes) 
 			{
@@ -612,12 +641,12 @@ static bool draw_game_entities(float margin_x, float margin_y, float inner_w, fl
 	}
 	
 
-	// Draw barriers
+	// Draw all barriers
 	int barrier;
 	for (barrier = 0; barrier < BARRIER_QUANTITY_MAX; barrier++)
 		draw_barriers(barrier, margin_x, margin_y, inner_w, inner_h, show_hitboxes);
 
-	// Draw player bullet
+	// Get player bullet and draw if active
 	bullet_t bullet = getPlayerBulletinfo();
 	if (bullet.active) 
 	{
@@ -628,7 +657,7 @@ static bool draw_game_entities(float margin_x, float margin_y, float inner_w, fl
 							 al_map_rgb(255, 255, 0), 2.0f);
 	}
 
-	// Draw enemy bullets
+	// Get enemy bullets and render them
 	bullet_t enemy_bullets[ENEMIES_ROW_MAX][ENEMIES_COLUMNS_MAX];
 	getEnemiesBulletsInfo(enemy_bullets);
 	for (row = 0; row < ENEMIES_ROW_MAX; row++) 
@@ -645,9 +674,11 @@ static bool draw_game_entities(float margin_x, float margin_y, float inner_w, fl
 		}
 	}
 
+	// Static variables for handling mothership explosion animation
 	static long long explosionMothershipTime;
 	static bool mothershipAlive;
-	// Draw mothership
+	
+	// Get mothership hitbox
 	hitbox_t mothership_hb = clipHitbox(getMothershipPosition(), margin_x, margin_y, inner_w, inner_h);
 	if (getIsMothershipAlive()) 
 	{
@@ -660,7 +691,7 @@ static bool draw_game_entities(float margin_x, float margin_y, float inner_w, fl
 	}
 	else
 	{
-		long long currentTime = getTimeMillis();
+		currentTime = getTimeMillis();
 
 			if(mothershipAlive)
 			{
@@ -675,85 +706,6 @@ static bool draw_game_entities(float margin_x, float margin_y, float inner_w, fl
 	}
 	
 	return gamePaused;
-}
-
-/* ---------------------------------------------------
- * @brief Draw barrier segments with visual effects
- * @param barrier Barrier index
- * @param margin_x X margin for clipping
- * @param margin_y Y margin for clipping
- * @param inner_w Inner width for clipping
- * @param inner_h Inner height for clipping
- * @param show_hitboxes Whether to render hitboxes
- * ---------------------------------------------------*/
-static void draw_barriers(int barrier, float margin_x, float margin_y, float inner_w, float inner_h, bool show_hitboxes)
-{
-	// First pass: Draw all barrier segments
-	for (int row = 0; row < BARRIER_ROWS; row++) 
-	{
-		for (int col = 0; col < BARRIER_COLUMNS; col++) 
-		{
-			if (!getBarrierIsAlive(barrier, row, col)) continue;
-			
-			hitbox_t hb = clipHitbox(getBarrierPosition(barrier, row, col), margin_x, margin_y, inner_w, inner_h);
-			al_draw_filled_rectangle(hb.start.x, hb.start.y, hb.end.x, hb.end.y, al_map_rgba(120, 0, 180, 80));
-		}
-	}
-
-	// Second pass: Draw energy grid
-	for (int row = 0; row < BARRIER_ROWS; row++) 
-	{
-		for (int col = 0; col < BARRIER_COLUMNS; col++) 
-		{
-			if (!getBarrierIsAlive(barrier, row, col)) continue;
-			
-			hitbox_t hb = clipHitbox(getBarrierPosition(barrier, row, col), margin_x, margin_y, inner_w, inner_h);
-			float center_x = (hb.start.x + hb.end.x) / 2;
-			float center_y = (hb.start.y + hb.end.y) / 2;
-			float time = al_get_time();
-			float pulse = 0.5f + 0.5f * sin(time * 3.0f);
-			
-			// Horizontal energy lines
-			for (int i = 0; i < 3; i++) 
-			{
-				float y = hb.start.y + (i+1) * (hb.end.y - hb.start.y)/4;
-				al_draw_line(hb.start.x, y, hb.end.x, y, al_map_rgba_f(0.3f, 0.8f, 1.0f, 0.3f + pulse*0.3f), 1.5f);
-			}
-			
-			// Connect to neighboring barriers
-			if (col < BARRIER_COLUMNS-1 && getBarrierIsAlive(barrier, row, col+1)) 
-			{
-				hitbox_t right_hb = clipHitbox(getBarrierPosition(barrier, row, col+1), margin_x, margin_y, inner_w, inner_h);
-				al_draw_line(hb.end.x, center_y, right_hb.start.x, center_y, al_map_rgba(100, 200, 255, 100), 2.0f);
-			}
-			
-			if (row < BARRIER_ROWS-1 && getBarrierIsAlive(barrier, row+1, col)) 
-			{
-				hitbox_t bottom_hb = clipHitbox(getBarrierPosition(barrier, row+1, col), margin_x, margin_y, inner_w, inner_h);
-				al_draw_line(center_x, hb.end.y, center_x, bottom_hb.start.y, al_map_rgba(100, 200, 255, 100), 2.0f);
-			}
-		}
-	}
-
-	// Third pass: Add pulsating core
-	for (int row = 0; row < BARRIER_ROWS; row++) 
-	{
-		for (int col = 0; col < BARRIER_COLUMNS; col++) 
-		{
-			if (!getBarrierIsAlive(barrier, row, col)) continue;
-			
-			hitbox_t hb = clipHitbox(getBarrierPosition(barrier, row, col), margin_x, margin_y, inner_w, inner_h);
-			float time = al_get_time();
-			float pulse_size = 0.8f + 0.2f * sin(time * 4.0f);
-			float size = (hb.end.x - hb.start.x) * 0.3f * pulse_size;
-			
-			if (show_hitboxes) 
-				al_draw_rectangle(hb.start.x, hb.start.y, hb.end.x, hb.end.y, al_map_rgb(0,255,0), 2.0f);
-			
-			al_draw_filled_circle((hb.start.x + hb.end.x)/2, (hb.start.y + hb.end.y)/2, size,
-								al_map_rgba_f(0.4f, 0.9f, 1.0f, 0.4f));
-		}
-	}
 }
 
 /* ---------------------------------------------------
@@ -778,23 +730,26 @@ static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *backgroun
 	{
 		int screen_w = al_get_display_width(display);
 		int screen_h = al_get_display_height(display);
+
+		// Calculate menu box dimensions
 		float option_spacing = screen_h * 0.06f;
 		float rect_width = screen_w * 0.4f;
 		float rect_height = option_count * option_spacing + 40;
 		float rect_x = (screen_w - rect_width) / 2;
 		float rect_y = (screen_h - rect_height) / 2;
-		// Draw frozen game state with overlay
+
+		// 1. Draw frozen game state with dark overlay
 		al_draw_scaled_bitmap(background, 0, 0, al_get_bitmap_width(background), al_get_bitmap_height(background),
 							  0, 0, al_get_display_width(display), al_get_display_height(display), 0);
 		al_draw_filled_rectangle(0, 0, screen_w, screen_h, al_map_rgba(0, 0, 0, 128));
 
-		// Draw menu box
+		// 2. Draw menu container
 		al_draw_filled_rectangle(rect_x, rect_y, rect_x + rect_width, rect_y + rect_height,
 								al_map_rgb(50, 50, 50));
 		al_draw_rectangle(rect_x, rect_y, rect_x + rect_width, rect_y + rect_height,
 						 al_map_rgb(255, 255, 255), 2);
 
-		// Draw menu options
+		// 3. Draw menu options with selection highlight
 		draw_menu_options(options, option_count, selected, rect_y + 20, option_spacing);
 
 		al_flip_display();
@@ -827,13 +782,13 @@ static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *backgroun
 			}
 		}
 	}
-
-	if(next_state == STATE_EXIT)
-		return STATE_EXIT;
 	
 	al_destroy_event_queue(queue);
 
 	// Map selection to game state
+	if(next_state == STATE_EXIT)
+		return STATE_EXIT;
+
 	switch (selected) 
 	{
 		case 0: next_state = STATE_RESUME_GAME; break;
@@ -853,8 +808,8 @@ static gameState_t pauseMenu(ALLEGRO_DISPLAY *display, ALLEGRO_BITMAP *backgroun
 static gameState_t showScoreboard(ALLEGRO_DISPLAY *display) 
 {
 	gameState_t next_state = STATE_MENU;
-	const int MAX_SCORES = 100;
-	score_t scores[MAX_SCORES];
+	const int MAX_SCORES = 100;	// Maximum number of scores to store
+	score_t scores[MAX_SCORES];	// Array to hold scores
 	int total_scores = getTopScore(scores, MAX_SCORES);
 	int current_page = 0;
 
@@ -864,13 +819,12 @@ static gameState_t showScoreboard(ALLEGRO_DISPLAY *display)
 	bool viewing = true;
 	ALLEGRO_EVENT event;
 
-	// Load arrow bitmap
+	// Load arrow bitmap used for navigation
 	ALLEGRO_BITMAP *arrow = al_load_bitmap("assets/images/arrows.png");
 	if (!arrow)
 		fprintf(stderr, "Failed to load arrow images\n");
-		// Handle error - maybe use text arrows instead
 
-	// Arrow hitboxes
+	// Define clickable hitboxes for left and right arrows
 	hitbox_t left_arrow_hb = 
 	{
 		.start = {.x = 0.05f, .y = 0.85f},
@@ -884,47 +838,52 @@ static gameState_t showScoreboard(ALLEGRO_DISPLAY *display)
 
 	while (viewing) 
 	{
-		// Pantalla
+		// Get screen dimensions
 		float screen_w = al_get_display_width(display);
 		float screen_h = al_get_display_height(display);
 
-		// Dimensiones del tablero
+		// Define scoreboard box dimensions
 		float board_width = 0.8f * screen_w;
 		float board_height = 0.7f * screen_h;
 		float board_x = (screen_w - board_width) / 2.0f;
 		float board_y = (screen_h - board_height) / 2.0f;
 
-		// Espaciado vertical proporcional
+		// Position offsets within scoreboard
 		float title_offset_y = 0.05f * board_height;
 		float page_info_offset_y = 0.1f * board_height;
 		float list_start_y = 0.2f * board_height;
 
-		// Altura por línea (puntaje)
+		// Height of each score entry
 		float entry_height = 0.05f * screen_h;
 
-		// Cálculo de cuántos puntajes entran
+		// Calculate how many scores fit per page
 		int SCORES_PER_PAGE = (int)((board_height - list_start_y) / entry_height);
 		if (SCORES_PER_PAGE < 1) SCORES_PER_PAGE = 1;
+
+		// Calculate total number of pages
 		int total_pages = (total_scores + SCORES_PER_PAGE - 1) / SCORES_PER_PAGE;
+
+
 		al_draw_scaled_bitmap(background, 0, 0, al_get_bitmap_width(background), al_get_bitmap_height(background),
 							  0, 0, al_get_display_width(display), al_get_display_height(display), 0);
 
-		// Draw semi-transparent overlay
+		// Draw semi-transparent overlay to dim background
 		al_draw_filled_rectangle(0, 0, al_get_display_width(display), al_get_display_height(display),
 								al_map_rgba(0, 0, 0, 200));
 
-		// Draw scoreboard background
+		// Draw scoreboard container
 		al_draw_filled_rectangle(board_x, board_y, board_x + board_width, board_y + board_height,
 								al_map_rgb(50, 50, 80));
 		al_draw_rectangle(board_x, board_y, board_x + board_width, board_y + board_height,
 						  al_map_rgb(255, 255, 255), 3);
-		// Título centrado
+
+		// Draw title text
 		al_draw_text(font, al_map_rgb(255, 255, 0),
 					screen_w / 2,
 					board_y + title_offset_y,
 					ALLEGRO_ALIGN_CENTER, "TOP SCORES");
 
-		// Página
+		// Draw current page indicator
 		char page_info[32];
 		snprintf(page_info, sizeof(page_info), "Page %d/%d", current_page + 1, total_pages);
 		al_draw_text(font, al_map_rgb(200, 200, 200),
@@ -932,29 +891,30 @@ static gameState_t showScoreboard(ALLEGRO_DISPLAY *display)
 					board_y + page_info_offset_y,
 					ALLEGRO_ALIGN_CENTER, page_info);
 
-		// Mostrar entradas
+		// Calculate score indices for current page
 		int start_idx = current_page * SCORES_PER_PAGE;
 		int end_idx = (start_idx + SCORES_PER_PAGE < total_scores) ? start_idx + SCORES_PER_PAGE : total_scores;
 
+		// Draw score entries on screen
 		for (int i = start_idx; i < end_idx; i++) 
 		{
 			float y_pos = board_y + list_start_y + (i - start_idx) * entry_height;
 
-			// Número
+			// Draw rank number
 			char rank[16];
-			snprintf(rank, sizeof(rank), "%d.", i + 1);
+			snprintf(rank, sizeof(rank), "%-3d.", i + 1);
 			al_draw_text(font, al_map_rgb(255, 255, 255),
 						board_x + 0.05f * board_width,
 						y_pos,
 						ALLEGRO_ALIGN_LEFT, rank);
 
-			// Nombre
+			// Draw player name
 			al_draw_text(font, al_map_rgb(255, 255, 255),
 						board_x + 0.18f * board_width,
 						y_pos,
 						ALLEGRO_ALIGN_LEFT, scores[i].name);
 
-			// Puntaje
+			// Draw player score
 			char score_str[16];
 			snprintf(score_str, sizeof(score_str), "%d", scores[i].score);
 			al_draw_text(font, al_map_rgb(255, 255, 255),
@@ -963,9 +923,7 @@ static gameState_t showScoreboard(ALLEGRO_DISPLAY *display)
 						ALLEGRO_ALIGN_RIGHT, score_str);
 		}
 
-		// Tamaños comunes para las flechas
-
-		// Draw left arrow (flipped horizontally)
+		// Draw left navigation arrow if not on first page
 		if (current_page > 0 && arrow) 
 		{
 			float arrow_w = (left_arrow_hb.end.x - left_arrow_hb.start.x) * screen_w;
@@ -977,14 +935,14 @@ static gameState_t showScoreboard(ALLEGRO_DISPLAY *display)
 				arrow,
 				0, 0,
 				al_get_bitmap_width(arrow), al_get_bitmap_height(arrow),
-				draw_x + arrow_w, draw_y,  // Position adjusted by arrow_w
-				-arrow_w,  // Negative width flips horizontally
+				draw_x + arrow_w, draw_y, 
+				-arrow_w,  // Flip horizontally	
 				arrow_h,
 				0
 			);
 		}
 
-		// Draw right arrow (normal)
+		// Draw right navigation arrow if more pages remain
 		if (current_page < total_pages - 1 && arrow) 
 		{
 			float arrow_w = (right_arrow_hb.end.x - right_arrow_hb.start.x) * screen_w;
@@ -1003,7 +961,7 @@ static gameState_t showScoreboard(ALLEGRO_DISPLAY *display)
 			);
 		}
 
-		// Draw return instruction
+		// Instruction to exit scoreboard
 		al_draw_text(font, al_map_rgb(200, 200, 200),
 					 al_get_display_width(display) / 2,
 					 al_get_display_height(display) * 0.95f,
@@ -1062,18 +1020,18 @@ static char** readCreditsFile(int* line_count)
 		return NULL;
 	}
 
-	// Count lines
+	// ---------- Count number of lines ----------
 	int count = 0;
 	char ch;
 	while (!feof(file)) 
 	{
 		ch = fgetc(file);
-		if (ch == '\n') count++;
+		if (ch == '\n') count++;	// Increment count for each newline found
 	}
-	count++; // For last line without newline
-	rewind(file);
+	count++; // Account for the last line if it doesn't end with newline
+	rewind(file); // Reset file pointer to the beginning for reading
 
-	// Allocate and read lines
+	// ---------- Allocate memory for line pointers ----------
 	char** lines = (char**)malloc(count * sizeof(char*));
 	if (!lines) 
 	{
@@ -1081,14 +1039,15 @@ static char** readCreditsFile(int* line_count)
 		return NULL;
 	}
 
+	// ---------- Read lines one by one ----------
 	char buffer[256];
 	int i = 0;
 	while (fgets(buffer, sizeof(buffer), file) && i < count) 
 	{
-		buffer[strcspn(buffer, "\n")] = 0; // Remove newline
-		lines[i] = strdup(buffer);
+		buffer[strcspn(buffer, "\n")] = 0; 	// Remove trailing newline character
+		lines[i] = strdup(buffer);			// Duplicate the string into heap memory
 		if (!lines[i]) {
-			// Cleanup if allocation fails
+			// Free already allocated strings on failure
 			for (int j = 0; j < i; j++) free(lines[j]);
 			free(lines);
 			fclose(file);
@@ -1111,7 +1070,7 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 	ALLEGRO_EVENT_QUEUE *queue = al_create_event_queue();
 	setup_event_queue(queue, display);
 
-	// Load credits content
+	// -------- Load credits from file or use fallback --------
 	int credit_count = 0;
 	char** credits = readCreditsFile(&credit_count);
 	
@@ -1125,30 +1084,33 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 			"PRESS ANY KEY TO RETURN", NULL
 		};
 
+		// Count fallback lines
 		credit_count = 0;
 		while (fallback_credits[credit_count]) credit_count++;
 
+		// Allocate space for fallback credit
 		credits = (char**)malloc((credit_count+1) * sizeof(char*));
 
+		// Copy fallback strings
 		for (int i = 0; i < credit_count; i++)
 			credits[i] = strdup(fallback_credits[i]);
 
 		credits[credit_count] = NULL;
 	}
 
-	// Load background
+	// -------- Load background image --------
 	ALLEGRO_BITMAP *credits_bg = al_load_bitmap("assets/images/credits_bg.png");
 	if (!credits_bg) 
 		credits_bg = al_load_bitmap("assets/images/backgroundMenu.png");
 
-	// Setup scrolling animation
+	// -------- Initialize scrolling state and timer --------
 	float scroll_pos = al_get_display_height(display);
 	bool credits_done = false;
-	bool shown_segfault_joke = false;
-	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 60.0);
+	ALLEGRO_TIMER *timer = al_create_timer(1.0 / 1000.0);
 	al_register_event_source(queue, al_get_timer_event_source(timer));
 	al_start_timer(timer);
 
+	// -------- Main loop --------
 	while (!credits_done)
 	{
 		ALLEGRO_EVENT event;
@@ -1157,6 +1119,7 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 		if(event_handle(queue, &event, &credits_done, display) == STATE_EXIT)
 				next_state = STATE_EXIT;
 		
+		// Any non-ALT/F4/F11 key will also end credits early
 		else if (event.type == ALLEGRO_EVENT_KEY_DOWN)
 		{
 			if (event.keyboard.keycode != ALLEGRO_KEYMOD_ALT  && event.keyboard.keycode != ALLEGRO_KEY_F4 &&
@@ -1165,30 +1128,21 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 				credits_done = true;
 			}
 		}
-			
+		
+		// Timer event: update scroll position
 		else if (event.type == ALLEGRO_EVENT_TIMER) 
 		{
+			// Scroll speed
 			scroll_pos -= 0.7f;
 
-			// Check for segfault joke position
-			if (!shown_segfault_joke && scroll_pos < -1500.0f) 
+			if (scroll_pos < -1300.0f)
 			{
-				for (int i = 0; i < credit_count; i++) 
-				{
-					if (strstr(credits[i], "*segmentation fault*")) 
-					{
-						playSound_play(SOUND_EXPLOSION);
-						shown_segfault_joke = true;
-						break;
-					}
-				}
-			}
-
-			if (scroll_pos < -2500.0f) 
 				credits_done = true;
+				break;
+			}
 		}
 
-		// Draw credits
+		// -------- Draw background --------
 		if (credits_bg) 
 			al_draw_scaled_bitmap(credits_bg, 0, 0, al_get_bitmap_width(credits_bg),
 								al_get_bitmap_height(credits_bg), 0, 0, 
@@ -1196,7 +1150,13 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 		else 
 			al_clear_to_color(al_map_rgb(0, 0, 0));
 
-		// Draw each credit line with appropriate formatting
+		// Add semi-transparent black overlay for better contrast (like scoreboard)
+		al_draw_filled_rectangle(0, 0, 
+						 al_get_display_width(display), 
+						 al_get_display_height(display), 
+						 al_map_rgba(0, 0, 0, 200));
+
+		// -------- Render each line of credits --------
 		float y = scroll_pos;
 		for (int i = 0; i < credit_count; i++) 
 		{
@@ -1204,7 +1164,7 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 			int font_size = al_get_font_line_height(font);
 			float x = al_get_display_width(display) / 2;
 
-			// Apply special formatting based on content
+			// Apply custom styles based on keywords
 			if (strstr(credits[i], "SPACE INVADERS")) 
 			{
 				color = al_map_rgb(0, 255, 255);
@@ -1251,11 +1211,15 @@ static gameState_t showCredits(ALLEGRO_DISPLAY *display)
 static gameState_t showGameOver(ALLEGRO_DISPLAY *display)
 {
 	gameState_t next_state = STATE_MENU;
+
+	// Allocate space for top scores
 	score_t * topScores=(score_t *)calloc(100,sizeof(score_t));
-	int count = getTopScore(topScores, 100); // cargar top 10
+	int count = getTopScore(topScores, 100);	// Load up to 100 scores
 	
+	// Check if current score qualifies for highscore
 	bool highscore = isHighScore(getScore(), topScores, count);
 	
+	// Player name entry buffer
 	char name[15] = "";
 	int name_pos = 0;
 
@@ -1267,41 +1231,43 @@ static gameState_t showGameOver(ALLEGRO_DISPLAY *display)
 
 	while (!done) 
 	{
+		// Draw background scaled to screen size
 		al_draw_scaled_bitmap(background, 0, 0, al_get_bitmap_width(background), al_get_bitmap_height(background),
 								  0, 0, al_get_display_width(display), al_get_display_height(display), 0);
 
 
-		// Título
+		// Draw "GAME OVER" title
 		al_draw_text(font, al_map_rgb(255, 255, 255),
 					 al_get_display_width(display)/2,
 					 al_get_display_height(display) * 0.1f,
 					 ALLEGRO_ALIGN_CENTER, "GAME OVER");
 
-		// Puntaje
+		// Show player's score
 		char scoreText[64];
-		snprintf(scoreText, sizeof(scoreText), "Your score: %d", getScore());
+		snprintf(scoreText, sizeof(scoreText), "Your score: %-6d", getScore());
 		al_draw_text(font, al_map_rgb(255, 255, 0),
 					 al_get_display_width(display)/2,
 					 al_get_display_height(display) * 0.2f,
 					 ALLEGRO_ALIGN_CENTER, scoreText);
 
-		// TOP 10
+		// Draw Top Scores header
 		al_draw_text(font, al_map_rgb(255, 255, 255),
 					 al_get_display_width(display)/2,
 					 al_get_display_height(display) * 0.3f,
 					 ALLEGRO_ALIGN_CENTER, "Top Scores:");
 
+		// Show top 10 scores
 		for (int i = 0; i < 10; ++i) 
 		{
 			char buffer[64];
-			snprintf(buffer, sizeof(buffer), "%d. %-15s - %d", i + 1, topScores[i].name, topScores[i].score);
+			snprintf(buffer, sizeof(buffer), "%-2d. %-15s - %-6d", i + 1, topScores[i].name, topScores[i].score);
 			al_draw_text(font, al_map_rgb(255, 255, 255),
 						 al_get_display_width(display)/2,
 						 al_get_display_height(display) * (0.35f + i * 0.05f),
 						 ALLEGRO_ALIGN_CENTER, buffer);
 		}
 
-		// Si entra en top
+		// Prompt user input if score is high enough
 		if (highscore) 
 		{
 			al_draw_text(font, al_map_rgb(0, 255, 0),
@@ -1329,6 +1295,7 @@ static gameState_t showGameOver(ALLEGRO_DISPLAY *display)
 		if(event_handle(queue, &event, &done, display) == STATE_EXIT)
 				next_state = STATE_EXIT;
 
+		// Handle character input for name entry
 		if (event.type == ALLEGRO_EVENT_KEY_CHAR && name_pos < 14) 
 		{
 			if (event.keyboard.unichar > 32 && event.keyboard.unichar <= 126) 
@@ -1337,21 +1304,23 @@ static gameState_t showGameOver(ALLEGRO_DISPLAY *display)
 				name[name_pos] = '\0';
 			} 
 		}
+		// Handle backspace for editing name
 		if (event.keyboard.keycode == ALLEGRO_KEY_BACKSPACE && name_pos > 0)
 			name[--name_pos] = '\0';
 
+		// Confirm and save score
 		if (event.type == ALLEGRO_EVENT_KEY_DOWN && event.keyboard.keycode == ALLEGRO_KEY_ENTER)
 		{
 			if (!highscore || (highscore && name_pos > 0)) 
 			{
 				if (highscore)
-					topScoreUpdate(getScore(), name); // Agregás el nuevo score
-
+					topScoreUpdate(getScore(), name); // Add new high score
 				done = true;
 			}
 		}
 	}
-    free(topScores);
+
+	free(topScores);
 	al_destroy_event_queue(queue);
 	return next_state;
 }
@@ -1368,29 +1337,6 @@ static bool isHighScore(int score, score_t topScores[], int count)
 	return (count < 10) || (score > topScores[count - 1].score);
 }
 
-/* ---------------------------------------------------
- * @brief Adjust hitbox coordinates based on display margins
- * @param hb Original hitbox
- * @param margin_x Horizontal margin
- * @param margin_y Vertical margin
- * @param inner_w Inner width
- * @param inner_h Inner height
- * @return Adjusted hitbox
- * ---------------------------------------------------*/
-static hitbox_t clipHitbox(hitbox_t hb, float margin_x, float margin_y, float inner_w, float inner_h)
-{
-	return (hitbox_t)
-	{
-		.start = {
-			.x = margin_x + hb.start.x * inner_w,
-			.y = margin_y + hb.start.y * inner_h
-		},
-		.end = {
-			.x = margin_x + hb.end.x * inner_w,
-			.y = margin_y + hb.end.y * inner_h
-		}
-	};
-}
 
 /* ==================== HELPER FUNCTIONS ==================== */
 

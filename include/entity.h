@@ -78,11 +78,8 @@ typedef struct
 	int lives;
 	bullet_t bullet;
 	long long cooldown;
-} player_t;
+} player_t;s
 
 #define HITBOX_COLLISION(hb1, hb2) (!((hb1).start.x > (hb2).end.x || (hb1).end.x < (hb2).start.x || (hb1).end.y < (hb2).start.y || (hb1).start.y > (hb2).end.y))
-
-void hitboxMove(hitbox_t *hitbox, hitbox_t movement);
-//void hitboxPosition(hitbox_t *hitbox, hitbox_t position);
 
 #endif // ENTITY_H

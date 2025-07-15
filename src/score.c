@@ -1,55 +1,26 @@
+/* ---------------------------------------------------
+ * score.C
+ * ---------------------------------------------------
+ * GRUPO 1:
+ * 	CASTRO, Tomás
+ *	FRIGERIO, Dylan
+ * 	VALENZUELA, Agustín
+ * 	YAGGI, Lucca
+ *
+ * Profesores:
+ * 	MAGLIOLA, Nicolas
+ * 	JACOBY, Daniel
+ * 	VACATELLO, Pablo
+ *
+ * fecha: 15/07/2025
+ * ---------------------------------------------------*/
+
 #include <stdio.h>
 #include <string.h>
 
 #include "score.h"
 
 #define MAX_CANT_SCORES 100
-
-// int main(void)
-// {
-//     score_t topScores[10] = {
-//         {"juan", 1000},
-//         {"maria", 900},
-//         {"pedro", 800},
-//         {"luisa", 700},
-//         {"carlos", 600},
-//         {"sofia", 500},
-//         {"jose", 400},
-//         {"ana", 300},
-//         {"luis", 200},
-//         {"marta", 100}
-//     };
-//     // Update the top scores with a new score
-//     int newScore = 950;
-//     const char *name = "nuevo_jugador";
-//     int result = topScoreUpdate(newScore, name);
-//     if (result == 1) {
-//         printf("Score updated successfully.\n");
-//     } else if (result == 0) {
-//         printf("Duplicate score and name, not added.\n");
-//     } else {
-//         printf("Error updating score.\n");
-//         return 1;
-//     }
-//     // Retrieve the top scores
-//     printf("Retrieving top scores...\n");
-//     score_t topScores[MAX_CANT_SCORES];
-//     int topCount = 10; // Assuming we want the top 10 scores
-//     // Get the top scores from the file
-//     int count = getTopScore(topScores, MAX_CANT_SCORES);
-    
-//     if (count < 0) {
-//         printf("Error reading scores.\n");
-//         return 1;
-//     }
-
-//     printf("Top Scores:\n");
-//     for (int i = 0; i < count; i++) {
-//         printf("%s: %d\n", topScores[i].name, topScores[i].score);
-//     }
-
-//     return 0;
-// }
 
 int getTopScore(score_t *topScore, int cantScores)
 {

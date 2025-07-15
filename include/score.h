@@ -26,26 +26,32 @@ typedef struct
     char name[15];
 }score_t;
 
-/**
- * @brief Loads the top scores from the corresponding file for the given platform.
- *
- * @param topScore Pointer to an array of score_t where the loaded scores will be stored.
- * @return The number of scores read from the file, or -1 if the file could not be opened.
- */
+/* ---------------------------------------------------
+ * @brief Loads the top scores from the file for the given platform.
+ * 
+ * Reads up to `cantScores` scores into the provided array `topScore`.
+ * Returns the number of scores read or -1 if the file could not be opened.
+ * 
+ * @param topScore Pointer to array where scores will be stored.
+ * @param cantScores Maximum number of scores to read.
+ * @return Number of scores read, or -1 on file open failure.
+ * ---------------------------------------------------*/
 int getTopScore(score_t *topScore, int cantScores);
 
-/**
- * @brief Updates the top scores list with a new score and player name for the specified platform.
- *
- * This function reads the current top scores from a file, checks if the new score and name combination
- * already exists to avoid duplicates, and inserts the new score in the correct position if it qualifies.
- * The updated top scores are then written back to the file. The list is limited to the top 10 scores.
- *
- * @param newScore The new score to be considered for the top scores list.
- * @param name The name of the player associated with the new score.
- * @return int Returns 1 if the operation was successful, 0 if the score was a duplicate and not added,
- *         or -1 if there was an error opening the file.
- */
+
+/* ---------------------------------------------------
+ * @brief Updates the top scores list with a new player score.
+ * 
+ * Loads existing top scores from file, checks for duplicates,
+ * inserts the new score in sorted order if it qualifies,
+ * and writes the updated list back to the file (max 10 entries).
+ * 
+ * @param newScore New score to consider for top list.
+ * @param name Player name associated with new score.
+ * @return 1 if updated successfully,
+ *         0 if duplicate entry not added,
+ *        -1 if file could not be opened.
+ * ---------------------------------------------------*/
 int topScoreUpdate(int newScore, const char *name);
 
 #endif // SCORE_H

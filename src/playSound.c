@@ -20,7 +20,7 @@
 #include <stdbool.h>
 
 
-// Rutas a los archivos de sonido
+// Paths to sound effect files, indexed by sound event enum values
 static const char *sound_filenames[SOUND_COUNT] = 
 {
     [SOUND_SHOOT] = "assets/sounds/shoot.wav",
@@ -39,6 +39,7 @@ static const char *sound_filenames[SOUND_COUNT] =
 	[SOUND_MOTHERSHIPDEATH] = "assets/sounds/mothershipdeath.wav",
 };
 
+// Paths to music track files, indexed by music track enum values
 static const char *music_filenames[MUSIC_COUNT] =
 {
     [INTRO_MUSIC] = "assets/sounds/spaceinvaders2.wav",
@@ -51,13 +52,19 @@ static const char *music_filenames[MUSIC_COUNT] =
 #include <allegro5/allegro_audio.h>
 #include <allegro5/allegro_acodec.h>
 
+// Array holding loaded sound samples for all sound effects
 static ALLEGRO_SAMPLE *sounds[SOUND_COUNT] = {0};
 
+// IDs used to control individual samples playing
 static ALLEGRO_SAMPLE_ID sound_ids[SOUND_COUNT];
 
+// Current music audio stream playing
 static ALLEGRO_AUDIO_STREAM *music_stream = NULL;
+
+// Tracks which music is currently playing (-1 means none)
 static GameMusicEvent current_music = -1;
 
+// Flag to track if the UFO low pitch sound is playing (special sound)
 static bool motherWasPlaying = false;
 
 bool playSound_init(void) 
